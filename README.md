@@ -2,23 +2,51 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+Run quality checks before opening a PR:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Lato.
+
+## Environment
+
+Create a local `.env.local` file with these values:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
+
+The app validates required Supabase variables through `utils/env.ts`. Only publishable Supabase keys should be exposed through `NEXT_PUBLIC_*` variables.
+
+## Project Structure
+
+Keep the structure small until the hackathon challenges are announced.
+
+```text
+app/                  Next.js app routes, metadata, and global styles
+components/           Reusable app and UI components
+components/ui/        Small design-system primitives
+public/               Static assets and service worker
+utils/                Shared helpers, env validation, and Supabase clients
+```
+
+Add folders only when a real challenge needs them.
 
 ## Design System Foundation
 
@@ -67,6 +95,106 @@ The default font stack is `Lato, Inter, system-ui, sans-serif`.
 | `text-body` | 24px | 36px | 300 |
 
 Use the typography tokens for primary content hierarchy instead of inline font-size utilities.
+
+## Component Primitives
+
+Use the shared UI primitives before creating one-off elements:
+
+```tsx
+import { Badge, Button, EmptyState, Input, Panel } from "@/components/ui";
+
+export function Example() {
+  return (
+    <Panel title="Challenge Prep" description="Reusable UI for fast delivery.">
+      <Badge tone="success">Ready</Badge>
+      <Input label="Team name" name="teamName" />
+      <Button>Continue</Button>
+      <EmptyState title="No submissions" />
+    </Panel>
+  );
+}
+```
+
+Available primitives:
+
+- `Button`
+- `Input`
+- `Panel`
+- `Badge`
+- `LoadingState`
+- `ErrorState`
+- `RetryButton`
+- `EmptyState`
+
+## Supabase And Data
+
+Supabase helpers are split by runtime:
+
+- `utils/supabase/client.ts` for browser components.
+- `utils/supabase/server.ts` for server components and server-side reads.
+- `utils/supabase/middleware.ts` for session refresh in `proxy.ts`.
+
+Before creating tables during the hackathon:
+
+- Use lowercase plural table names.
+- Enable Row Level Security for user-owned data.
+- Avoid service role keys in the frontend.
+- Document each table purpose and ownership rule in the PR.
+
+## Hackathon Workflow
+
+Use this flow once the two unknown challenges are announced:
+
+1. Create one branch per challenge, such as `challenge-1/short-name` and `challenge-2/short-name`.
+2. Fill out the challenge intake before coding.
+3. Build the smallest complete user flow first.
+4. Run `npm run lint`, `npm run typecheck`, and `npm run build`.
+5. Deploy a preview and verify it on mobile and desktop.
+6. Merge only after the flow is demo-ready.
+
+Challenge intake template:
+
+```md
+## Challenge
+What is being asked?
+
+## User Flow
+What must the user do?
+
+## Data Needed
+Tables, API calls, external services?
+
+## UI Needed
+Pages, components, states?
+
+## Risks
+Auth, deployment, performance, unknown APIs?
+
+## First 90 Minutes
+Concrete implementation plan.
+```
+
+## Deployment
+
+Preferred deployment target: Vercel.
+
+Before the hackathon:
+
+- Connect the GitHub repository.
+- Add the Supabase environment variables.
+- Confirm preview deployments work.
+- Keep the deploy path documented so challenge branches can be tested quickly.
+
+## Pre-Hackathon Checklist
+
+- [ ] Clean working tree before kickoff.
+- [ ] Base branch includes the design system and UI primitives.
+- [ ] Every teammate can run `npm install` and `npm run dev`.
+- [ ] `npm run lint`, `npm run typecheck`, and `npm run build` pass.
+- [ ] Preview deployment is configured.
+- [ ] Supabase project and env vars are available.
+- [ ] Branch strategy is agreed.
+- [ ] No domain-specific feature is built before challenges are announced.
 
 ## Learn More
 
