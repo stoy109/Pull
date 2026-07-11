@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Supabase, PWA, and Leaflet demo app",
     start_url: "/",
     display: "standalone",
-    background_color: "#020617",
-    theme_color: "#020617",
+    background_color: "#f8faf7",
+    theme_color: "#145c46",
     icons: [
       {
         src: "/icon.svg",
