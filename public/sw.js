@@ -3,7 +3,21 @@ const PRECACHE_URLS = ["/", "/manifest.webmanifest", "/icon.svg", "/apple-icon.s
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)),
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        PRECACHE_URLS.map(async (url) => {
+          try {
+            const response = await fetch(url, { cache: "reload" });
+
+            if (response.ok) {
+              await cache.put(url, response);
+            }
+          } catch {
+            // Optional precache entries should not block service worker install.
+          }
+        }),
+      ),
+    ),
   );
   self.skipWaiting();
 });

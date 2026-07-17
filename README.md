@@ -19,7 +19,7 @@ npm run typecheck
 npm run build
 ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the login page by modifying `app/(auth)/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Lato.
 
@@ -32,21 +32,21 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-The app validates required Supabase variables through `utils/env.ts`. Only publishable Supabase keys should be exposed through `NEXT_PUBLIC_*` variables.
+The app validates required Supabase variables through `lib/env.ts`. Only publishable Supabase keys should be exposed through `NEXT_PUBLIC_*` variables.
 
 ## Project Structure
 
-Keep the structure small until the hackathon challenges are announced.
-
 ```text
-app/                  Next.js app routes, metadata, and global styles
-components/           Reusable app and UI components
-components/ui/        Small design-system primitives
-public/               Static assets and service worker
-utils/                Shared helpers, env validation, and Supabase clients
+app/                  Route definitions, route groups, metadata, and global styles
+  (auth)/             Login, registration, verification, and reset-password routes
+  (protected)/        Onboarding and authenticated application routes
+  (public)/           Public legal pages
+features/             Feature-specific actions, components, and data access
+lib/                  Shared helpers, environment validation, and Supabase clients
+public/               Static assets grouped by feature, plus the service worker
 ```
 
-Add folders only when a real challenge needs them.
+Route-group folder names in parentheses organize the code without changing public URLs. Keep route files in `app/`, and place reusable domain code in its matching `features/<feature>/` folder.
 
 ## Design System Foundation
 
@@ -96,43 +96,13 @@ The default font stack is `Lato, Inter, system-ui, sans-serif`.
 
 Use the typography tokens for primary content hierarchy instead of inline font-size utilities.
 
-## Component Primitives
-
-Use the shared UI primitives before creating one-off elements:
-
-```tsx
-import { Badge, Button, EmptyState, Input, Panel } from "@/components/ui";
-
-export function Example() {
-  return (
-    <Panel title="Challenge Prep" description="Reusable UI for fast delivery.">
-      <Badge tone="success">Ready</Badge>
-      <Input label="Team name" name="teamName" />
-      <Button>Continue</Button>
-      <EmptyState title="No submissions" />
-    </Panel>
-  );
-}
-```
-
-Available primitives:
-
-- `Button`
-- `Input`
-- `Panel`
-- `Badge`
-- `LoadingState`
-- `ErrorState`
-- `RetryButton`
-- `EmptyState`
-
 ## Supabase And Data
 
 Supabase helpers are split by runtime:
 
-- `utils/supabase/client.ts` for browser components.
-- `utils/supabase/server.ts` for server components and server-side reads.
-- `utils/supabase/middleware.ts` for session refresh in `proxy.ts`.
+- `lib/supabase/client.ts` for browser components.
+- `lib/supabase/server.ts` for server components and server-side reads.
+- `lib/supabase/middleware.ts` for session refresh in `proxy.ts`.
 
 Before creating tables during the hackathon:
 
