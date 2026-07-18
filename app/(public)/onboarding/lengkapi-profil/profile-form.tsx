@@ -26,9 +26,9 @@ const initialOnboardingState: OnboardingActionState = {
 };
 
 const STEPS = [
-  { id: 1, label: "Welcome" },
-  { id: 2, label: "Choose Role" },
-  { id: 3, label: "Complete Profile" },
+  { id: 1, label: "Selamat Datang" },
+  { id: 2, label: "Pilih Peran" },
+  { id: 3, label: "Lengkapi Profil" },
 ];
 
 const BUSINESS_CATEGORIES = [
@@ -60,10 +60,10 @@ function Stepper() {
             <div className="flex min-w-0 items-center gap-2">
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all ${isDone
-                    ? "bg-[#6abd45] text-white"
-                    : isActive
-                      ? "bg-[#05723c] text-white"
-                      : "bg-[#e8f4e9] text-[#65a46e]"
+                  ? "bg-[#6abd45] text-white"
+                  : isActive
+                    ? "bg-[#05723c] text-white"
+                    : "bg-[#e8f4e9] text-[#65a46e]"
                   }`}
               >
                 {isDone ? <Check className="h-4 w-4 stroke-[3]" /> : step.id}
@@ -122,7 +122,7 @@ export function CompleteProfileForm({
 
         <div className="mt-4 text-center lg:mt-3">
           <h1 className="text-xl font-extrabold leading-tight tracking-normal text-[#10231d] sm:text-2xl lg:text-xl">
-            Complete <span className="text-[#05723c]">Profile</span>
+            Lengkapi <span className="text-[#05723c]">Profil</span>
           </h1>
           <p className="mx-auto mt-1 max-w-sm text-[11px] font-medium leading-relaxed text-[#6b7b75] sm:text-xs lg:text-[11px]">
             Lengkapi informasi profil Anda agar pengalaman menggunakan Pull lebih optimal.
@@ -148,13 +148,13 @@ export function CompleteProfileForm({
               </div>
 
               <p className="mt-5 text-sm font-bold text-[#10231d]">
-                Foto Profil Usaha
+                Logo / Foto Profil Usaha
               </p>
               <p className="mt-2 text-xs font-semibold leading-relaxed text-[#6b7b75]">
                 JPG, PNG maks. 2MB
               </p>
               <p className="mt-3 text-xs font-medium leading-relaxed text-[#6b7b75]">
-                Klik ikon kamera untuk upload foto profil usaha Anda
+                Bisa dilengkapi nanti
               </p>
             </div>
           </div>
@@ -167,7 +167,7 @@ export function CompleteProfileForm({
                 </FieldIcon>
                 <label className="grid gap-1.5">
                   <span className="text-xs font-bold text-[#10231d]">
-                    Nama Lengkap
+                    Nama Pemilik
                   </span>
                   <input
                     name="displayName"
@@ -269,23 +269,14 @@ export function CompleteProfileForm({
                   <span className="text-xs font-bold text-[#10231d]">
                     Nomor WhatsApp
                   </span>
-                  <div className="grid grid-cols-[92px_1fr] gap-3">
-                    <select
-                      name="phoneCountry"
-                      defaultValue="+62"
-                      className="h-12 rounded-xl border border-[#d6e4dc] bg-white px-3 text-sm font-semibold text-[#10231d] outline-none transition-all focus:border-[#05723c] focus:ring-2 focus:ring-[#05723c]/10 lg:h-11"
-                    >
-                      <option value="+62">+62</option>
-                    </select>
-                    <input
-                      name="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                      placeholder="Masukkan nomor WhatsApp Anda"
-                      className="h-12 min-w-0 rounded-xl border border-[#d6e4dc] bg-white px-4 text-sm text-[#10231d] outline-none transition-all placeholder:text-[#91a79d] focus:border-[#05723c] focus:ring-2 focus:ring-[#05723c]/10 lg:h-11"
-                    />
-                  </div>
+                  <input
+                    name="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="Masukkan nomor WhatsApp Anda"
+                    className="h-12 w-full rounded-xl border border-[#d6e4dc] bg-white px-4 text-sm text-[#10231d] outline-none transition-all placeholder:text-[#91a79d] focus:border-[#05723c] focus:ring-2 focus:ring-[#05723c]/10 lg:h-11"
+                  />
                 </label>
               </div>
             </div>
