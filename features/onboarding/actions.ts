@@ -45,10 +45,7 @@ export async function saveRoleAction(
   const { supabase, user } = await getCurrentUser();
 
   if (!user) {
-    return {
-      status: "error",
-      message: "Sesi Anda sudah berakhir. Silakan masuk ulang.",
-    };
+    redirect(`/onboarding/lengkapi-profil?role=${role}`);
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -74,33 +71,32 @@ export async function saveProfileAction(
   formData: FormData,
 ): Promise<OnboardingActionState> {
   const displayName = readFormString(formData, "displayName");
+  const businessName = readFormString(formData, "businessName");
   const location = readFormString(formData, "location");
   const headline = readFormString(formData, "headline");
-  const about = readFormString(formData, "about");
+  const phone = readFormString(formData, "phone");
 
-  if (!displayName || !location || !headline) {
+  if (!displayName || !businessName || !location || !headline) {
     return {
       status: "error",
-      message: "Nama tampilan, lokasi, dan ringkasan wajib diisi.",
+      message: "Nama lengkap, nama usaha, kategori, dan lokasi wajib diisi.",
     };
   }
 
   const { supabase, user } = await getCurrentUser();
 
   if (!user) {
-    return {
-      status: "error",
-      message: "Sesi Anda sudah berakhir. Silakan masuk ulang.",
-    };
+    redirect("/dashboard");
   }
 
   const { error } = await supabase.auth.updateUser({
     data: {
       ...user.user_metadata,
       display_name: displayName,
+      business_name: businessName,
       location,
       headline,
-      about,
+      phone,
       onboarding_step: "complete",
     },
   });

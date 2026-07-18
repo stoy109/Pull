@@ -20,16 +20,16 @@ export default function ResetSuccessPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-4 md:p-8">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
       <div
-        className="flex w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-white border border-[#e6eee9] flex-col md:flex-row min-h-[580px]"
+        className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white sm:rounded-[2.25rem] lg:flex-row lg:min-h-[520px]"
         style={{
           boxShadow:
             "0 24px 60px rgba(20,92,70,0.10), 0 4px 16px rgba(20,92,70,0.05)",
         }}
       >
         <div
-          className="relative hidden md:flex md:w-1/2 bg-gradient-to-br from-[#f0f9f4] to-[#e4f2e9] items-center justify-center border-r border-[#e6eee9]"
+          className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-gradient-to-br from-[#f0f9f4] to-[#e4f2e9] lg:flex lg:w-1/2"
           style={{ boxShadow: "inset -1px 0 0 #e6eee9" }}
         >
           <Image
@@ -37,14 +37,14 @@ export default function ResetSuccessPage() {
             alt="Kata sandi berhasil diperbarui"
             fill
             priority
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
             style={{ filter: "drop-shadow(0 8px 24px rgba(20,92,70,0.12))" }}
           />
         </div>
 
-        <div className="flex flex-col items-center justify-center bg-white p-8 md:w-1/2 md:p-16">
-          <div className="w-full max-w-[320px] text-center flex flex-col items-center gap-8">
+        <div className="flex flex-col items-center justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="flex w-full max-w-[320px] flex-col items-center gap-6 text-center">
             <div
               className={`relative flex items-center justify-center transition-all duration-700 ease-out ${
                 iconVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
@@ -93,7 +93,7 @@ export default function ResetSuccessPage() {
             >
               <Link
                 href="/"
-                className="group flex items-center justify-center gap-2.5 w-full h-[52px] rounded-[14px] bg-[#145c46] text-white font-semibold text-sm tracking-wide transition-all duration-200 hover:bg-[#0f4a37] active:scale-[0.98]"
+                className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-[14px] bg-[#145c46] text-sm font-semibold tracking-wide text-white transition-all duration-200 hover:bg-[#0f4a37] active:scale-[0.98] lg:h-11"
                 style={{ boxShadow: "0 8px 24px rgba(20,92,70,0.25)" }}
               >
                 Masuk ke Akun

@@ -44,10 +44,10 @@ export default function PilihPeranPage() {
   const currentStep = 2;
 
   return (
-    <div className="min-h-screen bg-[#f8faf7] flex flex-col items-center justify-center p-6 md:p-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8faf7] p-4 sm:p-6 lg:p-5">
       <form
         action={formAction}
-        className="w-full max-w-3xl bg-white rounded-[2.5rem] shadow-xl shadow-emerald-950/5 border border-[#e6eee9] p-8 md:p-12 flex flex-col gap-8"
+        className="flex w-full max-w-3xl flex-col gap-5 rounded-[2rem] border border-[#e6eee9] bg-white p-6 shadow-xl shadow-emerald-950/5 sm:p-8 lg:gap-6 lg:px-10 lg:py-7"
       >
         <input type="hidden" name="role" value={selectedRole} />
 
@@ -57,8 +57,8 @@ export default function PilihPeranPage() {
             const isActive = step.id === currentStep;
 
             return (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center gap-1.5 w-24">
+                <div key={step.id} className="flex items-center">
+                <div className="flex w-20 flex-col items-center gap-1.5 sm:w-24">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 ${
                       isDone
@@ -88,7 +88,7 @@ export default function PilihPeranPage() {
                 </div>
 
                 {index < STEPS.length - 1 && (
-                  <div className="w-12 h-[2px] -mt-5 flex-shrink-0 rounded-full overflow-hidden bg-[#e6eee9]">
+                  <div className="h-[2px] w-8 shrink-0 -mt-5 overflow-hidden rounded-full bg-[#e6eee9] sm:w-12">
                     <div
                       className="h-full bg-[#A7C840] transition-all duration-500"
                       style={{ width: step.id < currentStep ? "100%" : "0%" }}
@@ -100,8 +100,8 @@ export default function PilihPeranPage() {
           })}
         </div>
 
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-[#10231d]">
+        <div className="space-y-1.5 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-[#10231d] sm:text-3xl">
             Pilih <span className="text-[#145c46]">Peran</span> Anda
           </h1>
           <p className="text-sm text-[#6b7b75] leading-relaxed">
@@ -111,7 +111,7 @@ export default function PilihPeranPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 md:px-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:px-4">
           {ROLES.map((role) => {
             const isSelected = selectedRole === role.id;
 
@@ -120,7 +120,7 @@ export default function PilihPeranPage() {
                 key={role.id}
                 type="button"
                 onClick={() => setSelectedRole(role.id)}
-                className={`relative flex flex-col items-center gap-6 p-7 rounded-[28px] border bg-white transition-all duration-300 cursor-pointer ${
+                className={`relative flex flex-col items-center gap-4 rounded-[24px] border bg-white p-5 transition-all duration-300 ${
                   isSelected
                     ? "border-[#299a45] shadow-lg shadow-emerald-950/5 ring-1 ring-[#299a45]"
                     : "border-[#e6eee9] hover:border-[#a7c840] hover:shadow-md"
@@ -138,19 +138,19 @@ export default function PilihPeranPage() {
                   </div>
                 </div>
 
-                <div className="w-full h-[180px] flex items-end justify-center overflow-hidden">
+                <div className="flex h-36 w-full items-end justify-center overflow-hidden lg:h-32">
                   <Image
                     src={role.image}
                     alt={role.label}
-                    width={260}
-                    height={180}
-                    sizes="(min-width: 768px) 260px, 70vw"
+                    width={220}
+                    height={144}
+                    sizes="(min-width: 1024px) 220px, 70vw"
                     className="max-w-full max-h-full object-contain"
                   />
                 </div>
 
-                <div className="w-full text-center space-y-2">
-                  <h3 className="font-bold text-2xl text-[#10231d] tracking-tight">
+                <div className="w-full space-y-1.5 text-center">
+                  <h3 className="text-xl font-bold tracking-tight text-[#10231d] sm:text-2xl">
                     {role.label}
                   </h3>
                   <p className="text-xs text-[#6b7b75] leading-relaxed px-2 font-medium">
@@ -174,7 +174,7 @@ export default function PilihPeranPage() {
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/onboarding"
-            className="inline-flex items-center gap-2 h-[48px] px-6 rounded-2xl border-2 border-[#d6e4dc] bg-white text-sm font-semibold text-[#36544a] hover:bg-[#f4f8f5] transition-all duration-150 cursor-pointer"
+            className="inline-flex h-12 items-center gap-2 rounded-2xl border-2 border-[#d6e4dc] bg-white px-5 text-sm font-semibold text-[#36544a] transition-all duration-150 hover:bg-[#f4f8f5] lg:h-11"
           >
             <ArrowLeft className="w-4 h-4" />
             Kembali
@@ -183,7 +183,7 @@ export default function PilihPeranPage() {
           <button
             type="submit"
             disabled={!selectedRole || isPending}
-            className="inline-flex items-center gap-2 h-[48px] px-8 rounded-2xl bg-[#145c46] text-white text-sm font-semibold shadow-md shadow-emerald-950/20 hover:bg-[#104a38] active:scale-[0.99] transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#145c46] px-6 text-sm font-semibold text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#104a38] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 lg:h-11"
           >
             {isPending ? "Menyimpan..." : "Lanjutkan"}
             <ArrowRight className="w-4 h-4" />

@@ -27,25 +27,25 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-4 md:p-8">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
       {/* Outer Card Container */}
-      <div className="flex w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-white shadow-xl shadow-emerald-950/5 border border-[#e6eee9] flex-col md:flex-row min-h-[640px]">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
 
         {/* Left Side: Illustration Image */}
-        <div className="relative hidden md:flex md:w-1/2 bg-[#f4f8f5] items-center justify-center border-r border-[#e6eee9]">
+        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Satu Platform, Bersama UMKM Maju"
             fill
             priority
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
         </div>
 
         {/* Right Side: White Login Form */}
-        <div className="flex flex-col justify-center bg-white p-8 md:w-1/2 md:p-12">
-          <div className="w-full max-w-sm mx-auto space-y-8">
+        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="mx-auto w-full max-w-sm space-y-5 lg:space-y-6">
 
             {/* Title & Subtitle */}
             <div className="space-y-1">
@@ -60,13 +60,13 @@ export default function LoginPage() {
             {/* Login Form */}
             <form
               action={formAction}
-              className="space-y-5"
+              className="space-y-4"
               data-lpignore="true"
               data-form-type="other"
             >
 
               {/* Email Field */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#36544a]">
                   Email
                 </label>
@@ -82,13 +82,13 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@email.com"
-                    className="w-full h-12 pl-12 pr-4 rounded-2xl border border-[#d6e4dc] bg-white text-sm text-[#10231d] placeholder:text-[#91a79d] outline-none transition-all focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10"
+                    className="h-12 w-full rounded-2xl border border-[#d6e4dc] bg-white pl-12 pr-4 text-sm text-[#10231d] outline-none transition-all placeholder:text-[#91a79d] focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10 lg:h-11"
                   />
                 </div>
               </div>
 
               {/* Password Field */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#36544a]">
                   Kata Sandi
                 </label>
@@ -104,7 +104,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Masukkan kata sandi"
-                    className="w-full h-12 pl-12 pr-12 rounded-2xl border border-[#d6e4dc] bg-white text-sm text-[#10231d] placeholder:text-[#91a79d] outline-none transition-all focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10"
+                    className="h-12 w-full rounded-2xl border border-[#d6e4dc] bg-white pl-12 pr-12 text-sm text-[#10231d] outline-none transition-all placeholder:text-[#91a79d] focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10 lg:h-11"
                   />
                   <button
                     type="button"
@@ -149,7 +149,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full h-12 rounded-2xl bg-[#145c46] text-white font-semibold text-sm shadow-md shadow-emerald-950/20 hover:bg-[#104a38] active:scale-[0.99] transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+                className="h-12 w-full rounded-2xl bg-[#145c46] text-sm font-semibold text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#104a38] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 lg:h-11"
               >
                 {isPending ? "Memproses..." : "Masuk"}
               </button>
@@ -157,7 +157,7 @@ export default function LoginPage() {
             </form>
 
             {/* Divider */}
-            <div className="relative flex items-center justify-center my-6">
+            <div className="relative flex items-center justify-center">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-[#d6e4dc]"></div>
               </div>
@@ -172,7 +172,7 @@ export default function LoginPage() {
               <form action={signInWithGoogleAction}>
                 <button
                   type="submit"
-                  className="flex items-center justify-center gap-2.5 w-full h-12 rounded-2xl border border-[#d6e4dc] bg-white text-sm font-semibold text-[#10231d] hover:bg-[#f8faf7] transition-colors cursor-pointer"
+                  className="flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#d6e4dc] bg-white text-sm font-semibold text-[#10231d] transition-colors hover:bg-[#f8faf7] lg:h-11"
                 >
                   <FcGoogle className="h-5 w-5" aria-hidden="true" />
                   Google

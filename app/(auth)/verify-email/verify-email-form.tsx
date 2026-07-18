@@ -77,24 +77,24 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-4 md:p-8">
-      <div className="flex w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-white shadow-xl shadow-emerald-950/5 border border-[#e6eee9] flex-col md:flex-row min-h-[640px]">
-        <div className="relative hidden md:flex md:w-1/2 bg-[#f4f8f5] items-center justify-center border-r border-[#e6eee9]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Satu Platform, Bersama UMKM Maju"
             fill
             priority
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
         </div>
 
-        <div className="flex flex-col justify-center bg-white p-8 md:w-1/2 md:p-12">
-          <div className="w-full max-w-sm mx-auto space-y-8">
+        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="mx-auto w-full max-w-sm space-y-5 lg:space-y-6">
             <div className="flex justify-center">
-              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#f4f8f5] border border-[#d6e4dc] text-[#145c46]">
-                <Mail className="w-7 h-7" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#d6e4dc] bg-[#f4f8f5] text-[#145c46] lg:h-12 lg:w-12">
+                <Mail className="h-6 w-6" />
               </div>
             </div>
 
@@ -121,7 +121,7 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
               </p>
             )}
 
-            <form action={verifyAction} className="space-y-6">
+            <form action={verifyAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
               <input type="hidden" name="token" value={otpCode} />
 
@@ -139,12 +139,12 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
                     }}
                     onChange={(event) => handleChange(event.target.value, index)}
                     onKeyDown={(event) => handleKeyDown(event, index)}
-                    className="w-12 h-12 text-center text-xl font-bold rounded-xl border border-[#d6e4dc] bg-white text-[#10231d] outline-none transition-all focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10"
+                    className="h-12 w-12 rounded-xl border border-[#d6e4dc] bg-white text-center text-xl font-bold text-[#10231d] outline-none transition-all focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10 lg:h-11 lg:w-11"
                   />
                 ))}
               </div>
 
-              <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-[#f8faf7] border border-[#e6eee9] text-xs font-semibold text-[#145c46]">
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-[#e6eee9] bg-[#f8faf7] px-4 py-2.5 text-xs font-semibold text-[#145c46]">
                 <span>
                   {timeLeft > 0
                     ? `Kode akan kedaluwarsa dalam ${formatTime(timeLeft)}`
@@ -168,7 +168,7 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
               <button
                 type="submit"
                 disabled={!email || otpCode.length < 6 || isVerifyPending}
-                className="w-full h-12 rounded-2xl bg-[#145c46] text-white font-semibold text-sm shadow-md shadow-emerald-950/20 hover:bg-[#104a38] active:scale-[0.99] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer"
+                className="h-12 w-full rounded-2xl bg-[#145c46] text-sm font-semibold text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#104a38] active:scale-[0.99] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 lg:h-11"
               >
                 {isVerifyPending ? "Memverifikasi..." : "Verifikasi Email"}
               </button>

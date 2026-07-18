@@ -81,22 +81,22 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-4 md:p-8">
-      <div className="flex w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-white shadow-xl shadow-emerald-950/5 border border-[#e6eee9] flex-col md:flex-row min-h-[640px]">
-        <div className="relative hidden md:flex md:w-1/2 bg-[#f4f8f5] items-center justify-center border-r border-[#e6eee9]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Verifikasi Kode Reset"
             fill
             priority
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
         </div>
 
-        <div className="flex flex-col justify-center bg-white p-8 md:w-1/2 md:p-12">
-          <div className="w-full max-w-sm mx-auto space-y-8">
-            <div className="space-y-3 text-center">
+        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="mx-auto w-full max-w-sm space-y-5 lg:space-y-6">
+            <div className="space-y-2 text-center">
               <h1 className="text-2xl font-bold tracking-tight text-[#10231d] md:text-3xl">
                 Verifikasi Kode Reset
               </h1>
@@ -119,12 +119,12 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
               </p>
             )}
 
-            <form action={verifyAction} className="space-y-5">
+            <form action={verifyAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
               <input type="hidden" name="token" value={otpCode} />
 
-              <div className="space-y-3">
-                <div className="flex justify-between gap-3">
+              <div className="space-y-2">
+                <div className="flex justify-between gap-2">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
@@ -138,7 +138,7 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
                       }}
                       onChange={(event) => handleChange(event.target.value, index)}
                       onKeyDown={(event) => handleKeyDown(event, index)}
-                      className="w-full aspect-square max-w-[56px] h-14 text-center text-2xl font-bold rounded-2xl border-2 border-[#d6e4dc] bg-white text-[#10231d] outline-none transition-all focus:border-[#145c46] focus:ring-4 focus:ring-[#145c46]/8 placeholder:text-[#e6eee9]"
+                      className="h-12 w-full max-w-12 rounded-2xl border-2 border-[#d6e4dc] bg-white text-center text-xl font-bold text-[#10231d] outline-none transition-all placeholder:text-[#e6eee9] focus:border-[#145c46] focus:ring-4 focus:ring-[#145c46]/8 lg:h-11 lg:max-w-11"
                     />
                   ))}
                 </div>
@@ -147,7 +147,7 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
                 </p>
               </div>
 
-              <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-[#f8faf7] border border-[#e6eee9] text-xs font-semibold text-[#145c46]">
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-[#e6eee9] bg-[#f8faf7] px-4 py-2.5 text-xs font-semibold text-[#145c46]">
                 <span>
                   {timeLeft > 0
                     ? `Kode akan kedaluwarsa dalam ${formatTime(timeLeft)}`
@@ -171,7 +171,7 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
               <button
                 type="submit"
                 disabled={!email || !isComplete || isVerifyPending}
-                className={`w-full h-12 rounded-2xl font-semibold text-sm shadow-md transition-all duration-150 cursor-pointer ${
+                className={`h-12 w-full rounded-2xl text-sm font-semibold shadow-md transition-all duration-150 lg:h-11 ${
                   email && isComplete && !isVerifyPending
                     ? "bg-[#145c46] text-white shadow-emerald-950/20 hover:bg-[#104a38] active:scale-[0.99]"
                     : "bg-[#d6e4dc] text-[#6b7b75] cursor-not-allowed shadow-none"

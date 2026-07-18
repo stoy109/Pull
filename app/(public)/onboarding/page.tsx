@@ -42,21 +42,21 @@ export default function OnboardingPage() {
   const currentStep = 1;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-4 md:p-8">
-      <div className="flex w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-white shadow-xl shadow-emerald-950/5 border border-[#e6eee9] flex-col md:flex-row min-h-[640px]">
-        <div className="relative hidden md:flex md:w-1/2 bg-[#f4f8f5] items-center justify-center border-r border-[#e6eee9]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Selamat Datang di Pull"
             fill
             priority
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
         </div>
 
-        <div className="flex flex-col justify-center bg-white p-8 md:w-1/2 md:p-12">
-          <div className="w-full max-w-sm mx-auto flex flex-col gap-8">
+        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="mx-auto flex w-full max-w-sm flex-col gap-5 lg:gap-6">
             <div className="flex items-center gap-0">
               {STEPS.map((step, index) => {
                 const isDone = step.id < currentStep;
@@ -117,7 +117,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <ul className="space-y-3.5">
+            <ul className="space-y-3">
               {FEATURES.map((feature) => (
                 <li key={feature.title} className="flex items-start gap-3.5">
                   <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#eef8f2] border border-[#c3e6d0] flex items-center justify-center mt-0.5">
@@ -137,7 +137,7 @@ export default function OnboardingPage() {
 
             <Link
               href="/onboarding/pilih-peran"
-              className="flex items-center justify-center gap-2.5 w-full h-[52px] rounded-2xl bg-[#145c46] text-white font-semibold text-sm tracking-wide shadow-md shadow-emerald-950/20 hover:bg-[#104a38] active:scale-[0.99] transition-all duration-150"
+              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl bg-[#145c46] text-sm font-semibold tracking-wide text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#104a38] active:scale-[0.99] lg:h-11"
             >
               Mulai Sekarang
               <ArrowRight className="w-4 h-4" />

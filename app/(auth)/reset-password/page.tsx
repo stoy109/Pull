@@ -63,24 +63,24 @@ export default function ResetPasswordPage() {
   const isMatch = confirmPassword.length > 0 && password === confirmPassword;
   const isReady = allMet && isMatch;
   const inputBase =
-    "w-full h-[56px] pl-4 pr-12 rounded-[14px] border bg-white text-sm text-[#10231d] placeholder:text-[#b8ccc5] outline-none transition-all duration-200";
+    "h-12 w-full rounded-[14px] border bg-white pl-4 pr-12 text-sm text-[#10231d] outline-none transition-all duration-200 placeholder:text-[#b8ccc5] lg:h-11";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-4 md:p-8">
-      <div className="flex w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-white shadow-2xl shadow-emerald-950/8 border border-[#e6eee9] flex-col md:flex-row min-h-[640px]">
-        <div className="relative hidden md:flex md:w-1/2 bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ec] items-center justify-center border-r border-[#e6eee9]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-2xl shadow-emerald-950/8 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ec] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Buat Kata Sandi Baru"
             fill
             priority
-            sizes="(min-width: 768px) 50vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover drop-shadow-sm"
           />
         </div>
 
-        <div className="flex flex-col justify-center bg-white p-8 md:w-1/2 md:p-12">
-          <div className="w-full max-w-sm mx-auto space-y-7">
+        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="mx-auto w-full max-w-sm space-y-5">
             <div className="space-y-1.5">
               <h1 className="text-[1.75rem] font-bold tracking-tight text-[#10231d] leading-snug">
                 Buat Kata Sandi Baru
@@ -95,11 +95,11 @@ export default function ResetPasswordPage() {
 
             <form
               action={formAction}
-              className="space-y-5"
+              className="space-y-4"
               data-lpignore="true"
               data-form-type="other"
             >
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <label className="text-xs font-semibold text-[#36544a]">
                   Kata Sandi Baru
                 </label>
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 {password.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="h-1.5 w-full bg-[#e6eee9] rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ease-out ${strength.bar}`}
@@ -157,7 +157,7 @@ export default function ResetPasswordPage() {
                 )}
 
                 {password.length > 0 && (
-                  <ul className="grid grid-cols-1 gap-1 pt-1">
+                  <ul className="grid grid-cols-1 gap-0.5 pt-0.5">
                     {reqs.map((requirement) => (
                       <li
                         key={requirement.id}
@@ -249,7 +249,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={!isReady || isPending}
-                className={`w-full h-[52px] rounded-[14px] font-semibold text-sm tracking-wide transition-all duration-200 cursor-pointer mt-1 ${
+                className={`mt-1 h-12 w-full rounded-[14px] text-sm font-semibold tracking-wide transition-all duration-200 lg:h-11 ${
                   isReady && !isPending
                     ? "bg-[#145c46] text-white shadow-lg shadow-emerald-950/20 hover:bg-[#0f4a37] active:scale-[0.985] hover:shadow-xl hover:shadow-emerald-950/25"
                     : "bg-[#e6eee9] text-[#91a79d] cursor-not-allowed"

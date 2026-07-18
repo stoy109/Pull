@@ -1,19 +1,24 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CompleteProfileForm } from "./profile-form";
 
-export default async function LengkapiProfilPage() {
+type LengkapiProfilPageProps = {
+  searchParams: Promise<{
+    role?: string;
+  }>;
+};
+
+export default async function LengkapiProfilPage({
+  searchParams,
+}: LengkapiProfilPageProps) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/");
-  }
-
-  const metadata = user.user_metadata;
-  const role = typeof metadata.role === "string" ? metadata.role : "umkm";
+  const metadata = user?.user_metadata ?? {};
+  const searchRole = params.role === "pekerja" ? "pekerja" : "umkm";
+  const role = typeof metadata.role === "string" ? metadata.role : searchRole;
   const fullName =
     typeof metadata.full_name === "string" ? metadata.full_name : "";
   const phone = typeof metadata.phone === "string" ? metadata.phone : "";
