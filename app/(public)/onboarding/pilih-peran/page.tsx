@@ -120,7 +120,7 @@ export default function PilihPeranPage() {
                 key={role.id}
                 type="button"
                 onClick={() => setSelectedRole(role.id)}
-                className={`relative flex flex-col items-center gap-4 rounded-[24px] border bg-white p-5 transition-all duration-300 ${
+                className={`relative flex flex-col items-center gap-4 rounded-[24px] border bg-white p-5 cursor-pointer transition-all duration-300 ${
                   isSelected
                     ? "border-[#299a45] shadow-lg shadow-emerald-950/5 ring-1 ring-[#299a45]"
                     : "border-[#e6eee9] hover:border-[#a7c840] hover:shadow-md"
@@ -147,6 +147,7 @@ export default function PilihPeranPage() {
                     sizes="(min-width: 1024px) 220px, 70vw"
                     className="max-w-full max-h-full object-contain"
                     style={{ width: "auto", height: "auto" }}
+                    priority
                   />
                 </div>
 
