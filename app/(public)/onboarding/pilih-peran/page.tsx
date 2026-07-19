@@ -34,10 +34,10 @@ const ROLES = [
     image: "/onboarding/roles/pekerja.png",
   },
   {
-    id: "pekerja2",
-    label: "Pekerja 2",
-    desc: "Saya mencari peluang kerja atau ingin terhubung dengan pelaku usaha.",
-    image: "/onboarding/roles/pekerja.png",
+    id: "supplier",
+    label: "Supplier",
+    desc: "Saya menyediakan bahan baku atau produk dan ingin terhubung dengan pelaku usaha.",
+    image: "/onboarding/roles/supplier.png",
   },
 ];
 
@@ -63,16 +63,15 @@ export default function PilihPeranPage() {
             const isActive = step.id === currentStep;
 
             return (
-                <div key={step.id} className="flex items-center">
+              <div key={step.id} className="flex items-center">
                 <div className="flex w-20 flex-col items-center gap-1.5 sm:w-24">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 ${
-                      isDone
-                        ? "bg-[#A7C840] border-[#A7C840] text-white"
-                        : isActive
-                          ? "bg-[#145c46] border-[#145c46] text-white"
-                          : "bg-white border-[#d6e4dc] text-[#91a79d]"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 ${isDone
+                      ? "bg-[#A7C840] border-[#A7C840] text-white"
+                      : isActive
+                        ? "bg-[#145c46] border-[#145c46] text-white"
+                        : "bg-white border-[#d6e4dc] text-[#91a79d]"
+                      }`}
                   >
                     {isDone ? (
                       <Check className="w-4 h-4 stroke-[3]" />
@@ -81,13 +80,12 @@ export default function PilihPeranPage() {
                     )}
                   </div>
                   <span
-                    className={`text-[11px] font-semibold text-center leading-tight transition-colors duration-300 ${
-                      isActive
-                        ? "text-[#145c46]"
-                        : isDone
-                          ? "text-[#A7C840]"
-                          : "text-[#91a79d]"
-                    }`}
+                    className={`text-[11px] font-semibold text-center leading-tight transition-colors duration-300 ${isActive
+                      ? "text-[#145c46]"
+                      : isDone
+                        ? "text-[#A7C840]"
+                        : "text-[#91a79d]"
+                      }`}
                   >
                     {step.label}
                   </span>
@@ -126,17 +124,15 @@ export default function PilihPeranPage() {
                 key={role.id}
                 type="button"
                 onClick={() => setSelectedRole(role.id)}
-                className={`relative flex flex-col items-center gap-4 rounded-[24px] border bg-white p-5 cursor-pointer transition-all duration-300 ${
-                  isSelected
-                    ? "border-[#299a45] shadow-lg shadow-emerald-950/5 ring-1 ring-[#299a45]"
-                    : "border-[#e6eee9] hover:border-[#a7c840] hover:shadow-md"
-                }`}
+                className={`relative flex flex-col items-center gap-4 rounded-[24px] border bg-white p-5 cursor-pointer transition-all duration-300 ${isSelected
+                  ? "border-[#299a45] shadow-lg shadow-emerald-950/5 ring-1 ring-[#299a45]"
+                  : "border-[#e6eee9] hover:border-[#a7c840] hover:shadow-md"
+                  }`}
               >
                 <div className="absolute top-5 right-5">
                   <div
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                      isSelected ? "border-[#145c46]" : "border-[#d6e4dc]"
-                    }`}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isSelected ? "border-[#145c46]" : "border-[#d6e4dc]"
+                      }`}
                   >
                     {isSelected && (
                       <div className="w-3.5 h-3.5 rounded-full bg-[#145c46]" />
