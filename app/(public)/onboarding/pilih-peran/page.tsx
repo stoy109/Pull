@@ -4,6 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import pekerjaImage from "@/public/onboarding/roles/pekerja.png";
+import supplierImage from "@/public/onboarding/roles/supplier.png";
+import umkmImage from "@/public/onboarding/roles/umkm.png";
 import {
   saveRoleAction,
   type OnboardingActionState,
@@ -25,19 +28,19 @@ const ROLES = [
     id: "umkm",
     label: "UMKM",
     desc: "Saya pemilik usaha kecil atau menengah dan ingin berkembang bersama komunitas.",
-    image: "/onboarding/roles/umkm.png",
+    image: umkmImage,
   },
   {
     id: "pekerja",
     label: "Pekerja",
     desc: "Saya mencari peluang kerja atau ingin terhubung dengan pelaku usaha.",
-    image: "/onboarding/roles/pekerja.png",
+    image: pekerjaImage,
   },
   {
     id: "supplier",
     label: "Supplier",
     desc: "Saya menyediakan bahan baku atau produk dan ingin terhubung dengan pelaku usaha.",
-    image: "/onboarding/roles/supplier.png",
+    image: supplierImage,
   },
 ];
 
