@@ -33,6 +33,12 @@ const ROLES = [
     desc: "Saya mencari peluang kerja atau ingin terhubung dengan pelaku usaha.",
     image: "/onboarding/roles/pekerja.png",
   },
+  {
+    id: "pekerja2",
+    label: "Pekerja 2",
+    desc: "Saya mencari peluang kerja atau ingin terhubung dengan pelaku usaha.",
+    image: "/onboarding/roles/pekerja.png",
+  },
 ];
 
 export default function PilihPeranPage() {
@@ -47,7 +53,7 @@ export default function PilihPeranPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8faf7] p-4 sm:p-6 lg:p-5">
       <form
         action={formAction}
-        className="flex w-full max-w-3xl flex-col gap-5 rounded-[2rem] border border-[#e6eee9] bg-white p-6 shadow-xl shadow-emerald-950/5 sm:p-8 lg:gap-6 lg:px-10 lg:py-7"
+        className="flex w-full max-w-4xl flex-col gap-5 rounded-[2rem] border border-[#e6eee9] bg-white p-6 shadow-xl shadow-emerald-950/5 sm:p-8 lg:gap-6 lg:px-10 lg:py-7"
       >
         <input type="hidden" name="role" value={selectedRole} />
 
@@ -111,7 +117,7 @@ export default function PilihPeranPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:px-4">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 lg:px-4">
           {ROLES.map((role) => {
             const isSelected = selectedRole === role.id;
 
