@@ -17,7 +17,12 @@ export default async function LengkapiProfilPage({
   } = await supabase.auth.getUser();
 
   const metadata = user?.user_metadata ?? {};
-  const searchRole = params.role === "pekerja" ? "pekerja" : "umkm";
+  const searchRole =
+    params.role === "pekerja"
+      ? "pekerja"
+      : params.role === "supplier"
+        ? "supplier"
+        : "umkm";
   const role = typeof metadata.role === "string" ? metadata.role : searchRole;
   const fullName =
     typeof metadata.full_name === "string" ? metadata.full_name : "";
