@@ -146,6 +146,7 @@ export default function PilihPeranPage() {
                     height={144}
                     sizes="(min-width: 1024px) 220px, 70vw"
                     className="max-w-full max-h-full object-contain"
+                    style={{ width: "auto", height: "auto" }}
                   />
                 </div>
 
