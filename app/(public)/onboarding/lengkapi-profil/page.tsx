@@ -3,9 +3,23 @@ import { CompleteProfileForm } from "./profile-form";
 
 type LengkapiProfilPageProps = {
   searchParams: Promise<{
-    role?: string;
+    role?: string | string[];
+    displayName?: string | string[];
+    businessName?: string | string[];
+    headline?: string | string[];
+    deliveryArea?: string | string[];
+    phone?: string | string[];
   }>;
 };
+
+function readSearchString(value: string | string[] | undefined) {
+  return typeof value === "string" ? value : "";
+}
+
+function readMetadataString(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return typeof value === "string" ? value : "";
+}
 
 export default async function LengkapiProfilPage({
   searchParams,
@@ -23,14 +37,33 @@ export default async function LengkapiProfilPage({
       : params.role === "supplier"
         ? "supplier"
         : "umkm";
-  const role = typeof metadata.role === "string" ? metadata.role : searchRole;
-  const fullName =
-    typeof metadata.full_name === "string" ? metadata.full_name : "";
-  const phone = typeof metadata.phone === "string" ? metadata.phone : "";
+  const metadataRole = readMetadataString(metadata, "role");
+  const role =
+    metadataRole === "pekerja" || metadataRole === "supplier" || metadataRole === "umkm"
+      ? metadataRole
+      : searchRole;
+  const displayName =
+    readMetadataString(metadata, "display_name") ||
+    readMetadataString(metadata, "full_name") ||
+    readSearchString(params.displayName);
+  const businessName =
+    readMetadataString(metadata, "business_name") ||
+    readSearchString(params.businessName);
+  const headline =
+    readMetadataString(metadata, "headline") ||
+    readSearchString(params.headline);
+  const deliveryArea =
+    readMetadataString(metadata, "delivery_area") ||
+    readSearchString(params.deliveryArea);
+  const phone =
+    readMetadataString(metadata, "phone") || readSearchString(params.phone);
 
   return (
     <CompleteProfileForm
-      defaultDisplayName={fullName}
+      defaultDisplayName={displayName}
+      defaultBusinessName={businessName}
+      defaultHeadline={headline}
+      defaultDeliveryArea={deliveryArea}
       defaultPhone={phone}
       role={role}
     />

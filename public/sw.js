@@ -1,5 +1,12 @@
-const CACHE_NAME = "pull-pwa-v1";
-const PRECACHE_URLS = ["/", "/manifest.webmanifest", "/icon.svg", "/apple-icon.svg"];
+const CACHE_NAME = "pull-pwa-v2";
+const PRECACHE_URLS = [
+  "/",
+  "/manifest.webmanifest",
+  "/icon",
+  "/apple-icon",
+  "/icon.svg",
+  "/apple-icon.svg",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
