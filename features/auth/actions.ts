@@ -100,14 +100,13 @@ export async function signUpAction(
 ): Promise<AuthActionState> {
   const fullName = readFormString(formData, "fullName");
   const email = readFormString(formData, "email");
-  const phone = readFormString(formData, "phone");
   const password = readFormString(formData, "password");
   const agreeTerms = formData.get("agreeTerms") === "on";
 
-  if (!fullName || !email || !phone || !password) {
+  if (!fullName || !email || !password) {
     return {
       status: "error",
-      message: "Nama, email, nomor WhatsApp, dan kata sandi wajib diisi.",
+      message: "Nama, email, dan kata sandi wajib diisi.",
     };
   }
 
@@ -127,11 +126,6 @@ export async function signUpAction(
 
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
-  const normalizedPhone = phone.startsWith("0")
-    ? `62${phone.slice(1)}`
-    : phone.startsWith("62")
-      ? phone
-      : `62${phone}`;
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -140,7 +134,6 @@ export async function signUpAction(
       emailRedirectTo: `${siteUrl}/auth/confirm?next=/onboarding`,
       data: {
         full_name: fullName,
-        phone: normalizedPhone,
       },
     },
   });

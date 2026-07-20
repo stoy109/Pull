@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
+import { FormFeedback } from "@/components/form-ui";
 import {
   resendEmailOtpAction,
   verifyEmailOtpAction,
@@ -77,9 +78,9 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
-      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
-        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
+    <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
+      <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+        <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Satu Platform, Bersama UMKM Maju"
@@ -90,8 +91,8 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
           />
         </div>
 
-        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
-          <div className="mx-auto w-full max-w-sm space-y-5 lg:space-y-6">
+        <div className="form-panel flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="form-content mx-auto w-full max-w-sm space-y-5 lg:space-y-6">
             <div className="flex justify-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#d6e4dc] bg-[#f4f8f5] text-[#145c46] lg:h-12 lg:w-12">
                 <Mail className="h-6 w-6" />
@@ -99,10 +100,10 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
             </div>
 
             <div className="space-y-2 text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-[#145c46] md:text-3xl">
+              <h1 className="form-title form-title--brand text-2xl font-bold tracking-tight text-[#145c46] md:text-3xl">
                 Verifikasi Email
               </h1>
-              <p className="text-sm text-[#6b7b75] leading-relaxed">
+              <p className="form-description text-sm text-[#6b7b75] leading-relaxed">
                 Masukkan 6 digit kode verifikasi yang telah kami kirimkan ke{" "}
                 <span className="font-semibold text-[#10231d]">
                   {email || "email Anda"}
@@ -112,39 +113,38 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
             </div>
 
             {!email && (
-              <p
-                role="alert"
-                className="rounded-2xl border border-[#f7c8d3] bg-[#fce8ed] px-4 py-3 text-center text-xs font-semibold text-[#921932]"
-              >
+              <FormFeedback status="error" centered>
                 Email tidak ditemukan. Silakan daftar ulang dari halaman
                 registrasi.
-              </p>
+              </FormFeedback>
             )}
 
             <form action={verifyAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
               <input type="hidden" name="token" value={otpCode} />
 
-              <div className="flex justify-between gap-2">
+              <div className="form-otp-grid" role="group" aria-label="Kode verifikasi 6 digit">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
                     type="text"
                     inputMode="numeric"
+                    autoComplete={index === 0 ? "one-time-code" : "off"}
                     maxLength={1}
                     required
+                    aria-label={`Digit kode ${index + 1}`}
                     value={digit}
                     ref={(element) => {
                       inputRefs.current[index] = element;
                     }}
                     onChange={(event) => handleChange(event.target.value, index)}
                     onKeyDown={(event) => handleKeyDown(event, index)}
-                    className="h-12 w-12 rounded-xl border border-[#d6e4dc] bg-white text-center text-xl font-bold text-[#10231d] outline-none transition-all focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10 lg:h-11 lg:w-11"
+                    className="form-otp-input"
                   />
                 ))}
               </div>
 
-              <div className="flex items-center justify-center gap-2 rounded-lg border border-[#e6eee9] bg-[#f8faf7] px-4 py-2.5 text-xs font-semibold text-[#145c46]">
+              <div className="form-note">
                 <span>
                   {timeLeft > 0
                     ? `Kode akan kedaluwarsa dalam ${formatTime(timeLeft)}`
@@ -153,22 +153,15 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
               </div>
 
               {statusState.status !== "idle" && (
-                <p
-                  role={statusState.status === "error" ? "alert" : "status"}
-                  className={`rounded-2xl border px-4 py-3 text-center text-xs font-semibold ${
-                    statusState.status === "error"
-                      ? "border-[#f7c8d3] bg-[#fce8ed] text-[#921932]"
-                      : "border-[#c3e6d0] bg-[#eef8f2] text-[#145c46]"
-                  }`}
-                >
+                <FormFeedback status={statusState.status} centered>
                   {statusState.message}
-                </p>
+                </FormFeedback>
               )}
 
               <button
                 type="submit"
                 disabled={!email || otpCode.length < 6 || isVerifyPending}
-                className="h-12 w-full rounded-2xl bg-[#145c46] text-sm font-semibold text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#104a38] active:scale-[0.99] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 lg:h-11"
+                className="form-button form-button--primary w-full"
               >
                 {isVerifyPending ? "Memverifikasi..." : "Verifikasi Email"}
               </button>
@@ -184,7 +177,7 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
               <button
                 type="submit"
                 disabled={!email || isResendPending}
-                className="text-[#299a45] hover:text-[#217c37] font-bold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                className="form-link"
               >
                 {isResendPending ? "Mengirim..." : "Kirim ulang kode"}
               </button>
@@ -194,7 +187,7 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
               Salah email?{" "}
               <Link
                 href="/register"
-                className="text-[#299a45] hover:text-[#217c37] transition-colors"
+                className="form-link text-[#299a45] hover:text-[#217c37] transition-colors"
               >
                 Daftar ulang
               </Link>

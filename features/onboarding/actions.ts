@@ -8,11 +8,38 @@ export type OnboardingActionState = {
   message: string;
 };
 
-const validRoles = new Set(["umkm", "pekerja"]);
+const validRoles = new Set(["umkm", "pekerja", "supplier"]);
 
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function createProfileSuccessPath({
+  role,
+  displayName,
+  businessName,
+  headline,
+  deliveryArea,
+  phone,
+}: {
+  role: string;
+  displayName: string;
+  businessName: string;
+  headline: string;
+  deliveryArea: string;
+  phone: string;
+}) {
+  const params = new URLSearchParams({
+    role,
+    displayName,
+    businessName,
+    headline,
+    deliveryArea,
+    phone,
+  });
+
+  return `/onboarding/berhasil?${params.toString()}`;
 }
 
 async function getCurrentUser() {
@@ -72,31 +99,59 @@ export async function saveProfileAction(
 ): Promise<OnboardingActionState> {
   const displayName = readFormString(formData, "displayName");
   const businessName = readFormString(formData, "businessName");
-  const location = readFormString(formData, "location");
   const headline = readFormString(formData, "headline");
+  const deliveryArea = readFormString(formData, "deliveryArea");
   const phone = readFormString(formData, "phone");
+  const formRole = readFormString(formData, "role");
+  const role = validRoles.has(formRole) ? formRole : "umkm";
+  const profileName = role === "pekerja" ? displayName : businessName;
 
-  if (!displayName || !businessName || !location || !headline) {
+  if (role === "pekerja" && (!displayName || !headline || !phone)) {
     return {
       status: "error",
-      message: "Nama lengkap, nama usaha, kategori, dan lokasi wajib diisi.",
+      message: "Nama lengkap, bidang keahlian, dan nomor WhatsApp wajib diisi.",
+    };
+  }
+
+  if (role === "supplier" && (!displayName || !businessName || !headline || !deliveryArea || !phone)) {
+    return {
+      status: "error",
+      message:
+        "Nama penanggung jawab, nama perusahaan, kategori produk, area pengiriman, dan nomor telepon wajib diisi.",
+    };
+  }
+
+  if (role === "umkm" && (!displayName || !businessName || !headline || !phone)) {
+    return {
+      status: "error",
+      message: "Nama lengkap, nama usaha, kategori, dan nomor WhatsApp wajib diisi.",
     };
   }
 
   const { supabase, user } = await getCurrentUser();
 
   if (!user) {
-    redirect("/dashboard");
+    redirect(
+      createProfileSuccessPath({
+        role,
+        displayName,
+        businessName: profileName,
+        headline,
+        deliveryArea,
+        phone,
+      }),
+    );
   }
 
   const { error } = await supabase.auth.updateUser({
     data: {
       ...user.user_metadata,
       display_name: displayName,
-      business_name: businessName,
-      location,
+      business_name: profileName,
       headline,
+      delivery_area: deliveryArea,
       phone,
+      role,
       onboarding_step: "complete",
     },
   });
@@ -108,5 +163,14 @@ export async function saveProfileAction(
     };
   }
 
-  redirect("/dashboard");
+  redirect(
+    createProfileSuccessPath({
+      role,
+      displayName,
+      businessName: profileName,
+      headline,
+      deliveryArea,
+      phone,
+    }),
+  );
 }

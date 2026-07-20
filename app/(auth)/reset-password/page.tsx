@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Check, X } from "lucide-react";
+import { FormFeedback, FormHelper, FormLabel } from "@/components/form-ui";
 import { updatePasswordAction, type AuthActionState } from "@/features/auth/actions";
 
 const initialAuthState: AuthActionState = {
@@ -62,13 +63,12 @@ export default function ResetPasswordPage() {
   const allMet = reqs.every((requirement) => requirement.met);
   const isMatch = confirmPassword.length > 0 && password === confirmPassword;
   const isReady = allMet && isMatch;
-  const inputBase =
-    "h-12 w-full rounded-[14px] border bg-white pl-4 pr-12 text-sm text-[#10231d] outline-none transition-all duration-200 placeholder:text-[#b8ccc5] lg:h-11";
+  const inputBase = "form-control form-control--trailing";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
-      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-2xl shadow-emerald-950/8 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
-        <div className="relative hidden items-center justify-center border-r border-[#e6eee9] bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ec] lg:flex lg:w-1/2">
+    <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
+      <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-2xl shadow-emerald-950/8 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+        <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-gradient-to-br from-[#f0f9f4] to-[#e8f5ec] lg:flex lg:w-1/2">
           <Image
             src="/auth/login-bg.png"
             alt="Buat Kata Sandi Baru"
@@ -79,16 +79,16 @@ export default function ResetPasswordPage() {
           />
         </div>
 
-        <div className="flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
-          <div className="mx-auto w-full max-w-sm space-y-5">
+        <div className="form-panel flex flex-col justify-center bg-white p-6 sm:p-8 lg:w-1/2 lg:px-10 lg:py-8">
+          <div className="form-content mx-auto w-full max-w-sm space-y-5">
             <div className="space-y-1.5">
-              <h1 className="text-[1.75rem] font-bold tracking-tight text-[#10231d] leading-snug">
+              <h1 className="form-title text-[1.75rem] font-bold tracking-tight text-[#10231d] leading-snug">
                 Buat Kata Sandi Baru
               </h1>
-              <p className="text-sm text-[#6b7b75] leading-relaxed">
+              <p className="form-description text-sm text-[#6b7b75] leading-relaxed">
                 Masukkan kata sandi baru yang kuat dan aman untuk melindungi akun Anda.
               </p>
-              <p className="text-xs text-[#91a79d]">
+              <p className="form-helper">
                 Gunakan kata sandi yang belum pernah digunakan sebelumnya.
               </p>
             </div>
@@ -99,13 +99,12 @@ export default function ResetPasswordPage() {
               data-lpignore="true"
               data-form-type="other"
             >
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#36544a]">
-                  Kata Sandi Baru
-                </label>
+              <div className="form-field space-y-2">
+                <FormLabel htmlFor="new-password" required>Kata Sandi Baru</FormLabel>
 
                 <div className="relative">
                   <input
+                    id="new-password"
                     name="password"
                     autoComplete="new-password"
                     data-lpignore="true"
@@ -115,21 +114,16 @@ export default function ResetPasswordPage() {
                     minLength={8}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="**********"
-                    aria-label="Kata sandi baru"
-                    className={`${inputBase} ${
-                      password.length > 0
-                        ? allMet
-                          ? "border-[#299a45] focus:border-[#299a45] focus:ring-2 focus:ring-[#299a45]/10"
-                          : "border-[#d6e4dc] focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10"
-                        : "border-[#d6e4dc] focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10"
-                    }`}
+                    placeholder="Masukkan kata sandi baru"
+                    aria-describedby={password.length > 0 ? "password-strength password-requirements" : undefined}
+                    data-valid={password.length > 0 && allMet ? "true" : undefined}
+                    className={inputBase}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#91a79d] hover:text-[#36544a] transition-colors duration-150"
+                    className="form-icon-button"
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -147,7 +141,7 @@ export default function ResetPasswordPage() {
                         style={{ width: strength.width }}
                       />
                     </div>
-                    <p className="text-xs text-[#6b7b75]">
+                    <p id="password-strength" aria-live="polite" className="form-helper">
                       Kekuatan Kata Sandi:{" "}
                       <span className={`font-bold ${strength.color}`}>
                         {strength.label}
@@ -157,7 +151,7 @@ export default function ResetPasswordPage() {
                 )}
 
                 {password.length > 0 && (
-                  <ul className="grid grid-cols-1 gap-0.5 pt-0.5">
+                  <ul id="password-requirements" className="grid grid-cols-1 gap-0.5 pt-0.5">
                     {reqs.map((requirement) => (
                       <li
                         key={requirement.id}
@@ -181,13 +175,14 @@ export default function ResetPasswordPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#36544a]">
+              <div className="form-field space-y-2">
+                <FormLabel htmlFor="confirm-password" required>
                   Konfirmasi Kata Sandi Baru
-                </label>
+                </FormLabel>
 
                 <div className="relative">
                   <input
+                    id="confirm-password"
                     name="confirmPassword"
                     autoComplete="new-password"
                     data-lpignore="true"
@@ -197,21 +192,17 @@ export default function ResetPasswordPage() {
                     minLength={8}
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
-                    placeholder="**********"
-                    aria-label="Konfirmasi kata sandi"
-                    className={`${inputBase} ${
-                      confirmPassword.length > 0
-                        ? isMatch
-                          ? "border-[#299a45] focus:border-[#299a45] focus:ring-2 focus:ring-[#299a45]/10"
-                          : "border-[#B61F3E] focus:border-[#B61F3E] focus:ring-2 focus:ring-[#B61F3E]/10"
-                        : "border-[#d6e4dc] focus:border-[#145c46] focus:ring-2 focus:ring-[#145c46]/10"
-                    }`}
+                    placeholder="Masukkan kembali kata sandi baru"
+                    aria-invalid={confirmPassword.length > 0 && !isMatch ? true : undefined}
+                    aria-describedby={confirmPassword.length > 0 ? "password-match-status" : undefined}
+                    data-valid={confirmPassword.length > 0 && isMatch ? "true" : undefined}
+                    className={inputBase}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm((value) => !value)}
                     aria-label={showConfirm ? "Sembunyikan konfirmasi" : "Tampilkan konfirmasi"}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#91a79d] hover:text-[#36544a] transition-colors duration-150"
+                    className="form-icon-button"
                   >
                     {showConfirm ? (
                       <EyeOff className="w-5 h-5" />
@@ -222,38 +213,32 @@ export default function ResetPasswordPage() {
                 </div>
 
                 {confirmPassword.length > 0 && (
-                  <p
-                    className={`flex items-center gap-1.5 text-xs font-medium transition-colors duration-200 ${
-                      isMatch ? "text-[#299a45]" : "text-[#B61F3E]"
-                    }`}
-                  >
-                    {isMatch ? (
-                      <Check className="w-4 h-4 text-[#299a45]" />
-                    ) : (
-                      <X className="w-4 h-4 text-[#B61F3E]" />
-                    )}
-                    {isMatch ? "Kata sandi cocok" : "Kata sandi tidak sama"}
-                  </p>
+                  <div aria-live="polite">
+                    <FormHelper
+                      id="password-match-status"
+                      tone={isMatch ? "success" : "error"}
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        {isMatch ? (
+                          <Check className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <X className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {isMatch ? "Kata sandi cocok." : "Kata sandi tidak sama."}
+                      </span>
+                    </FormHelper>
+                  </div>
                 )}
               </div>
 
               {state.status === "error" && (
-                <p
-                  role="alert"
-                  className="rounded-2xl border border-[#f7c8d3] bg-[#fce8ed] px-4 py-3 text-xs font-semibold text-[#921932]"
-                >
-                  {state.message}
-                </p>
+                <FormFeedback status="error">{state.message}</FormFeedback>
               )}
 
               <button
                 type="submit"
                 disabled={!isReady || isPending}
-                className={`mt-1 h-12 w-full rounded-[14px] text-sm font-semibold tracking-wide transition-all duration-200 lg:h-11 ${
-                  isReady && !isPending
-                    ? "bg-[#145c46] text-white shadow-lg shadow-emerald-950/20 hover:bg-[#0f4a37] active:scale-[0.985] hover:shadow-xl hover:shadow-emerald-950/25"
-                    : "bg-[#e6eee9] text-[#91a79d] cursor-not-allowed"
-                }`}
+                className="form-button form-button--primary form-button--disabled-solid mt-1 w-full"
               >
                 {isPending ? "Memperbarui..." : "Perbarui Kata Sandi"}
               </button>
@@ -263,7 +248,7 @@ export default function ResetPasswordPage() {
               Sudah ingat kata sandi?{" "}
               <Link
                 href="/"
-                className="text-[#299a45] hover:text-[#217c37] font-semibold transition-colors duration-150"
+                className="form-link text-[#299a45] hover:text-[#217c37] font-semibold transition-colors duration-150"
               >
                 Masuk
               </Link>
