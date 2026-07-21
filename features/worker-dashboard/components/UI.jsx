@@ -128,7 +128,15 @@ export function ActivityIcon({ name, tone = 'brand' }) {
 }
 
 export function StageBadge({ stage }) {
-  const tone = stage === 'Interview' ? 'bg-[#fff1e8] text-[#a9593a]' : stage === 'Diterima' ? 'bg-pull-100 text-pull-700' : stage === 'Selesai' ? 'bg-[#edf0f3] text-[#5d6b76]' : 'bg-pull-50 text-pull-600'
+  const tone = stage === 'Interview'
+    ? 'bg-[#fff1e8] text-[#a9593a]'
+    : stage === 'Diterima'
+      ? 'bg-pull-100 text-pull-700'
+      : stage === 'Ditolak'
+        ? 'bg-[#fae5da] text-[#a6533a]'
+        : stage === 'Selesai'
+          ? 'bg-[#edf0f3] text-[#5d6b76]'
+          : 'bg-pull-50 text-pull-600'
   return <span className={`rounded-full px-2.5 py-1 text-[9px] font-extrabold ${tone}`}>{stage}</span>
 }
 

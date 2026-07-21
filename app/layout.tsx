@@ -6,6 +6,7 @@ import {
   Manrope,
 } from "next/font/google";
 import { PwaRegister } from "@/components/pwa-register";
+import { RouteTransition } from "@/components/route-transition";
 import "./globals.css";
 
 const lato = Lato({
@@ -51,7 +52,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <PwaRegister />
-        {children}
+        <RouteTransition>{children}</RouteTransition>
       </body>
     </html>
   );

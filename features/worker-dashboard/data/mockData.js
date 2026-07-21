@@ -26,6 +26,11 @@ export const jobs = [
     benefits: ['Makan satu kali', 'Pelatihan barista dasar', 'Insentif performa bulanan'],
     employerTrust: 4.9,
     employerReviews: 38,
+    employerJobs: 14,
+    applicants: 4,
+    workersNeeded: 2,
+    startDate: '22 Jul 2026',
+    coordinates: [-7.5488, 110.8214],
   },
   {
     id: 2,
@@ -54,6 +59,11 @@ export const jobs = [
     benefits: ['Kerja hybrid dua hari', 'Bonus target penjualan', 'Pelatihan marketplace'],
     employerTrust: 4.8,
     employerReviews: 54,
+    employerJobs: 21,
+    applicants: 6,
+    workersNeeded: 1,
+    startDate: '25 Jul 2026',
+    coordinates: [-7.5662, 110.7974],
   },
   {
     id: 3,
@@ -82,6 +92,11 @@ export const jobs = [
     benefits: ['Bayar setelah shift selesai', 'Sarapan dan makan siang', 'Prioritas untuk jadwal berikutnya'],
     employerTrust: 4.7,
     employerReviews: 29,
+    employerJobs: 11,
+    applicants: 3,
+    workersNeeded: 4,
+    startDate: '23 Jul 2026',
+    coordinates: [-7.5547, 110.8563],
   },
   {
     id: 4,
@@ -110,6 +125,11 @@ export const jobs = [
     benefits: ['BPJS setelah masa percobaan', 'Insentif penjualan', 'Seragam kerja'],
     employerTrust: 4.8,
     employerReviews: 63,
+    employerJobs: 27,
+    applicants: 8,
+    workersNeeded: 2,
+    startDate: '26 Jul 2026',
+    coordinates: [-7.5818, 110.8311],
   },
   {
     id: 5,
@@ -138,6 +158,11 @@ export const jobs = [
     benefits: ['Bayar mingguan', 'Makan siang', 'Bonus jika target proyek selesai cepat'],
     employerTrust: 4.6,
     employerReviews: 21,
+    employerJobs: 8,
+    applicants: 2,
+    workersNeeded: 3,
+    startDate: '24 Jul 2026',
+    coordinates: [-7.5714, 110.7928],
   },
   {
     id: 6,
@@ -166,6 +191,11 @@ export const jobs = [
     benefits: ['Kerja dari rumah', 'Paket data bulanan', 'Jam kerja tetap'],
     employerTrust: 4.7,
     employerReviews: 17,
+    employerJobs: 9,
+    applicants: 5,
+    workersNeeded: 1,
+    startDate: '28 Jul 2026',
+    coordinates: null,
   },
 ]
 
@@ -182,11 +212,31 @@ export const initialApplications = {
     { id: 'app-5', company: 'Akar Studio', role: 'Admin Konten', time: 'Senin · 10.30 WIB', status: 'Interview daring', location: 'Hybrid', pay: 'Rp2,8 jt / bulan' },
   ],
   Diterima: [
-    { id: 'app-6', company: 'Pasar Segar Nusukan', role: 'Staf Toko', time: 'Diterima 12 Jun', status: 'Pekerjaan sedang berjalan', location: 'Banjarsari', pay: 'Rp2,6 jt / bulan' },
+    {
+      id: 'app-6',
+      company: 'Pasar Segar Nusukan',
+      role: 'Staf Toko',
+      time: 'Mulai Senin, 22 Juli',
+      status: 'Jadwal kerja perlu dikonfirmasi',
+      urgent: true,
+      location: 'Banjarsari',
+      pay: 'Rp2,6 jt / bulan',
+      scheduleConfirmed: false,
+      workSchedule: {
+        date: 'Senin, 22 Juli 2026',
+        time: '08.00–16.00 WIB',
+        address: 'Pasar Segar Nusukan, Jl. Adi Sumarmo No. 18',
+        meetingPoint: 'Pintu timur · meja informasi',
+        contact: 'Ibu Rina · supervisor toko',
+      },
+    },
+  ],
+  Ditolak: [
+    { id: 'app-9', company: 'Kedai Tumbuh', role: 'Crew Akhir Pekan', time: 'Ditutup 16 Jul', status: 'Tidak lanjut', reason: 'Jadwal akhir pekan belum cocok dengan ketersediaanmu. Profil tetap tersimpan untuk peluang berikutnya.', location: 'Laweyan', pay: 'Rp125 rb / hari' },
   ],
   Selesai: [
     { id: 'app-7', company: 'Sambal Mbokde', role: 'Crew Acara', time: 'Selesai 2 Mei', status: 'Konfirmasi selesai kerja', confirmable: true, employerConfirmed: true, workerConfirmed: false, rated: false, location: 'Laweyan', pay: 'Rp150 rb / hari' },
-    { id: 'app-8', company: 'Laras Craft', role: 'Packing Harian', time: 'Tidak lanjut 18 Apr', status: 'Proses ditutup', confirmable: false, location: 'Jebres', pay: 'Rp105 rb / hari' },
+    { id: 'app-8', company: 'Laras Craft', role: 'Packing Harian', time: 'Selesai 18 Apr', status: 'Rating terkirim', confirmable: true, employerConfirmed: true, workerConfirmed: true, rated: true, rating: 4.5, review: 'Tim ramah dan pembagian tugas jelas.', location: 'Jebres', pay: 'Rp105 rb / hari' },
   ],
 }
 

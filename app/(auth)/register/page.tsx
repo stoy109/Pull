@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { AuthSlideshow } from "@/components/auth-slideshow";
 import {
   FormFeedback,
   FormLabel,
@@ -34,14 +34,7 @@ export default function RegisterPage() {
 
         {/* Left Side: Illustration Image (reusing the same image) */}
         <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
-          <Image
-            src="/auth/login-bg.png"
-            alt="Satu Platform, Bersama UMKM Maju"
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-          />
+          <AuthSlideshow />
         </div>
 
         {/* Right Side: White Register Form */}

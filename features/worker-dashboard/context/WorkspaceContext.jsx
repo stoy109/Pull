@@ -46,7 +46,7 @@ function escapeHtml(value) {
 export function WorkspaceProvider({ children, initialProfile }) {
   const navigate = useNavigate()
   const [profile, setProfile] = usePersistentState('pull-worker-profile-v2', { ...mockInitialProfile, ...initialProfile })
-  const [applications, setApplications] = usePersistentState('pull-worker-applications-v2', initialApplications)
+  const [applications, setApplications] = usePersistentState('pull-worker-applications-v3', initialApplications)
   const [activities, setActivities] = usePersistentState('pull-worker-activities-v2', initialActivities)
   const [portfolio, setPortfolio] = usePersistentState('pull-worker-portfolio-v2', initialPortfolio)
   const [certificates, setCertificates] = usePersistentState('pull-worker-certificates-v2', initialCertificates)
@@ -61,7 +61,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
   const toastTimer = useRef(null)
 
   const unreadCount = activities.filter((activity) => !activity.read).length
-  const activeApplicationCount = applications.Dilamar.length + applications.Ditinjau.length + applications.Interview.length
+  const activeApplicationCount = applications.Dilamar.length + applications.Ditinjau.length + applications.Interview.length + applications.Diterima.length
 
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
@@ -96,6 +96,18 @@ export function WorkspaceProvider({ children, initialProfile }) {
       ...current,
       [stage]: current[stage].map((application) => application.id === id ? { ...application, ...patch } : application),
     }))
+  }
+
+  const moveApplication = (fromStage, toStage, id, patch = {}) => {
+    setApplications((current) => {
+      const application = current[fromStage].find((item) => item.id === id)
+      if (!application) return current
+      return {
+        ...current,
+        [fromStage]: current[fromStage].filter((item) => item.id !== id),
+        [toStage]: [{ ...application, ...patch }, ...current[toStage]],
+      }
+    })
   }
 
   const findApplication = (id) => {
@@ -198,6 +210,43 @@ export function WorkspaceProvider({ children, initialProfile }) {
       return
     }
 
+
+
+    if (type === 'confirm-work-schedule') {
+      updateApplication('Diterima', payload.id, { scheduleConfirmed: true, scheduleChangeRequested: false, status: 'Jadwal kerja dikonfirmasi', urgent: false })
+      addActivity('Jadwal kerja dikonfirmasi', `${payload.company} · ${payload.schedule}`, 'calendar', 'brand')
+      showToast('Jadwal kerja dikonfirmasi')
+      return
+    }
+
+    if (type === 'request-schedule-change') {
+      updateApplication('Diterima', payload.id, {
+        scheduleChangeRequested: true,
+        status: 'Perubahan jadwal diminta',
+        urgent: false,
+      })
+      addActivity('Perubahan jadwal diminta', `${payload.company} akan mengirim jadwal baru melalui WhatsApp.`, 'calendar', 'warm')
+      openWhatsApp(`Halo ${payload.company}, saya ingin meminta penyesuaian jadwal kerja. Mohon kabari pilihan waktu lainnya.`)
+      showToast('Membuka WhatsApp untuk perubahan jadwal')
+      return
+    }
+
+    if (type === 'finish-work') {
+      moveApplication('Diterima', 'Selesai', payload.id, {
+        time: 'Selesai baru saja',
+        status: 'Menunggu konfirmasi employer',
+        confirmable: true,
+        workerConfirmed: true,
+        employerConfirmed: false,
+        rated: false,
+        urgent: false,
+      })
+      addActivity('Pekerjaan ditandai selesai', `${payload.company} perlu mengonfirmasi sebelum rating dibuka.`, 'check', 'brand')
+      navigate(`/applications/${payload.id}`)
+      showToast('Pekerjaan ditandai selesai')
+      return
+    }
+
     if (type === 'confirm-work') {
       updateApplication('Selesai', payload.id, { workerConfirmed: true, status: 'Rating sudah terbuka' })
       addActivity('Pekerjaan selesai dikonfirmasi', 'Kedua pihak sudah mengonfirmasi. Rating dua arah kini terbuka.', 'check', 'brand')
@@ -206,7 +255,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
     }
 
     if (type === 'submit-rating') {
-      updateApplication('Selesai', payload.id, { rated: true, rating: payload.rating, review: payload.review, status: 'Rating terkirim' })
+      updateApplication('Selesai', payload.id, { rated: true, rating: payload.rating, ratingTags: payload.tags || [], review: payload.review, status: 'Rating terkirim' })
       addActivity('Rating pekerjaan terkirim', `${payload.rating}/5 untuk Sambal Mbokde. Ulasan terikat pada pekerjaan terverifikasi.`, 'star', 'warm')
       closeDialog()
       showToast('Rating berhasil dikirim')

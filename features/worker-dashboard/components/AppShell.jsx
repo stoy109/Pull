@@ -58,12 +58,12 @@ function SidebarNav({ onNavigate }) {
   const { activeApplicationCount, openDialog } = useWorkspace()
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="px-5 pb-7 pt-6"><Brand inverse /></div>
-      <nav className="flex-1 overflow-y-auto border-y border-white/10 px-3 py-4" aria-label="Navigasi utama">
-        <div className="space-y-1">{primaryNavigation.map((item) => <SidebarLink key={item.path} item={item} count={item.count ? activeApplicationCount : null} onNavigate={onNavigate} />)}</div>
+    <div className="flex h-full flex-col p-4">
+      <div className="px-2 py-2"><Brand inverse /></div>
+      <nav className="mt-5 flex-1 space-y-1 overflow-y-auto" aria-label="Navigasi utama">
+        {primaryNavigation.map((item) => <SidebarLink key={item.path} item={item} count={item.count ? activeApplicationCount : null} onNavigate={onNavigate} />)}
       </nav>
-      <div className="space-y-1 p-3">
+      <div className="mt-3 space-y-1 border-t border-white/10 pt-3">
         <button onClick={() => openDialog('help')} className="nav-item"><CircleHelp size={18} /><span>Bantuan</span></button>
         <NavLink to="/settings" onClick={onNavigate} className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}><Settings size={18} /><span>Pengaturan</span></NavLink>
       </div>
@@ -75,7 +75,7 @@ function SidebarLink({ item, count, onNavigate }) {
   const Icon = item.icon
   return (
     <NavLink to={item.path} onClick={onNavigate} className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
-      {({ isActive }) => <><Icon size={18} strokeWidth={isActive ? 2.3 : 1.9} /><span className="min-w-0 flex-1"><span className="block truncate">{item.label}</span>{item.description ? <span className={`mt-0.5 block truncate text-[8px] font-semibold ${isActive ? 'text-pull-500' : 'text-white/40'}`}>{item.description}</span> : null}</span>{count ? <span className={`nav-count ${isActive ? 'bg-pull-100 text-pull-800' : ''}`}>{count}</span> : null}</>}
+      {({ isActive }) => <><Icon size={18} strokeWidth={isActive ? 2.3 : 1.9} /><span className="min-w-0 flex-1 truncate">{item.label}</span>{count ? <span className="nav-count">{count}</span> : null}</>}
     </NavLink>
   )
 }
@@ -98,8 +98,8 @@ function Topbar({ onOpenMenu }) {
     <header data-worker-topbar className="sticky top-0 z-30 border-b border-pull-100/90 bg-[#f6f8f5]/90 backdrop-blur-xl">
       <div className="flex h-16 items-center px-4 sm:px-6 md:h-[74px] xl:px-8">
         <div className="md:hidden"><Brand /></div>
-        <button className="icon-button hidden md:grid xl:hidden" onClick={onOpenMenu} aria-label="Buka navigasi tablet"><Menu size={20} /></button>
-        <div className="ml-3 hidden md:block xl:ml-0"><p className="text-[8px] font-extrabold uppercase tracking-[0.15em] text-pull-400">Ruang kerja pekerja</p><h1 className="mt-0.5 font-display text-xl font-semibold tracking-[-0.03em] text-pull-950">{pageTitle}</h1></div>
+        <button className="icon-button hidden md:grid lg:hidden" onClick={onOpenMenu} aria-label="Buka navigasi tablet"><Menu size={20} /></button>
+        <div className="ml-3 hidden md:block lg:ml-0"><p className="text-[8px] font-extrabold uppercase tracking-[0.15em] text-pull-400">Ruang kerja pekerja</p><h1 className="mt-0.5 font-display text-xl font-semibold tracking-[-0.03em] text-pull-950">{pageTitle}</h1></div>
         <div className="relative ml-auto hidden md:block">
           <button onClick={() => setProfileOpen((current) => !current)} className="flex h-12 min-w-56 items-center gap-3 rounded-2xl border border-pull-100 bg-white px-2.5 text-left shadow-[0_8px_24px_rgba(18,59,48,0.06)] transition hover:border-pull-200" aria-expanded={profileOpen} aria-haspopup="menu"><span className="avatar">{profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-extrabold text-pull-950">{profile.name}</span><span className="mt-0.5 block text-[9px] font-semibold text-pull-500">{profile.completion}% profil lengkap</span></span>{unreadCount ? <span className="size-2 rounded-full bg-[#df754b]" aria-label={`${unreadCount} notifikasi baru`} /> : null}<ChevronDown size={14} className="text-pull-400" /></button>
           {profileOpen ? <div ref={profileMenuRef} className="absolute right-0 top-[calc(100%+10px)] w-72 overflow-hidden rounded-[20px] border border-pull-100 bg-white p-2 shadow-[0_22px_60px_rgba(12,38,28,0.16)]" role="menu"><div className="rounded-[14px] bg-pull-50 p-3"><p className="text-xs font-extrabold text-pull-950">{profile.name}</p><p className="mt-0.5 text-[9px] font-semibold text-pull-500">WhatsApp terverifikasi · Worker</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-pull-100"><div className="h-full rounded-full bg-pull-600" style={{ width: `${profile.completion}%` }} /></div></div><p className="px-2.5 pb-1 pt-3 text-[8px] font-extrabold uppercase tracking-[0.15em] text-pull-400">Menu lainnya</p>{profileNavigation.map((item) => { const Icon = item.icon; const count = item.count === 'notifications' ? unreadCount : null; return <NavLink key={item.path} to={item.path} onClick={() => setProfileOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-2.5 py-2 text-[10px] font-extrabold transition ${isActive ? 'bg-pull-50 text-pull-950' : 'text-pull-600 hover:bg-pull-50'}`} role="menuitem"><span className="grid size-8 place-items-center rounded-lg bg-pull-50 text-pull-600"><Icon size={15} /></span><span className="flex-1">{item.label}</span>{count ? <span className="rounded-full bg-[#fff1e8] px-2 py-0.5 text-[8px] text-[#a9593a]">{count}</span> : null}<ChevronRight size={13} className="text-pull-300" /></NavLink> })}<button onClick={() => { setProfileOpen(false); openDialog('logout') }} className="mt-1 flex w-full items-center rounded-xl border-t border-pull-100 px-2.5 py-2.5 text-[10px] font-extrabold text-[#a64f37] hover:bg-[#fff7f4]" role="menuitem">Keluar dari akun</button></div> : null}
@@ -180,10 +180,10 @@ export default function AppShell() {
 
   return (
     <div ref={shellRef} className="worker-dashboard min-h-screen bg-[#f6f8f5] text-pull-950">
-      <aside data-worker-sidebar className="fixed inset-y-0 left-0 z-40 hidden w-[252px] border-r border-white/10 bg-pull-950 xl:block"><SidebarNav /></aside>
-      {tabletNavOpen ? <div data-tablet-navigation className="fixed inset-0 z-50 hidden md:block xl:hidden"><button data-tablet-scrim className="absolute inset-0 bg-pull-950/35 backdrop-blur-sm" onClick={() => setTabletNavOpen(false)} aria-label="Tutup navigasi tablet" /><aside className="relative h-full w-[286px] bg-pull-950 shadow-2xl"><button onClick={() => setTabletNavOpen(false)} className="icon-button absolute right-3 top-4 z-10" aria-label="Tutup navigasi tablet"><X size={18} /></button><SidebarNav onNavigate={() => setTabletNavOpen(false)} /></aside></div> : null}
+      <aside data-worker-sidebar className="fixed inset-y-0 left-0 z-40 hidden w-56 bg-gradient-to-b from-[#00613f] via-[#005235] to-[#003f29] lg:block"><SidebarNav /></aside>
+      {tabletNavOpen ? <div data-tablet-navigation className="fixed inset-0 z-50 hidden md:block lg:hidden"><button data-tablet-scrim className="absolute inset-0 bg-pull-950/35 backdrop-blur-sm" onClick={() => setTabletNavOpen(false)} aria-label="Tutup navigasi tablet" /><aside className="relative h-full w-64 bg-gradient-to-b from-[#00613f] via-[#005235] to-[#003f29] shadow-2xl"><button onClick={() => setTabletNavOpen(false)} className="icon-button absolute right-3 top-4 z-10" aria-label="Tutup navigasi tablet"><X size={18} /></button><SidebarNav onNavigate={() => setTabletNavOpen(false)} /></aside></div> : null}
       {mobileMoreOpen ? <MobileMoreSheet onClose={() => setMobileMoreOpen(false)} /> : null}
-      <div className="xl:pl-[252px]"><Topbar onOpenMenu={() => setTabletNavOpen(true)} /><main className="mx-auto max-w-[1540px] px-4 pb-28 pt-5 sm:px-6 sm:pb-16 sm:pt-7 xl:px-8"><Outlet /><footer className="mt-8 flex flex-col gap-2 border-t border-pull-100 pt-5 text-[9px] font-semibold text-pull-400 sm:flex-row sm:items-center sm:justify-between"><p>Pull Worker Space · Membangun peluang dari Solo Raya</p><p>Data demo tersimpan di perangkat ini</p></footer></main></div>
+      <div className="lg:pl-56"><Topbar onOpenMenu={() => setTabletNavOpen(true)} /><main className="mx-auto max-w-[1540px] px-4 pb-28 pt-5 sm:px-6 sm:pb-16 sm:pt-7 xl:px-8"><Outlet /><footer className="mt-8 flex flex-col gap-2 border-t border-pull-100 pt-5 text-[9px] font-semibold text-pull-400 sm:flex-row sm:items-center sm:justify-between"><p>Pull Worker Space · Membangun peluang dari Solo Raya</p><p>Data demo tersimpan di perangkat ini</p></footer></main></div>
       <MobileBottomNav onOpenMore={() => setMobileMoreOpen(true)} />
       <FeatureModal key={dialog ? `${dialog.type}-${dialog.appId || dialog.item?.id || ''}` : 'closed'} dialog={dialog} onClose={closeDialog} onEvent={handleModalEvent} profile={profile} applications={applications} skills={skills} certificates={certificates} portfolio={portfolio} experiences={experiences} filters={advancedFilters} />
       <Toast message={toast} />

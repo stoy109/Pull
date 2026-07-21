@@ -1,17 +1,44 @@
-import Image from 'next/image'
 import { useMemo, useState } from 'react'
-import { Bookmark, Search, SlidersHorizontal, Sparkles, Zap } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import {
+  Bookmark,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  List,
+  LocateFixed,
+  Map as MapIcon,
+  MapPin,
+  MoreHorizontal,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from 'lucide-react'
+import { FaWhatsapp } from 'react-icons/fa'
 import { jobs } from '../data/mockData'
 import { useWorkspace } from '../context/WorkspaceContext'
-import { EmptyState, JobCard, PageHeader } from '../components/UI'
+import { EmptyState, PageHeader } from '../components/UI'
+import JobsMap from '../components/JobsMap'
 
-const filters = ['Untukmu', 'Terdekat', 'Remote', 'Upah harian', 'Mendesak', 'Tersimpan']
+const pageSize = 3
+const categories = ['Semua kategori', ...new Set(jobs.map((job) => job.category))]
+const districts = ['Semua kecamatan', ...new Set(jobs.filter((job) => !job.remote).map((job) => job.district))]
 
 export default function JobsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { savedJobIds, advancedFilters, openDialog } = useWorkspace()
-  const [activeFilter, setActiveFilter] = useState(searchParams.get('filter') || 'Untukmu')
+  const { savedJobIds, appliedJobIds, toggleSavedJob, openDialog } = useWorkspace()
+  const [category, setCategory] = useState('Semua kategori')
+  const [district, setDistrict] = useState('Semua kecamatan')
+  const [payType, setPayType] = useState('Semua upah')
+  const [duration, setDuration] = useState('Semua durasi')
+  const [sort, setSort] = useState('Terbaru')
+  const [view, setView] = useState('list')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [mapRadius, setMapRadius] = useState(5)
+  const [focusRequest, setFocusRequest] = useState(0)
+  const [selectedMapJob, setSelectedMapJob] = useState(null)
   const query = searchParams.get('q') || ''
 
   const setQuery = (value) => {
@@ -19,34 +46,163 @@ export default function JobsPage() {
     if (value) next.set('q', value)
     else next.delete('q')
     setSearchParams(next, { replace: true })
+    setCurrentPage(1)
   }
 
-  const filteredJobs = useMemo(() => jobs.filter((job) => {
+  const filteredJobs = useMemo(() => {
     const normalized = query.trim().toLowerCase()
-    const matchesSearch = !normalized || `${job.role} ${job.company} ${job.location} ${job.category}`.toLowerCase().includes(normalized)
-    const matchesQuick = activeFilter === 'Untukmu' || (activeFilter === 'Terdekat' && job.nearby) || (activeFilter === 'Remote' && job.remote) || (activeFilter === 'Upah harian' && job.daily) || (activeFilter === 'Mendesak' && job.urgent) || (activeFilter === 'Tersimpan' && savedJobIds.includes(job.id))
-    const distanceNumber = Number.parseFloat(job.distance.replace(',', '.'))
-    const distanceLimit = Number.parseInt(advancedFilters.distance, 10)
-    const matchesAdvanced = (advancedFilters.category === 'Semua kategori' || job.category === advancedFilters.category) && (advancedFilters.distance === 'Semua jarak' || (!Number.isNaN(distanceNumber) && distanceNumber <= distanceLimit)) && (advancedFilters.workType === 'Semua tipe' || job.type.includes(advancedFilters.workType)) && job.match >= advancedFilters.minMatch && (!advancedFilters.urgentOnly || job.urgent)
-    return matchesSearch && matchesQuick && matchesAdvanced
-  }), [query, activeFilter, savedJobIds, advancedFilters])
+    const filtered = jobs.filter((job) => {
+      const matchesSearch = !normalized || `${job.role} ${job.company} ${job.location} ${job.category}`.toLowerCase().includes(normalized)
+      const matchesCategory = category === 'Semua kategori' || job.category === category
+      const matchesDistrict = district === 'Semua kecamatan' || job.district === district
+      const matchesPay = payType === 'Semua upah' || (payType === 'Upah harian' ? job.daily : !job.daily)
+      const matchesDuration = duration === 'Semua durasi' || (duration === 'Harian' ? job.daily : job.duration.toLowerCase().includes(duration.toLowerCase()))
+      return matchesSearch && matchesCategory && matchesDistrict && matchesPay && matchesDuration
+    })
 
-  const advancedCount = Object.entries(advancedFilters).filter(([key, value]) => key === 'category' ? value !== 'Semua kategori' : key === 'distance' ? value !== 'Semua jarak' : key === 'workType' ? value !== 'Semua tipe' : key === 'minMatch' ? value > 0 : value).length
-  const partnerCount = new Set(jobs.map((job) => job.company)).size
+    return filtered.sort((first, second) => {
+      if (sort === 'Kecocokan') return second.match - first.match
+      if (sort === 'Terdekat') return parseDistance(first.distance) - parseDistance(second.distance)
+      return first.id - second.id
+    })
+  }, [query, category, district, payType, duration, sort])
+
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedJobs = filteredJobs.slice((safePage - 1) * pageSize, safePage * pageSize)
+  const mappableJobs = useMemo(() => filteredJobs.filter((job) => job.coordinates && parseDistance(job.distance) <= mapRadius), [filteredJobs, mapRadius])
+  const activeMapJob = selectedMapJob && mappableJobs.some((job) => job.id === selectedMapJob.id) ? selectedMapJob : mappableJobs[0]
+
+  const resetFilters = () => {
+    setQuery('')
+    setCategory('Semua kategori')
+    setDistrict('Semua kecamatan')
+    setPayType('Semua upah')
+    setDuration('Semua durasi')
+  }
 
   return (
     <>
-      <PageHeader eyebrow="Smart matching" title="Cari peluang kerja" description="Lowongan informal dan semi-formal dari UMKM terverifikasi di Solo Raya." actions={<><span className="availability-pill"><Sparkles size={14} /> {filteredJobs.length} cocok</span><button onClick={() => openDialog('filters')} className="secondary-button"><SlidersHorizontal size={14} /> Filter rinci {advancedCount ? `(${advancedCount})` : ''}</button></>} />
-      <section className="card overflow-hidden">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <label className="search-box max-w-none flex-1 lg:max-w-[480px]"><Search size={16} className="text-pull-400" /><input id="job-search" value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari posisi, UMKM, kecamatan, atau kategori" /></label>
-          <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">{filters.map((filter) => <button key={filter} onClick={() => setActiveFilter(filter)} className={`filter-chip ${activeFilter === filter ? 'filter-chip-active' : ''}`}>{filter === 'Mendesak' ? <Zap size={12} /> : filter === 'Tersimpan' ? <Bookmark size={12} /> : null}{filter}</button>)}</div>
+      <PageHeader eyebrow="Papan loker" title="Temukan pekerjaan di Solo Raya" description="Lowongan lokal terverifikasi dengan detail upah, jadwal, dan reputasi UMKM." actions={<span className="availability-pill"><Sparkles size={14} /> {filteredJobs.length} lowongan</span>} />
+
+      <section className="card">
+        <label className="flex h-14 items-center gap-3 rounded-[16px] border border-pull-100 bg-white px-4 transition focus-within:border-pull-300 focus-within:ring-4 focus-within:ring-pull-100/45">
+          <Search size={21} className="text-pull-500" />
+          <span className="sr-only">Cari jenis pekerjaan</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari jenis pekerjaan, UMKM, atau lokasi..." className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-pull-900 outline-none placeholder:text-pull-400" />
+        </label>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+          <FilterSelect label="Kategori" value={category} onChange={(value) => { setCategory(value); setCurrentPage(1) }} options={categories} />
+          <FilterSelect label="Kecamatan" value={district} onChange={(value) => { setDistrict(value); setCurrentPage(1) }} options={districts} />
+          <FilterSelect label="Upah" value={payType} onChange={(value) => { setPayType(value); setCurrentPage(1) }} options={['Semua upah', 'Upah harian', 'Upah bulanan']} />
+          <FilterSelect label="Durasi" value={duration} onChange={(value) => { setDuration(value); setCurrentPage(1) }} options={['Semua durasi', 'Harian', 'Kontrak', 'Proyek']} />
+          <div className="grid grid-cols-2 overflow-hidden rounded-[15px] border border-pull-100 bg-white p-1">
+            <button type="button" onClick={() => setView('list')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-[10px] font-extrabold transition ${view === 'list' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-500 hover:bg-pull-50'}`}><List size={16} /> List</button>
+            <button type="button" onClick={() => setView('map')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-[10px] font-extrabold transition ${view === 'map' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-500 hover:bg-pull-50'}`}><MapIcon size={16} /> Map</button>
+          </div>
         </div>
-        <div className="mt-4 flex min-h-24 items-center overflow-hidden rounded-[18px] bg-pull-50 px-4 sm:pr-0"><div className="relative z-10 min-w-0 flex-1"><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-pull-500">Jejaring lokal terverifikasi</p><p className="mt-1 text-xs font-extrabold text-pull-900">{partnerCount} UMKM membuka {jobs.length} peluang di Solo Raya</p><p className="mt-1 text-[9px] font-semibold text-pull-500">Data lowongan dan status diperbarui langsung oleh mitra.</p></div><Image src="/illustrations/storefront-wide.webp" alt="" width={240} height={96} className="hidden h-24 w-60 shrink-0 object-contain object-bottom sm:block" /></div>
       </section>
-      <div className="mt-4 grid gap-4 2xl:grid-cols-2">
-        {filteredJobs.length ? filteredJobs.map((job) => <JobCard key={job.id} job={job} />) : <div className="2xl:col-span-2"><EmptyState illustration="/illustrations/store-profile.webp" illustrationAlt="Ilustrasi profil UMKM lokal" title="Belum ada loker yang cocok" description="Ubah kata kunci atau longgarkan filter jarak dan kecocokan." action={<button onClick={() => { setQuery(''); setActiveFilter('Untukmu') }} className="secondary-button">Atur ulang pencarian</button>} /></div>}
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[11px] font-bold text-pull-500">Menampilkan <strong className="text-pull-900">{filteredJobs.length}</strong> lowongan di Solo Raya</p>
+        <label className="flex items-center gap-2 text-[10px] font-bold text-pull-500">Urutkan:<select value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1) }} className="h-10 rounded-xl border border-pull-100 bg-white px-3 font-extrabold text-pull-700 outline-none"><option>Terbaru</option><option>Kecocokan</option><option>Terdekat</option></select></label>
       </div>
+
+      {view === 'list' ? (
+        <>
+          <section className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {paginatedJobs.length ? paginatedJobs.map((job) => (
+              <JobBoardCard
+                key={job.id}
+                job={job}
+                saved={savedJobIds.includes(job.id)}
+                applied={appliedJobIds.includes(job.id)}
+                onToggleSaved={() => toggleSavedJob(job.id)}
+                onOpenDetail={() => openDialog('job-detail', { job })}
+                onApply={() => openDialog('job-apply', { job })}
+              />
+            )) : (
+              <div className="md:col-span-2 xl:col-span-3"><EmptyState illustration="/illustrations/store-profile.webp" illustrationAlt="Ilustrasi profil UMKM lokal" title="Belum ada loker yang cocok" description="Ubah kata kunci atau longgarkan filter pencarian." action={<button onClick={resetFilters} className="secondary-button">Atur ulang pencarian</button>} /></div>
+            )}
+          </section>
+          {filteredJobs.length ? <Pagination page={safePage} totalPages={totalPages} onChange={setCurrentPage} /> : null}
+        </>
+      ) : (
+        <section className="relative isolate z-0 mt-4 min-h-[620px] overflow-hidden rounded-[24px] border border-pull-100 bg-pull-50 shadow-[0_18px_50px_rgba(18,59,48,.08)]">
+          <JobsMap jobs={mappableJobs} radius={mapRadius} focusRequest={focusRequest} onSelectJob={setSelectedMapJob} />
+          <label className="absolute right-4 top-4 z-[500] rounded-[16px] border border-pull-100 bg-white/95 p-3 shadow-lg backdrop-blur-md"><span className="block text-[9px] font-extrabold text-pull-500">Jarak maksimal</span><select value={mapRadius} onChange={(event) => setMapRadius(Number(event.target.value))} className="mt-1 h-9 bg-transparent text-sm font-extrabold text-pull-900 outline-none"><option value={3}>3 km</option><option value={5}>5 km</option><option value={10}>10 km</option></select></label>
+          <button type="button" onClick={() => setFocusRequest((value) => value + 1)} className="absolute bottom-40 right-4 z-[500] flex h-11 items-center gap-2 rounded-xl border border-pull-100 bg-white px-4 text-[10px] font-extrabold text-pull-700 shadow-lg"><LocateFixed size={16} /> Lokasi saya</button>
+          {activeMapJob ? <MapJobCard job={activeMapJob} onDetail={() => openDialog('job-detail', { job: activeMapJob })} onApply={() => openDialog('job-apply', { job: activeMapJob })} /> : null}
+        </section>
+      )}
     </>
   )
+}
+
+function FilterSelect({ label, value, onChange, options }) {
+  return (
+    <label className="rounded-[15px] border border-pull-100 bg-white px-3.5 py-2.5">
+      <span className="block text-[8px] font-extrabold text-pull-500">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-7 w-full bg-transparent text-[10px] font-extrabold text-pull-800 outline-none">
+        {options.map((option) => <option key={option}>{option}</option>)}
+      </select>
+    </label>
+  )
+}
+
+function JobBoardCard({ job, saved, applied, onToggleSaved, onOpenDetail, onApply }) {
+  const trustScore = Math.round(job.employerTrust * 20)
+  const nearlyFull = job.applicants >= 8
+
+  return (
+    <article className="flex min-h-[440px] flex-col rounded-[20px] border border-pull-100 bg-white p-4 shadow-[0_10px_28px_rgba(18,59,48,.035)] transition duration-200 hover:-translate-y-1 hover:border-pull-200 hover:shadow-[0_18px_38px_rgba(18,59,48,.08)]">
+      <div className="flex items-start gap-3">
+        <div className={`grid size-12 shrink-0 place-items-center rounded-full text-xs font-black ${job.tone}`}>{job.logo}</div>
+        <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><p className="truncate text-xs font-extrabold text-pull-950">{job.company}</p><ShieldCheck size={14} className="shrink-0 text-[#0e9855]" fill="currentColor" /></div><p className="mt-1 text-[9px] font-bold text-pull-400">Trust Score: {trustScore}</p></div>
+        <div className="flex items-center gap-1"><button type="button" onClick={onToggleSaved} className={`grid size-8 place-items-center rounded-lg ${saved ? 'bg-pull-50 text-pull-700' : 'text-pull-300 hover:bg-pull-50'}`} aria-label={saved ? 'Hapus dari tersimpan' : 'Simpan loker'}><Bookmark size={15} fill={saved ? 'currentColor' : 'none'} /></button><button type="button" onClick={onOpenDetail} className="grid size-8 place-items-center rounded-lg text-pull-500 hover:bg-pull-50" aria-label={`Buka detail cepat ${job.role}`}><MoreHorizontal size={18} /></button></div>
+      </div>
+
+      <Link to={`/jobs/${job.id}`} className="mt-6 font-display text-[22px] font-semibold leading-tight tracking-[-0.03em] text-pull-950 hover:text-pull-600">{job.role}</Link>
+      <div className="mt-4 grid gap-2 text-[9px] font-semibold text-pull-500 sm:grid-cols-2">
+        <span className="flex items-center gap-1.5"><MapPin size={13} /> {job.location}</span>
+        <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {job.duration}</span>
+        <span className="flex items-center gap-1.5"><Clock3 size={13} /> Mulai {job.startDate}</span>
+        <span className="flex items-center gap-1.5"><Users size={13} /> {job.workersNeeded} dibutuhkan</span>
+      </div>
+      <p className="mt-5 text-lg font-extrabold text-[#08783f]">{job.pay}</p>
+      <div className="mt-4 flex flex-wrap gap-2"><span className="rounded-lg bg-pull-50 px-2.5 py-1.5 text-[8px] font-extrabold text-pull-700">{job.category}</span><span className={`rounded-lg px-2.5 py-1.5 text-[8px] font-extrabold ${nearlyFull ? 'bg-[#fff0e7] text-[#c05f2a]' : 'bg-[#eaf6ee] text-[#08783f]'}`}>{nearlyFull ? 'Hampir penuh' : job.urgent ? 'Rekrut cepat' : 'Terbuka'}</span></div>
+      <div className="mt-auto flex items-center gap-4 border-t border-pull-100 pt-4 text-[9px] font-semibold text-pull-400"><span className="flex items-center gap-1"><Clock3 size={13} /> {job.posted}</span><span className="flex items-center gap-1"><Users size={13} /> {job.applicants} pelamar</span></div>
+      {applied ? <Link to="/applications" className="secondary-button mt-4 w-full justify-center"><CheckCircleLabel /> Lihat lamaran</Link> : <button type="button" onClick={onApply} className="whatsapp-button mt-4 w-full text-xs"><FaWhatsapp size={18} /> Lamar via WhatsApp</button>}
+    </article>
+  )
+}
+
+function CheckCircleLabel() {
+  return <span className="grid size-4 place-items-center rounded-full bg-pull-100 text-[9px] font-black text-pull-700">✓</span>
+}
+
+function MapJobCard({ job, onDetail, onApply }) {
+  return (
+    <div className="absolute bottom-4 left-4 right-4 z-[500] max-w-xl rounded-[20px] border border-pull-100 bg-white/95 p-4 shadow-[0_18px_45px_rgba(12,38,28,.18)] backdrop-blur-md">
+      <div className="flex items-start gap-3"><div className={`grid size-12 shrink-0 place-items-center rounded-full text-xs font-black ${job.tone}`}>{job.logo}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-pull-950">{job.company}</p><p className="mt-1 text-[9px] font-bold text-pull-400">Trust Score: {Math.round(job.employerTrust * 20)}</p></div><button type="button" onClick={onDetail} className="icon-button size-9"><MoreHorizontal size={17} /></button></div>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="font-display text-xl font-semibold text-pull-950">{job.role}</h2><p className="mt-1 text-lg font-extrabold text-[#08783f]">{job.pay}</p></div><button type="button" onClick={onApply} className="whatsapp-button size-12 self-end px-0" aria-label={`Lamar ${job.role} via WhatsApp`}><FaWhatsapp size={20} /></button></div>
+    </div>
+  )
+}
+
+function Pagination({ page, totalPages, onChange }) {
+  return (
+    <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="Navigasi halaman lowongan">
+      <button type="button" disabled={page === 1} onClick={() => onChange(page - 1)} className="icon-button disabled:cursor-not-allowed disabled:opacity-40" aria-label="Halaman sebelumnya"><ChevronLeft size={16} /></button>
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map((number) => <button key={number} type="button" onClick={() => onChange(number)} className={`grid size-10 place-items-center rounded-xl text-[10px] font-extrabold transition ${page === number ? 'bg-[#08783f] text-white shadow-sm' : 'border border-pull-100 bg-white text-pull-600 hover:bg-pull-50'}`} aria-current={page === number ? 'page' : undefined}>{number}</button>)}
+      <button type="button" disabled={page === totalPages} onClick={() => onChange(page + 1)} className="icon-button disabled:cursor-not-allowed disabled:opacity-40" aria-label="Halaman berikutnya"><ChevronRight size={16} /></button>
+      <span className="ml-2 rounded-xl border border-pull-100 bg-white px-4 py-3 text-[9px] font-extrabold text-pull-500">{pageSize} per halaman</span>
+    </nav>
+  )
+}
+
+function parseDistance(distance) {
+  const value = Number.parseFloat(distance.replace(',', '.'))
+  return Number.isNaN(value) ? Number.POSITIVE_INFINITY : value
 }

@@ -124,7 +124,7 @@ export default async function DashboardPage() {
             </div>
 
             <nav
-              className="mt-5 flex gap-2 overflow-x-auto pb-1 lg:mt-7 lg:flex-col lg:overflow-visible lg:pb-0"
+              className="mt-5 flex gap-2 overflow-x-auto pb-1 lg:mt-7 lg:flex-1 lg:flex-col lg:overflow-visible lg:pb-0"
               aria-label="Navigasi dashboard UMKM"
             >
               {SIDEBAR_ITEMS.map((item) => {

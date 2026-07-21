@@ -51,12 +51,12 @@ export default function OnboardingPage() {
       <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
         <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
-            src="/auth/login-bg.png"
-            alt="Selamat Datang di Pull"
+            src="/onboarding/start-illustration-portrait.webp"
+            alt="Pelaku UMKM dan pekerja terhubung melalui Pull"
             fill
             priority
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
+            className="object-cover object-center"
           />
         </div>
 

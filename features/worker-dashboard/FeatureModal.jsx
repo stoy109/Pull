@@ -1,10 +1,13 @@
+import Image from 'next/image'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { gsap } from 'gsap'
+import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   Award,
   BadgeCheck,
   BriefcaseBusiness,
+  CalendarDays,
   Camera,
   Check,
   CheckCircle2,
@@ -24,8 +27,10 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  Store,
   UploadCloud,
   UserRound,
+  Users,
   Wallet,
   X,
 } from 'lucide-react'
@@ -250,6 +255,49 @@ function ExperienceForm({ onClose, onEvent }) {
   )
 }
 
+function JobQuickDetail({ job, onClose, onEvent }) {
+  const trustScore = Math.round(job.employerTrust * 20)
+  const message = `Halo ${job.company}, saya Dimas tertarik melamar posisi ${job.role}. Profil dan ketersediaan saya tersedia di Pull.`
+
+  return (
+    <ModalShell title={job.company} eyebrow="UMKM terverifikasi" description={`Trust Score ${trustScore} · ${job.employerReviews} ulasan`} onClose={onClose} wide>
+      <div className="flex items-center gap-3">
+        <div className={`grid size-14 shrink-0 place-items-center rounded-[18px] text-sm font-black ${job.tone}`}>{job.logo}</div>
+        <div className="min-w-0 flex-1"><p className="text-sm font-extrabold text-pull-950">{job.company}</p><p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-pull-500"><ShieldCheck size={13} className="text-[#0e9855]" /> {trustScore} · Sangat baik</p></div>
+      </div>
+
+      <section className="mt-5 rounded-[18px] border border-pull-100 p-4">
+        <p className="form-label">Informasi pekerjaan</p>
+        <div className="mt-3 flex flex-col gap-3 border-b border-pull-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div><h3 className="font-display text-xl font-semibold tracking-[-0.03em] text-pull-950">{job.role}</h3><p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-pull-500"><MapPin size={13} /> {job.location}</p></div>
+          <strong className="text-lg font-extrabold text-[#08783f]">{job.pay}</strong>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <QuickDetail icon={CalendarDays} label="Durasi" value={job.duration} />
+          <QuickDetail icon={Users} label="Kebutuhan" value={`${job.workersNeeded} pekerja`} />
+          <QuickDetail icon={BriefcaseBusiness} label="Pelamar" value={`${job.applicants} orang`} />
+        </div>
+      </section>
+
+      <section className="mt-5"><p className="form-label">Deskripsi pekerjaan</p><p className="text-[11px] font-medium leading-6 text-pull-600">{job.description}</p></section>
+
+      <section className="mt-5 rounded-[18px] border border-pull-100 bg-pull-50/45 p-4">
+        <p className="form-label">Profil UMKM</p>
+        <div className="grid gap-3 sm:grid-cols-2"><QuickDetail icon={BriefcaseBusiness} label="Kategori" value={job.category} /><QuickDetail icon={ShieldCheck} label="Trust Score" value={`${trustScore} · Sangat baik`} /><QuickDetail icon={MapPin} label="Lokasi" value={job.location} /><QuickDetail icon={CalendarDays} label="Riwayat loker" value={`${job.employerJobs} diterbitkan`} /></div>
+      </section>
+
+      <div className="mt-5 rounded-[18px] bg-[#edf8f1] p-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[11px] font-extrabold text-pull-900">Lamar via WhatsApp</p><p className="mt-0.5 text-[9px] text-pull-500">Nomor UMKM dilindungi oleh Pull.</p></div><button onClick={() => onEvent('contact-job', { job, message })} className="whatsapp-button">Lamar via WhatsApp <ExternalLink size={14} /></button></div>
+      </div>
+      <div className="mt-3 text-center"><Link to={`/jobs/${job.id}`} onClick={onClose} className="text-button">Lihat detail lengkap <ArrowRight size={13} /></Link></div>
+    </ModalShell>
+  )
+}
+
+function QuickDetail({ icon: Icon, label, value }) {
+  return <div className="flex items-start gap-2"><Icon size={14} className="mt-0.5 shrink-0 text-pull-500" /><div><p className="text-[8px] font-bold text-pull-400">{label}</p><p className="mt-0.5 text-[10px] font-extrabold leading-5 text-pull-700">{value}</p></div></div>
+}
+
 function JobApplyForm({ job, onClose, onEvent }) {
   const [message, setMessage] = useState(`Halo ${job.company}, saya Dimas tertarik melamar posisi ${job.role}. Profil dan riwayat saya tersedia di Pull.`)
 
@@ -264,6 +312,102 @@ function JobApplyForm({ job, onClose, onEvent }) {
       <div className="modal-footer"><button onClick={onClose} className="secondary-button">Batal</button><button onClick={() => onEvent('contact-job', { job, message })} className="whatsapp-button">Catat & buka WhatsApp <ExternalLink size={14} /></button></div>
     </ModalShell>
   )
+}
+
+const ratingTags = ['Pembayaran tepat waktu', 'Lingkungan kerja nyaman', 'Instruksi jelas', 'Ramah dan sopan', 'Pekerjaan sesuai deskripsi', 'Akan bekerja lagi']
+
+function WorkConfirmationFlow({ application, onClose, onEvent }) {
+  const [step, setStep] = useState('confirm')
+  if (!application) return null
+  if (step === 'rating') return <WorkRatingForm application={application} onClose={onClose} onEvent={onEvent} />
+
+  if (step === 'success') {
+    return (
+      <ModalShell title="Konfirmasi berhasil!" eyebrow="Pekerjaan selesai" description="Konfirmasi tercatat. Sertifikat kerja dan PullPoints sedang diproses." onClose={onClose} wide>
+        <div className="text-center">
+          <Image src="/Profile(Selesai).png" alt="Konfirmasi pekerjaan berhasil" width={360} height={240} className="mx-auto h-40 w-auto max-w-full object-contain" priority />
+        </div>
+        <div className="mx-auto mt-6 max-w-md rounded-[18px] bg-[#edf8f1] p-4">
+          {['Konfirmasi tercatat', 'Sertifikat sedang diterbitkan', '+1 PullPoints ditambahkan', 'Trust Score diperbarui'].map((item) => <div key={item} className="flex items-center gap-3 py-1.5 text-[10px] font-extrabold text-pull-700"><span className="grid size-5 place-items-center rounded-full bg-[#0e9855] text-white"><Check size={12} strokeWidth={3} /></span>{item}</div>)}
+        </div>
+        <div className="mt-6 flex items-center gap-4 rounded-[18px] bg-[linear-gradient(100deg,#eef8f1,#e4f4e9)] p-4"><span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#fff6d9] text-[#e4a008]"><Star size={25} fill="currentColor" /></span><div><p className="text-sm font-extrabold text-pull-950">Beri rating untuk {application.company}</p><p className="mt-1 text-[10px] leading-5 text-pull-500">Ratingmu membantu pekerja lain menilai UMKM ini.</p></div></div>
+        <button onClick={() => setStep('rating')} className="primary-button mt-6 h-11 w-full">Beri rating sekarang</button>
+        <button onClick={onClose} className="mt-3 w-full text-[10px] font-extrabold text-pull-400 hover:text-pull-700">Nanti saja</button>
+      </ModalShell>
+    )
+  }
+
+  return (
+    <ModalShell title="Konfirmasi Selesai Kerja" eyebrow="Confirmation Loop" description="Pastikan pekerjaan sudah benar-benar selesai sebelum konfirmasi." onClose={onClose} wide>
+      <section>
+        <p className="form-label">Ringkasan pekerjaan</p>
+        <div className="mt-2 grid gap-2 rounded-[18px] bg-pull-50/70 p-4 text-[10px] sm:grid-cols-2">
+          <SummaryValue label="Pekerjaan" value={application.role} />
+          <SummaryValue label="UMKM" value={application.company} />
+          <SummaryValue label="Tanggal" value={application.time} />
+          <SummaryValue label="Durasi" value={application.duration || '1 hari'} />
+          <SummaryValue label="Upah" value={application.pay || 'Sesuai kesepakatan'} />
+        </div>
+      </section>
+
+      <section className="mt-5">
+        <p className="form-label">Status konfirmasi</p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <ConfirmationParty icon={Store} label={application.company} status="Sudah konfirmasi" done={application.employerConfirmed} />
+          <ConfirmationParty icon={UserRound} label="Kamu" status={application.workerConfirmed ? 'Sudah konfirmasi' : 'Belum konfirmasi'} done={application.workerConfirmed} />
+        </div>
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-[9px] font-semibold text-pull-400"><CircleAlert size={13} /> Kedua pihak harus konfirmasi agar rating dan sertifikat terbuka.</p>
+      </section>
+
+      <section className="mt-5 rounded-[18px] bg-[linear-gradient(100deg,#eef8f1,#e5f5ea)] p-4">
+        <p className="text-[10px] font-extrabold text-pull-700">Yang kamu dapatkan setelah konfirmasi</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3"><Benefit icon={Award} label="Sertifikat kerja digital" /><Benefit icon={ShieldCheck} label="Trust Score diperbarui" /><Benefit icon={Star} label="+1 PullPoints" /></div>
+      </section>
+
+      <div className="modal-footer"><button onClick={onClose} className="secondary-button justify-center">Batal</button><button onClick={() => { onEvent('confirm-work', { id: application.id }); setStep('success') }} className="primary-button">Ya, pekerjaan sudah selesai <Check size={15} /></button></div>
+    </ModalShell>
+  )
+}
+
+function WorkRatingForm({ application, onClose, onEvent }) {
+  const [rating, setRating] = useState(application.rating || 0)
+  const [selectedTags, setSelectedTags] = useState(application.ratingTags || [])
+  const [review, setReview] = useState(application.review || '')
+  const ratingLabel = ['', 'Kurang', 'Cukup', 'Baik', 'Sangat baik', 'Sangat baik'][rating]
+
+  const toggleTag = (tag) => setSelectedTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag])
+
+  return (
+    <ModalShell title="Beri Rating" eyebrow="Pengalaman kerja" description="Bagaimana pengalaman kerja kamu bersama UMKM ini?" onClose={onClose} wide>
+      <div className="flex items-center gap-3 rounded-[18px] border border-pull-100 p-4"><div className="grid size-12 shrink-0 place-items-center rounded-full bg-pull-100 text-xs font-black text-pull-700">{application.company.split(' ').slice(0, 2).map((word) => word[0]).join('')}</div><div><p className="text-sm font-extrabold text-pull-950">{application.company}</p><p className="mt-1 text-[10px] font-bold text-pull-500">{application.role}</p><p className="mt-1 flex items-center gap-1 text-[9px] text-pull-400"><CalendarDays size={12} /> {application.time}</p></div></div>
+
+      <section className="mt-5">
+        <p className="form-label">Rating keseluruhan</p>
+        <div className="mt-3 flex justify-center gap-2" aria-label="Pilih rating">
+          {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" onClick={() => setRating(value)} className={`p-1 transition hover:scale-110 ${value <= rating ? 'text-[#f4ad12]' : 'text-pull-200'}`} aria-label={`${value} bintang`}><Star size={38} fill={value <= rating ? 'currentColor' : 'none'} /></button>)}
+        </div>
+        <p className={`mt-2 text-center text-[10px] font-extrabold ${rating ? 'text-[#08783f]' : 'text-pull-400'}`}>{rating ? ratingLabel : 'Pilih bintang untuk memberikan rating'}</p>
+      </section>
+
+      <section className="mt-5"><p className="form-label">Apa yang paling berkesan? <span className="normal-case tracking-normal text-pull-300">(opsional)</span></p><div className="mt-2 flex flex-wrap gap-2">{ratingTags.map((tag) => { const selected = selectedTags.includes(tag); return <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`rounded-xl border px-3 py-2 text-[9px] font-bold transition ${selected ? 'border-[#4fa673] bg-[#edf8f1] text-[#08783f]' : 'border-pull-100 text-pull-500 hover:border-pull-200'}`}>{tag}{selected ? ' ✓' : ''}</button> })}</div></section>
+
+      <label className="mt-5 block"><span className="form-label">Ulasan <span className="normal-case tracking-normal text-pull-300">(opsional)</span></span><textarea maxLength={200} className="form-textarea min-h-28" value={review} onChange={(event) => setReview(event.target.value)} placeholder="Ceritakan pengalaman kerja kamu..." /><span className="mt-1 block text-right text-[8px] font-bold text-pull-300">{review.length}/200</span></label>
+      <div className="info-note mt-4"><CircleAlert size={15} /><p>Rating ditampilkan publik di profil UMKM setelah dikirim.</p></div>
+      <div className="modal-footer"><button onClick={onClose} className="secondary-button">Lewati</button><button disabled={!rating} onClick={() => onEvent('submit-rating', { id: application.id, rating, review, tags: selectedTags })} className="primary-button">Kirim rating</button></div>
+    </ModalShell>
+  )
+}
+
+function SummaryValue({ label, value }) {
+  return <div className="grid grid-cols-[76px_1fr] gap-2"><span className="font-bold text-pull-400">{label}</span><strong className="text-pull-800">: {value}</strong></div>
+}
+
+function ConfirmationParty({ icon: Icon, label, status, done }) {
+  return <div className="flex items-center gap-3 rounded-[16px] border border-pull-100 p-3"><span className={`grid size-10 shrink-0 place-items-center rounded-full ${done ? 'bg-[#e8f5ec] text-[#08783f]' : 'bg-[#fff0df] text-[#d96800]'}`}><Icon size={18} /></span><div className="min-w-0"><p className="truncate text-[10px] font-extrabold text-pull-800">{label}</p><p className={`mt-1 text-[9px] font-bold ${done ? 'text-[#08783f]' : 'text-[#d96800]'}`}>{status}{done ? ' ✓' : ''}</p></div></div>
+}
+
+function Benefit({ icon: Icon, label }) {
+  return <div className="flex items-center gap-2"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#08783f]"><Icon size={16} /></span><span className="text-[9px] font-extrabold leading-4 text-pull-700">{label}</span></div>
 }
 
 function ApplicationDetail({ application, stage, onClose, onEvent }) {
@@ -325,9 +469,9 @@ function TimelineRow({ title, detail, done }) {
 }
 
 function MessagesPanel({ applications, onClose, onEvent }) {
-  const contacts = applications.Interview.concat(applications.Ditinjau).slice(0, 3)
+  const contacts = applications.Diterima.concat(applications.Interview, applications.Ditinjau).slice(0, 4)
   return (
-    <ModalShell title="Kontak employer" eyebrow="WhatsApp privat" description="Pull tidak menyimpan isi chat. Setiap tombol memakai redirect privat dan mencatat klik untuk anti-spam." onClose={onClose}>
+    <ModalShell title="Kontak employer" eyebrow="WhatsApp privat" description="Semua percakapan dibuka melalui WhatsApp. Pull hanya mencatat status dan akses kontak untuk keamanan." onClose={onClose}>
       <div className="space-y-2.5">
         {contacts.map((application) => <div key={application.id} className="flex items-center gap-3 rounded-[16px] border border-pull-100 p-3"><div className="grid size-10 place-items-center rounded-xl bg-pull-50 text-[10px] font-black text-pull-700">{application.company.split(' ').slice(0, 2).map((word) => word[0]).join('')}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-pull-900">{application.company}</p><p className="mt-0.5 truncate text-[9px] text-pull-400">{application.role} · {application.status}</p></div><button onClick={() => onEvent('contact-employer', { application })} className="whatsapp-button size-9 px-0" aria-label={`Hubungi ${application.company}`}><MessageCircle size={15} /></button></div>)}
       </div>
@@ -446,7 +590,7 @@ function AssetDetail({ type, item, onClose }) {
 function HelpPanel({ onClose, onEvent }) {
   return <ModalShell title="Pusat bantuan" eyebrow="Bantuan Pull" description="Jawaban singkat untuk alur pekerja yang paling sering ditanyakan." onClose={onClose}>
     <div className="space-y-2">{[
-      ['Kenapa lamaran dibuka lewat WhatsApp?', 'Negosiasi informal lebih mudah di kanal yang sudah dikenal. Pull tetap mencatat klik, status lamaran, dan konfirmasi selesai kerja.'],
+      ['Kenapa chat dibuka lewat WhatsApp?', 'Koordinasi informal lebih mudah di kanal yang sudah dikenal. Pull tetap mencatat status lamaran dan konfirmasi selesai kerja.'],
       ['Apakah KTP wajib?', 'Tidak untuk pekerja. KTP opsional dan hanya memberi badge serta boost visibilitas.'],
       ['Kapan rating bisa diberikan?', 'Setelah pekerja dan employer sama-sama menekan Konfirmasi Selesai Kerja.'],
     ].map(([question, answer]) => <details key={question} className="rounded-xl border border-pull-100 p-3"><summary className="cursor-pointer text-[11px] font-extrabold text-pull-800">{question}</summary><p className="mt-2 text-[9px] leading-relaxed text-pull-400">{answer}</p></details>)}</div>
@@ -475,8 +619,14 @@ export default function FeatureModal({ dialog, onClose, onEvent, profile, applic
       return <PortfolioForm onClose={onClose} onEvent={onEvent} />
     case 'experience':
       return <ExperienceForm onClose={onClose} onEvent={onEvent} />
+    case 'job-detail':
+      return <JobQuickDetail job={dialog.job} onClose={onClose} onEvent={onEvent} />
     case 'job-apply':
       return <JobApplyForm job={dialog.job} onClose={onClose} onEvent={onEvent} />
+    case 'work-confirmation':
+      return <WorkConfirmationFlow application={application} onClose={onClose} onEvent={onEvent} />
+    case 'work-rating':
+      return <WorkRatingForm application={application} onClose={onClose} onEvent={onEvent} />
     case 'application':
       return <ApplicationDetail application={application} stage={dialog.stage} onClose={onClose} onEvent={onEvent} />
     case 'messages':

@@ -83,15 +83,15 @@
   }
 
   .worker-dashboard .nav-item {
-    @apply flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[11px] font-bold text-white/65 transition duration-200 hover:bg-white/8 hover:text-white;
+    @apply flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-bold text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-white;
   }
 
   .worker-dashboard .nav-item-active {
-    @apply bg-white text-pull-950 shadow-[0_8px_22px_rgba(0,0,0,0.16)] hover:bg-white hover:text-pull-950;
+    @apply bg-[#0e9855] text-white shadow-lg shadow-emerald-950/20 hover:bg-[#0e9855] hover:text-white;
   }
 
   .worker-dashboard .nav-count {
-    @apply ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-extrabold text-white/65;
+    @apply ml-auto rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-extrabold text-white;
   }
 
   .worker-dashboard .icon-button {

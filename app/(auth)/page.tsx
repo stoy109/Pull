@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import { AuthSlideshow } from "@/components/auth-slideshow";
 import { FormFeedback, FormLabel } from "@/components/form-ui";
 import {
   signInAction,
@@ -34,14 +34,7 @@ export default function LoginPage() {
 
         {/* Left Side: Illustration Image */}
         <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
-          <Image
-            src="/auth/login-bg.png"
-            alt="Satu Platform, Bersama UMKM Maju"
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-          />
+          <AuthSlideshow />
         </div>
 
         {/* Right Side: White Login Form */}
