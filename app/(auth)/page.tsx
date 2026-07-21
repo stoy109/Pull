@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FormFeedback, FormLabel } from "@/components/form-ui";
+import { useClientMounted } from "@/components/use-client-mounted";
 import {
   signInAction,
   signInWithGoogleAction,
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const isMounted = useClientMounted();
 
   return (
     <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
@@ -59,12 +61,13 @@ export default function LoginPage() {
             </div>
 
             {/* Login Form */}
-            <form
-              action={formAction}
-              className="space-y-4"
-              data-lpignore="true"
-              data-form-type="other"
-            >
+            {isMounted ? (
+              <form
+                action={formAction}
+                className="space-y-4"
+                data-lpignore="true"
+                data-form-type="other"
+              >
 
               {/* Email Field */}
               <div className="form-field space-y-1.5">
@@ -149,7 +152,15 @@ export default function LoginPage() {
                 {isPending ? "Memproses..." : "Masuk"}
               </button>
 
-            </form>
+              </form>
+            ) : (
+              <div className="space-y-4" aria-hidden="true">
+                <div className="h-[74px]" />
+                <div className="h-[74px]" />
+                <div className="h-5" />
+                <div className="h-12" />
+              </div>
+            )}
 
             {/* Divider */}
             <div className="relative flex items-center justify-center">

@@ -9,6 +9,7 @@ import {
   FormLabel,
   RequiredIndicator,
 } from "@/components/form-ui";
+import { useClientMounted } from "@/components/use-client-mounted";
 import { signUpAction, type AuthActionState } from "@/features/auth/actions";
 
 const initialAuthState: AuthActionState = {
@@ -26,6 +27,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const isMounted = useClientMounted();
 
   return (
     <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
@@ -59,12 +61,13 @@ export default function RegisterPage() {
             </div>
 
             {/* Register Form */}
-            <form
-              action={formAction}
-              className="space-y-4"
-              data-lpignore="true"
-              data-form-type="other"
-            >
+            {isMounted ? (
+              <form
+                action={formAction}
+                className="space-y-4"
+                data-lpignore="true"
+                data-form-type="other"
+              >
 
               {/* Nama Lengkap Field */}
               <div className="form-field space-y-1.5">
@@ -176,7 +179,16 @@ export default function RegisterPage() {
                 {isPending ? "Mendaftarkan..." : "Daftar"}
               </button>
 
-            </form>
+              </form>
+            ) : (
+              <div className="space-y-4" aria-hidden="true">
+                <div className="h-[74px]" />
+                <div className="h-[74px]" />
+                <div className="h-[74px]" />
+                <div className="h-8" />
+                <div className="h-12" />
+              </div>
+            )}
 
             {/* Footer Links */}
             <div className="pt-1 text-center text-xs font-semibold text-[#36544a]">
