@@ -147,7 +147,7 @@ export default async function OnboardingSuccessPage({
   const role = readMetadataString(metadata, "role", queryRole || "umkm");
   const isWorker = role === "pekerja";
   const isSupplier = role === "supplier";
-  const dashboardHref = "/dashboard";
+  const dashboardHref = isWorker ? "/worker/dashboard" : "/dashboard";
   const profileParams = createProfileParams({
     role,
     displayName,

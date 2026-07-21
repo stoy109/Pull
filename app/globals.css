@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../features/worker-dashboard/worker-dashboard.css";
 
 :root {
   --color-primary-50: #eaf4ef;

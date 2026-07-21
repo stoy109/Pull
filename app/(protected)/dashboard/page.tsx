@@ -87,6 +87,11 @@ export default async function DashboardPage() {
 
   const metadata = user?.user_metadata ?? {};
   const role = readMetadataString(metadata, "role", "umkm");
+
+  if (role === "pekerja") {
+    redirect("/worker/dashboard");
+  }
+
   const savedOwnerName =
     readMetadataString(metadata, "display_name") ||
     readMetadataString(metadata, "full_name");
