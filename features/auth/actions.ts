@@ -94,6 +94,12 @@ export async function signInWithGoogleAction() {
   redirect(data.url);
 }
 
+export async function signOutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
+}
+
 export async function signUpAction(
   _state: AuthActionState,
   formData: FormData,
