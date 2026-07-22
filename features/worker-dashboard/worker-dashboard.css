@@ -62,6 +62,12 @@
     @apply rounded-[22px] border border-pull-100/90 bg-white p-4 shadow-[0_12px_35px_rgba(18,59,48,0.035)] sm:rounded-[24px] sm:p-5;
   }
 
+  .worker-dashboard .dashboard-welcome {
+    background-image:
+      radial-gradient(circle at 78% 55%, rgba(216, 235, 211, 0.56) 0 19%, transparent 19.2%),
+      linear-gradient(105deg, #fffefa 0%, #fffefa 45%, #f8fbf4 100%);
+  }
+
   .worker-dashboard .eyebrow {
     @apply mb-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-pull-500;
   }
@@ -82,8 +88,18 @@
     @apply mb-2 px-3 text-[9px] font-extrabold uppercase tracking-[0.16em] text-white/40;
   }
 
+  .worker-dashboard .worker-sidebar-nav,
+  .worker-dashboard .worker-sidebar-nav .nav-item,
+  .worker-dashboard .worker-sidebar-nav .nav-item span {
+    font-family: var(--font-family-sans);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    letter-spacing: 0;
+  }
+
   .worker-dashboard .nav-item {
-    @apply flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-bold text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-white;
+    @apply flex min-h-11 w-full shrink-0 items-center gap-3 rounded-xl px-3 text-left text-sm font-bold leading-normal tracking-normal text-white/90 transition-colors hover:bg-white/10 hover:text-white;
   }
 
   .worker-dashboard .nav-item-active {
@@ -404,6 +420,10 @@
     @apply sm:max-w-[720px];
   }
 
+  .worker-dashboard .modal-panel-job-detail {
+    @apply sm:max-w-[528px] sm:rounded-[22px];
+  }
+
   .worker-dashboard .modal-header {
     @apply flex shrink-0 items-start justify-between gap-4 border-b border-pull-100 px-5 py-4 sm:px-6 sm:py-5;
   }
@@ -428,6 +448,11 @@
     @apply min-h-24 w-full resize-y rounded-xl border border-pull-100 bg-white px-3 py-2.5 text-[11px] font-semibold leading-relaxed text-pull-800 outline-none transition placeholder:text-pull-300 focus:border-pull-300 focus:ring-4 focus:ring-pull-100/50;
   }
 
+  .worker-dashboard .rating-tag-button {
+    font-size: 9px;
+    line-height: 1;
+  }
+
   .worker-dashboard .form-grid {
     @apply grid gap-4 sm:grid-cols-2;
   }
@@ -445,7 +470,7 @@
   }
 
   .worker-dashboard .whatsapp-button {
-    @apply inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#247a54] px-3.5 text-[10px] font-extrabold text-white shadow-[0_7px_16px_rgba(36,122,84,.16)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#1c6746] disabled:cursor-default disabled:opacity-50;
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#247a54] px-3.5 text-[10px] font-extrabold text-white shadow-[0_7px_16px_rgba(36,122,84,.16)] transition duration-200 hover:bg-[#1c6746] disabled:cursor-default disabled:opacity-50;
   }
 
   .worker-dashboard .option-card {

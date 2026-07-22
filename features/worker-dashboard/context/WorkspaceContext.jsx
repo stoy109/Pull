@@ -12,6 +12,7 @@ import {
 } from '../data/mockData'
 
 const WorkspaceContext = createContext(null)
+const confirmationDemoApplication = initialApplications.Selesai.find((application) => application.id === 'app-7')
 
 function usePersistentState(key, initialValue) {
   const [value, setValue] = useState(() => {
@@ -46,7 +47,7 @@ function escapeHtml(value) {
 export function WorkspaceProvider({ children, initialProfile }) {
   const navigate = useNavigate()
   const [profile, setProfile] = usePersistentState('pull-worker-profile-v2', { ...mockInitialProfile, ...initialProfile })
-  const [applications, setApplications] = usePersistentState('pull-worker-applications-v3', initialApplications)
+  const [applications, setApplications] = usePersistentState('pull-worker-applications-v4', initialApplications)
   const [activities, setActivities] = usePersistentState('pull-worker-activities-v2', initialActivities)
   const [portfolio, setPortfolio] = usePersistentState('pull-worker-portfolio-v2', initialPortfolio)
   const [certificates, setCertificates] = usePersistentState('pull-worker-certificates-v2', initialCertificates)
@@ -65,10 +66,35 @@ export function WorkspaceProvider({ children, initialProfile }) {
 
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
+  useEffect(() => {
+    const migrationKey = 'pull-worker-confirmation-demo-v2'
+    try {
+      if (window.localStorage.getItem(migrationKey)) return
+    } catch {
+      // Continue with the in-memory seed when storage is unavailable.
+    }
+
+    setApplications((current) => {
+      const withoutOldDemo = Object.fromEntries(Object.entries(current).map(([stage, items]) => [stage, items.filter((application) => application.id !== confirmationDemoApplication.id)]))
+      return { ...withoutOldDemo, Selesai: [{ ...confirmationDemoApplication }, ...withoutOldDemo.Selesai] }
+    })
+
+    try {
+      window.localStorage.setItem(migrationKey, 'done')
+    } catch {
+      // In-memory state is enough for the current session.
+    }
+  }, [setApplications])
+
   const showToast = (message) => {
     setToast(message)
     clearTimeout(toastTimer.current)
     toastTimer.current = setTimeout(() => setToast(''), 2800)
+  }
+
+  const dismissToast = () => {
+    clearTimeout(toastTimer.current)
+    setToast('')
   }
 
   const addActivity = (title, detail, icon = 'bell', tone = 'brand') => {
@@ -181,7 +207,9 @@ export function WorkspaceProvider({ children, initialProfile }) {
     }
 
     if (type === 'contact-job') {
-      const { job, message } = payload
+      const { job } = payload
+      const workerName = profile?.name || 'pekerja Pull'
+      const message = payload.message || `Halo, saya ${workerName} dari Pull. Saya tertarik melamar posisi "${job.role}" yang Anda posting di Pull. Apakah masih tersedia?`
       setAppliedJobIds((current) => current.includes(job.id) ? current : [...current, job.id])
       setApplications((current) => current.Dilamar.some((application) => application.jobId === job.id) ? current : ({
         ...current,
@@ -255,10 +283,16 @@ export function WorkspaceProvider({ children, initialProfile }) {
     }
 
     if (type === 'submit-rating') {
-      updateApplication('Selesai', payload.id, { rated: true, rating: payload.rating, ratingTags: payload.tags || [], review: payload.review, status: 'Rating terkirim' })
-      addActivity('Rating pekerjaan terkirim', `${payload.rating}/5 untuk Sambal Mbokde. Ulasan terikat pada pekerjaan terverifikasi.`, 'star', 'warm')
+      updateApplication('Selesai', payload.id, { rated: true, rating: payload.rating, ratingTags: payload.tags || [], review: payload.review, ratingDraft: 0, ratingTagsDraft: [], reviewDraft: '', status: 'Rating terkirim' })
+      addActivity('Rating pekerjaan terkirim', `${payload.rating}/5 untuk ${payload.company || 'UMKM'}. Ulasan terikat pada pekerjaan terverifikasi.`, 'star', 'warm')
       closeDialog()
-      showToast('Rating berhasil dikirim')
+      showToast({ title: 'Rating berhasil dikirim!', detail: 'Trust Score UMKM diperbarui.' })
+      return
+    }
+
+    if (type === 'save-rating-draft') {
+      updateApplication('Selesai', payload.id, { ratingDraft: payload.rating || 0, ratingTagsDraft: payload.tags || [], reviewDraft: payload.review || '' })
+      closeDialog()
       return
     }
 
@@ -348,7 +382,8 @@ export function WorkspaceProvider({ children, initialProfile }) {
     }
 
     if (type === 'contact-support') {
-      window.location.href = 'mailto:dukungan@pull.id?subject=Bantuan%20akun%20pekerja'
+      openWhatsApp('Halo CS Pull, saya membutuhkan bantuan terkait akun pekerja saya.')
+      closeDialog()
       return
     }
 
@@ -378,6 +413,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
     openDialog,
     closeDialog,
     showToast,
+    dismissToast,
     addActivity,
     toggleSavedJob,
     markActivityRead,

@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { gsap } from 'gsap'
-import { Link } from 'react-router-dom'
+import { FaWhatsapp } from 'react-icons/fa'
 import {
   ArrowRight,
   Award,
@@ -17,7 +17,7 @@ import {
   Download,
   ExternalLink,
   GraduationCap,
-  HelpCircle,
+  Lightbulb,
   LockKeyhole,
   MapPin,
   MessageCircle,
@@ -35,8 +35,9 @@ import {
   X,
 } from 'lucide-react'
 import { signOutAction } from '@/features/auth/actions'
+import { VerifiedUmkmIcon } from './components/UI'
 
-function ModalShell({ title, eyebrow, description, onClose, children, wide = false }) {
+function ModalShell({ title, eyebrow, description, onClose, children, wide = false, bare = false, panelClassName = '' }) {
   const rootRef = useRef(null)
 
   useLayoutEffect(() => {
@@ -65,16 +66,18 @@ function ModalShell({ title, eyebrow, description, onClose, children, wide = fal
   return (
     <div ref={rootRef} className="modal-backdrop" role="presentation">
       <button data-modal-scrim className="absolute inset-0 cursor-default bg-pull-950/45 backdrop-blur-sm" onClick={onClose} aria-label="Tutup dialog" />
-      <section className={`modal-panel ${wide ? 'modal-panel-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <header className="modal-header">
-          <div className="min-w-0">
-            {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-            <h2 id="modal-title" className="font-display text-xl font-semibold tracking-[-0.03em] text-pull-950 sm:text-2xl">{title}</h2>
-            {description ? <p className="mt-1.5 text-[11px] leading-relaxed text-pull-500">{description}</p> : null}
-          </div>
-          <button onClick={onClose} className="icon-button size-9" aria-label="Tutup dialog"><X size={17} /></button>
-        </header>
-        <div className="modal-body">{children}</div>
+      <section className={`modal-panel ${wide ? 'modal-panel-wide' : ''} ${bare ? 'modal-panel-job-detail' : ''} ${panelClassName}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        {bare ? children : <>
+          <header className="modal-header">
+            <div className="min-w-0">
+              {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+              <h2 id="modal-title" className="font-display text-xl font-semibold tracking-[-0.03em] text-pull-950 sm:text-2xl">{title}</h2>
+              {description ? <p className="mt-1.5 text-[11px] leading-relaxed text-pull-500">{description}</p> : null}
+            </div>
+            <button onClick={onClose} className="icon-button size-9" aria-label="Tutup dialog"><X size={17} /></button>
+          </header>
+          <div className="modal-body">{children}</div>
+        </>}
       </section>
     </div>
   )
@@ -200,7 +203,7 @@ function ProfileForm({ profile, onClose, onEvent }) {
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
 
   return (
-    <ModalShell title="Lengkapi profil" eyebrow={`Kekuatan profil ${profile.completion}%`} description="Data ini membantu employer menilai kecocokan sebelum menghubungimu." onClose={onClose} wide>
+    <ModalShell title="Lengkapi profil" eyebrow={`Kekuatan profil ${profile.completion}%`} description="Data ini membantu employer menilai profilmu sebelum menghubungimu." onClose={onClose} wide>
       <form onSubmit={(event) => { event.preventDefault(); onEvent('update-profile', form) }}>
         <div className="form-grid">
           <label><span className="form-label">Nama lengkap</span><input required className="form-input" value={form.name} onChange={(event) => update('name', event.target.value)} /></label>
@@ -255,47 +258,95 @@ function ExperienceForm({ onClose, onEvent }) {
   )
 }
 
-function JobQuickDetail({ job, onClose, onEvent }) {
+function JobQuickDetail({ job, applied, profile, onClose, onEvent }) {
   const trustScore = Math.round(job.employerTrust * 20)
-  const message = `Halo ${job.company}, saya Dimas tertarik melamar posisi ${job.role}. Profil dan ketersediaan saya tersedia di Pull.`
+  const workerName = profile?.name || 'pekerja Pull'
+  const message = `Halo, saya ${workerName} dari Pull. Saya tertarik melamar posisi "${job.role}" yang Anda posting di Pull. Apakah masih tersedia?`
+  const [payAmount, ...payUnitParts] = job.pay.split(' / ')
+  const payUnit = payUnitParts.length ? `/ ${payUnitParts.join(' / ')}` : ''
 
   return (
-    <ModalShell title={job.company} eyebrow="UMKM terverifikasi" description={`Trust Score ${trustScore} · ${job.employerReviews} ulasan`} onClose={onClose} wide>
-      <div className="flex items-center gap-3">
-        <div className={`grid size-14 shrink-0 place-items-center rounded-[18px] text-sm font-black ${job.tone}`}>{job.logo}</div>
-        <div className="min-w-0 flex-1"><p className="text-sm font-extrabold text-pull-950">{job.company}</p><p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-pull-500"><ShieldCheck size={13} className="text-[#0e9855]" /> {trustScore} · Sangat baik</p></div>
+    <ModalShell title={job.company} onClose={onClose} bare>
+      <div className="overflow-y-auto px-5 pb-5 pt-5 sm:px-8 sm:pb-7 sm:pt-6">
+        <header className="relative flex items-center gap-5 border-b border-[#dfe8e2] pb-4 pr-10">
+          <div className={`relative grid size-[74px] shrink-0 place-items-center overflow-hidden rounded-full text-base font-black sm:size-[80px] ${job.tone}`}>
+            {job.logoImage ? <Image src={job.logoImage} alt={`Logo ${job.company}`} fill sizes="80px" className="object-cover" /> : job.logo}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h2 id="modal-title" className="truncate text-base font-extrabold text-pull-950 sm:text-lg">{job.company}</h2>
+              {job.verified ? <VerifiedUmkmIcon className="size-[18px] shrink-0" /> : null}
+            </div>
+            <p className="mt-1 flex items-center gap-2 text-xs font-extrabold text-[#087a41]"><Star size={18} className="fill-[#e6a700] text-[#e6a700]" /> <span className="text-pull-950">{trustScore}</span> — Sangat Baik</p>
+            {job.verified ? <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-[#e6f5e9] px-2 py-1 text-[9px] font-extrabold text-[#087a41]"><Check size={11} strokeWidth={3} /> Terverifikasi Pull</span> : null}
+          </div>
+          <button type="button" onClick={onClose} className="absolute right-0 top-0 grid size-9 place-items-center rounded-xl text-pull-800 transition hover:bg-pull-50" aria-label="Tutup detail pekerjaan"><X size={23} /></button>
+        </header>
+
+        <section className="border-b border-[#dfe8e2] py-4">
+          <h3 className="text-lg font-extrabold text-pull-950 sm:text-xl">{job.role}</h3>
+          <p className="mt-1 text-xl font-extrabold text-[#087a41]">{payAmount} <span className="text-xs font-extrabold">{payUnit}</span></p>
+          <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
+            <JobDetailItem icon={CalendarDays} label="Durasi" value={job.duration} />
+            <JobDetailItem icon={MapPin} label="Lokasi" value={job.location} />
+            <JobDetailItem icon={Users} label="Dibutuhkan" value={`${job.workersNeeded} orang`} />
+            <JobDetailItem icon={BriefcaseBusiness} label="Sudah melamar" value={`${job.applicants} pelamar`} />
+          </div>
+        </section>
+
+        <section className="border-b border-[#dfe8e2] py-4">
+          <h3 className="text-xs font-extrabold text-pull-950">Deskripsi Pekerjaan</h3>
+          <p className="mt-2 text-[11px] font-medium leading-5 text-pull-700">{job.description}</p>
+        </section>
+
+        <section className="border-b border-[#dfe8e2] py-4">
+          <h3 className="text-xs font-extrabold text-pull-950">Tentang UMKM</h3>
+          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
+            <JobDetailItem icon={Store} label="Kategori" value={job.category} />
+            <JobDetailItem icon={Star} label="Trust Score" value={`${trustScore} — Sangat Baik`} accent />
+            <JobDetailItem icon={MapPin} label="Lokasi" value={job.location} />
+            <JobDetailItem icon={CalendarDays} label="Total Lowongan" value={`${job.employerJobs} lowongan diterbitkan`} />
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-xl bg-[#f3f6f4] p-3">
+          <div className="flex items-center gap-3">
+            <span className={`grid size-12 shrink-0 place-items-center rounded-lg ${applied ? 'bg-[#e7f5fb] text-[#32a8de]' : 'bg-[#087a41] text-white'}`}>
+              {applied ? <CheckCircle2 size={27} /> : <FaWhatsapp size={29} />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-extrabold text-pull-950">{applied ? 'Sudah Dilamar' : 'Lamar via WhatsApp'}</p>
+              <p className="mt-1 text-[9px] font-medium leading-4 text-pull-600">{applied ? 'Lamaran Anda telah dikirim ke UMKM ini melalui Pull.' : 'Kami akan membuka WhatsApp dengan pesan siap kirim ke UMKM (nomor dilindungi).'}</p>
+            </div>
+            <div className="shrink-0 rounded-lg bg-[#e4f1e7] px-3 py-2 text-right">
+              <p className="text-[8px] font-semibold text-pull-500">Nomor dilindungi</p>
+              <p className="mt-1 text-[10px] font-extrabold text-pull-800">+62 8XX-XXXX-XXXX</p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex gap-2.5 rounded-lg border border-[#efd18c] bg-[#fffaf0] px-3 py-2.5">
+            {applied ? <CircleAlert size={15} className="mt-0.5 shrink-0 text-[#db9500]" /> : <Lightbulb size={15} className="mt-0.5 shrink-0 text-[#db9500]" />}
+            <p className="text-[9px] font-medium leading-4 text-pull-700">{applied ? <>Tunggu konfirmasi dari UMKM melalui WhatsApp.<br /><strong>Pastikan Anda merespons dengan sopan dan tepat waktu.</strong></> : <><strong>Pesan yang akan dikirim:</strong><br />{message}</>}</p>
+          </div>
+        </section>
+
+        {applied ? (
+          <button type="button" disabled className="mt-3 flex h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-[#dfe4e8] text-sm font-extrabold text-[#657180]"><CheckCircle2 size={18} /> Sudah Dilamar <Check size={17} /></button>
+        ) : (
+          <button type="button" onClick={() => onEvent('contact-job', { job, message })} className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[linear-gradient(90deg,#087a41,#006c38)] text-sm font-extrabold text-white transition-colors hover:brightness-95"><FaWhatsapp size={20} /> Lamar via WhatsApp</button>
+        )}
       </div>
-
-      <section className="mt-5 rounded-[18px] border border-pull-100 p-4">
-        <p className="form-label">Informasi pekerjaan</p>
-        <div className="mt-3 flex flex-col gap-3 border-b border-pull-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
-          <div><h3 className="font-display text-xl font-semibold tracking-[-0.03em] text-pull-950">{job.role}</h3><p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-pull-500"><MapPin size={13} /> {job.location}</p></div>
-          <strong className="text-lg font-extrabold text-[#08783f]">{job.pay}</strong>
-        </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <QuickDetail icon={CalendarDays} label="Durasi" value={job.duration} />
-          <QuickDetail icon={Users} label="Kebutuhan" value={`${job.workersNeeded} pekerja`} />
-          <QuickDetail icon={BriefcaseBusiness} label="Pelamar" value={`${job.applicants} orang`} />
-        </div>
-      </section>
-
-      <section className="mt-5"><p className="form-label">Deskripsi pekerjaan</p><p className="text-[11px] font-medium leading-6 text-pull-600">{job.description}</p></section>
-
-      <section className="mt-5 rounded-[18px] border border-pull-100 bg-pull-50/45 p-4">
-        <p className="form-label">Profil UMKM</p>
-        <div className="grid gap-3 sm:grid-cols-2"><QuickDetail icon={BriefcaseBusiness} label="Kategori" value={job.category} /><QuickDetail icon={ShieldCheck} label="Trust Score" value={`${trustScore} · Sangat baik`} /><QuickDetail icon={MapPin} label="Lokasi" value={job.location} /><QuickDetail icon={CalendarDays} label="Riwayat loker" value={`${job.employerJobs} diterbitkan`} /></div>
-      </section>
-
-      <div className="mt-5 rounded-[18px] bg-[#edf8f1] p-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[11px] font-extrabold text-pull-900">Lamar via WhatsApp</p><p className="mt-0.5 text-[9px] text-pull-500">Nomor UMKM dilindungi oleh Pull.</p></div><button onClick={() => onEvent('contact-job', { job, message })} className="whatsapp-button">Lamar via WhatsApp <ExternalLink size={14} /></button></div>
-      </div>
-      <div className="mt-3 text-center"><Link to={`/jobs/${job.id}`} onClick={onClose} className="text-button">Lihat detail lengkap <ArrowRight size={13} /></Link></div>
     </ModalShell>
   )
 }
 
-function QuickDetail({ icon: Icon, label, value }) {
-  return <div className="flex items-start gap-2"><Icon size={14} className="mt-0.5 shrink-0 text-pull-500" /><div><p className="text-[8px] font-bold text-pull-400">{label}</p><p className="mt-0.5 text-[10px] font-extrabold leading-5 text-pull-700">{value}</p></div></div>
+function JobDetailItem({ icon: Icon, label, value, accent = false }) {
+  return (
+    <div className="flex min-w-0 items-start gap-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#edf6ef] text-[#087a41]"><Icon size={18} className={accent ? 'fill-[#087a41] text-white' : undefined} /></span>
+      <div className="min-w-0"><p className="text-[9px] font-medium text-pull-600">{label}</p><p className={`mt-0.5 text-[10px] font-bold leading-4 ${accent ? 'text-[#087a41]' : 'text-pull-950'}`}>{value}</p></div>
+    </div>
+  )
 }
 
 function JobApplyForm({ job, onClose, onEvent }) {
@@ -316,98 +367,144 @@ function JobApplyForm({ job, onClose, onEvent }) {
 
 const ratingTags = ['Pembayaran tepat waktu', 'Lingkungan kerja nyaman', 'Instruksi jelas', 'Ramah dan sopan', 'Pekerjaan sesuai deskripsi', 'Akan bekerja lagi']
 
-function WorkConfirmationFlow({ application, onClose, onEvent }) {
+function WorkConfirmationFlow({ application, profile, onClose, onEvent }) {
   const [step, setStep] = useState('confirm')
   if (!application) return null
   if (step === 'rating') return <WorkRatingForm application={application} onClose={onClose} onEvent={onEvent} />
 
   if (step === 'success') {
     return (
-      <ModalShell title="Konfirmasi berhasil!" eyebrow="Pekerjaan selesai" description="Konfirmasi tercatat. Sertifikat kerja dan PullPoints sedang diproses." onClose={onClose} wide>
-        <div className="text-center">
-          <Image src="/Profile(Selesai).png" alt="Konfirmasi pekerjaan berhasil" width={360} height={240} className="mx-auto h-40 w-auto max-w-full object-contain" priority />
+      <ModalShell title="Konfirmasi Berhasil" onClose={onClose} wide bare panelClassName="sm:max-w-[800px]">
+        <div className="relative min-h-0 overflow-y-auto px-5 pb-6 pt-7 sm:px-12 sm:pb-8 sm:pt-9">
+          <button type="button" onClick={onClose} className="absolute right-4 top-4 grid size-9 place-items-center rounded-lg text-[#14211c] transition hover:bg-pull-50 sm:right-6 sm:top-6" aria-label="Tutup dialog"><X size={25} /></button>
+
+          <div className="mx-auto flex max-w-xl flex-col items-center text-center">
+            <SuccessMark />
+            <h2 id="modal-title" className="mt-5 text-2xl font-extrabold text-[#07130e] sm:text-[30px]">Konfirmasi Berhasil!</h2>
+            <p className="mt-3 max-w-lg text-[11px] font-medium leading-6 text-[#53635c] sm:text-sm">Terima kasih telah mengkonfirmasi. Sertifikat kerja Anda<br className="hidden sm:block" /> sedang diterbitkan.</p>
+
+            <div className="mt-6 w-full max-w-md rounded-xl bg-[linear-gradient(110deg,#edf8f0,#e3f3e8)] px-6 py-4 text-left">
+              {['Konfirmasi tercatat', 'Sertifikat sedang diterbitkan', '+1 PullPoints ditambahkan', 'Trust Score diperbarui'].map((item) => <div key={item} className="flex items-center gap-3 py-1.5 text-[11px] font-semibold text-[#1b2a24] sm:text-xs"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#0b8d43] text-white"><Check size={12} strokeWidth={3} /></span>{item}</div>)}
+            </div>
+          </div>
+
+          <div className="mx-auto mt-7 flex max-w-2xl items-center gap-4 rounded-xl bg-[linear-gradient(110deg,#edf8f0,#e3f3e8)] p-4 sm:px-7 sm:py-5"><span className="grid size-14 shrink-0 place-items-center rounded-full bg-[#fff3c8] text-[#f4b400] sm:size-16"><Star size={31} fill="currentColor" /></span><div className="min-w-0"><p className="text-sm font-extrabold text-[#101d17] sm:text-base">Beri Rating untuk {application.company}</p><p className="mt-1.5 text-[10px] font-medium leading-5 text-[#4e6058] sm:text-xs">Rating Anda membantu pekerja lain menilai UMKM ini.</p></div></div>
+
+          <div className="mx-auto mt-7 max-w-2xl">
+            <button type="button" onClick={() => setStep('rating')} className="flex h-12 w-full items-center justify-center rounded-lg bg-[#07843f] px-5 text-sm font-extrabold text-white transition hover:bg-[#066f36]">Beri Rating Sekarang</button>
+            <button type="button" onClick={onClose} className="mt-3 h-9 w-full text-xs font-extrabold text-[#77837e] transition hover:text-pull-800">Nanti Saja</button>
+          </div>
         </div>
-        <div className="mx-auto mt-6 max-w-md rounded-[18px] bg-[#edf8f1] p-4">
-          {['Konfirmasi tercatat', 'Sertifikat sedang diterbitkan', '+1 PullPoints ditambahkan', 'Trust Score diperbarui'].map((item) => <div key={item} className="flex items-center gap-3 py-1.5 text-[10px] font-extrabold text-pull-700"><span className="grid size-5 place-items-center rounded-full bg-[#0e9855] text-white"><Check size={12} strokeWidth={3} /></span>{item}</div>)}
-        </div>
-        <div className="mt-6 flex items-center gap-4 rounded-[18px] bg-[linear-gradient(100deg,#eef8f1,#e4f4e9)] p-4"><span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#fff6d9] text-[#e4a008]"><Star size={25} fill="currentColor" /></span><div><p className="text-sm font-extrabold text-pull-950">Beri rating untuk {application.company}</p><p className="mt-1 text-[10px] leading-5 text-pull-500">Ratingmu membantu pekerja lain menilai UMKM ini.</p></div></div>
-        <button onClick={() => setStep('rating')} className="primary-button mt-6 h-11 w-full">Beri rating sekarang</button>
-        <button onClick={onClose} className="mt-3 w-full text-[10px] font-extrabold text-pull-400 hover:text-pull-700">Nanti saja</button>
       </ModalShell>
     )
   }
 
   return (
-    <ModalShell title="Konfirmasi Selesai Kerja" eyebrow="Confirmation Loop" description="Pastikan pekerjaan sudah benar-benar selesai sebelum konfirmasi." onClose={onClose} wide>
-      <section>
-        <p className="form-label">Ringkasan pekerjaan</p>
-        <div className="mt-2 grid gap-2 rounded-[18px] bg-pull-50/70 p-4 text-[10px] sm:grid-cols-2">
-          <SummaryValue label="Pekerjaan" value={application.role} />
-          <SummaryValue label="UMKM" value={application.company} />
-          <SummaryValue label="Tanggal" value={application.time} />
-          <SummaryValue label="Durasi" value={application.duration || '1 hari'} />
-          <SummaryValue label="Upah" value={application.pay || 'Sesuai kesepakatan'} />
-        </div>
-      </section>
+    <ModalShell title="Konfirmasi Selesai Kerja" onClose={onClose} wide bare panelClassName="sm:max-w-[800px]">
+      <div className="relative min-h-0 overflow-y-auto px-5 pb-6 pt-7 sm:px-10 sm:pb-8 sm:pt-10">
+        <button type="button" onClick={onClose} className="absolute right-4 top-4 grid size-9 place-items-center rounded-lg text-[#14211c] transition hover:bg-pull-50 sm:right-6 sm:top-6" aria-label="Tutup dialog"><X size={25} /></button>
 
-      <section className="mt-5">
-        <p className="form-label">Status konfirmasi</p>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
-          <ConfirmationParty icon={Store} label={application.company} status="Sudah konfirmasi" done={application.employerConfirmed} />
-          <ConfirmationParty icon={UserRound} label="Kamu" status={application.workerConfirmed ? 'Sudah konfirmasi' : 'Belum konfirmasi'} done={application.workerConfirmed} />
-        </div>
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-[9px] font-semibold text-pull-400"><CircleAlert size={13} /> Kedua pihak harus konfirmasi agar rating dan sertifikat terbuka.</p>
-      </section>
+        <header className="grid gap-4 pr-8 text-center sm:grid-cols-[76px_1fr] sm:items-center sm:text-left">
+          <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#fff0df] text-[#df6d00] sm:size-[70px]"><CircleAlert size={36} strokeWidth={2.2} /></span>
+          <div>
+            <h2 id="modal-title" className="text-2xl font-extrabold text-[#07130e] sm:text-[28px]">Konfirmasi Selesai Kerja</h2>
+            <p className="mt-2 text-[11px] font-medium leading-5 text-[#52625b] sm:text-xs">Pastikan pekerjaan sudah benar-benar selesai sebelum konfirmasi.</p>
+          </div>
+        </header>
 
-      <section className="mt-5 rounded-[18px] bg-[linear-gradient(100deg,#eef8f1,#e5f5ea)] p-4">
-        <p className="text-[10px] font-extrabold text-pull-700">Yang kamu dapatkan setelah konfirmasi</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3"><Benefit icon={Award} label="Sertifikat kerja digital" /><Benefit icon={ShieldCheck} label="Trust Score diperbarui" /><Benefit icon={Star} label="+1 PullPoints" /></div>
-      </section>
+        <section className="mt-8">
+          <h3 className="text-base font-extrabold text-[#101d17]">Ringkasan Pekerjaan</h3>
+          <dl className="mt-3 grid grid-cols-[105px_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl bg-[#f1f4f2] px-5 py-5 text-[11px] sm:grid-cols-[170px_minmax(0,1fr)] sm:px-6 sm:text-xs">
+            <SummaryValue label="Pekerjaan" value={application.role} />
+            <SummaryValue label="UMKM" value={application.company} />
+            <SummaryValue label="Tanggal" value={application.workPeriod || application.time} />
+            <SummaryValue label="Durasi" value={application.duration || '1 hari'} />
+            <SummaryValue label="Upah Total" value={application.totalPay || application.pay || 'Sesuai kesepakatan'} />
+          </dl>
+        </section>
 
-      <div className="modal-footer"><button onClick={onClose} className="secondary-button justify-center">Batal</button><button onClick={() => { onEvent('confirm-work', { id: application.id }); setStep('success') }} className="primary-button">Ya, pekerjaan sudah selesai <Check size={15} /></button></div>
+        <section className="mt-6">
+          <h3 className="text-base font-extrabold text-[#101d17]">Status Konfirmasi</h3>
+          <div className="relative mt-3 grid gap-3 sm:grid-cols-2 sm:gap-12">
+            <span className="absolute left-1/2 top-1/2 hidden h-px w-12 -translate-x-1/2 bg-[#cbd8d1] sm:block"><span className="absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#08783f]" /></span>
+            <ConfirmationParty icon={Store} label={application.company} status="Sudah konfirmasi" done={application.employerConfirmed} />
+            <ConfirmationParty icon={UserRound} label={`Anda (${profile?.name || 'Pekerja Pull'})`} status={application.workerConfirmed ? 'Sudah konfirmasi' : 'Belum konfirmasi'} done={application.workerConfirmed} />
+          </div>
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[9px] font-medium text-[#66766f]"><CircleAlert size={13} /> Kedua pihak harus konfirmasi agar sertifikat terbit</p>
+        </section>
+
+        <section className="mt-7 rounded-xl bg-[linear-gradient(110deg,#edf8f0,#e3f3e8)] px-5 py-4">
+          <p className="text-[11px] font-extrabold text-[#08783f]">Yang akan Anda dapatkan setelah konfirmasi:</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-[#d4e7da]"><Benefit icon={Award} label="Sertifikat Kerja Digital auto-terbit" /><Benefit icon={ShieldCheck} label="Trust Score Anda diperbarui" /><Benefit icon={Star} label="+1 PullPoints" /></div>
+        </section>
+
+        <div className="mt-7 grid gap-3 sm:grid-cols-[0.75fr_1.25fr]"><button type="button" onClick={onClose} className="h-11 rounded-lg border border-[#596760] bg-white text-xs font-extrabold text-[#17231e] transition hover:bg-pull-50">Batal</button><button type="button" onClick={() => { onEvent('confirm-work', { id: application.id }); setStep('success') }} className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#07843f] px-4 text-xs font-extrabold text-white transition hover:bg-[#066f36]"><CheckCircle2 size={17} /> Ya, Pekerjaan Sudah Selesai</button></div>
+      </div>
     </ModalShell>
   )
 }
 
-function WorkRatingForm({ application, onClose, onEvent }) {
-  const [rating, setRating] = useState(application.rating || 0)
-  const [selectedTags, setSelectedTags] = useState(application.ratingTags || [])
-  const [review, setReview] = useState(application.review || '')
-  const ratingLabel = ['', 'Kurang', 'Cukup', 'Baik', 'Sangat baik', 'Sangat baik'][rating]
+function WorkRatingForm({ application, onEvent }) {
+  const [rating, setRating] = useState(application.ratingDraft || application.rating || 0)
+  const [selectedTags, setSelectedTags] = useState(application.ratingTagsDraft || application.ratingTags || [])
+  const [review, setReview] = useState(application.reviewDraft || application.review || '')
+  const ratingLabel = ['', 'Sangat Kurang', 'Kurang', 'Cukup', 'Baik', 'Sangat Baik'][rating]
 
   const toggleTag = (tag) => setSelectedTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag])
+  const saveAndClose = () => onEvent('save-rating-draft', { id: application.id, rating, review, tags: selectedTags })
 
   return (
-    <ModalShell title="Beri Rating" eyebrow="Pengalaman kerja" description="Bagaimana pengalaman kerja kamu bersama UMKM ini?" onClose={onClose} wide>
-      <div className="flex items-center gap-3 rounded-[18px] border border-pull-100 p-4"><div className="grid size-12 shrink-0 place-items-center rounded-full bg-pull-100 text-xs font-black text-pull-700">{application.company.split(' ').slice(0, 2).map((word) => word[0]).join('')}</div><div><p className="text-sm font-extrabold text-pull-950">{application.company}</p><p className="mt-1 text-[10px] font-bold text-pull-500">{application.role}</p><p className="mt-1 flex items-center gap-1 text-[9px] text-pull-400"><CalendarDays size={12} /> {application.time}</p></div></div>
+    <ModalShell title="Beri Rating" onClose={saveAndClose} wide bare panelClassName="sm:max-w-[620px]">
+      <div className="relative min-h-0 overflow-y-auto px-5 pb-6 pt-7 sm:px-7 sm:pb-8 sm:pt-8">
+        <button type="button" onClick={saveAndClose} className="absolute right-4 top-4 grid size-9 place-items-center rounded-lg text-[#14211c] transition hover:bg-pull-50 sm:right-6 sm:top-6" aria-label="Tutup dialog"><X size={25} /></button>
 
-      <section className="mt-5">
-        <p className="form-label">Rating keseluruhan</p>
-        <div className="mt-3 flex justify-center gap-2" aria-label="Pilih rating">
-          {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" onClick={() => setRating(value)} className={`p-1 transition hover:scale-110 ${value <= rating ? 'text-[#f4ad12]' : 'text-pull-200'}`} aria-label={`${value} bintang`}><Star size={38} fill={value <= rating ? 'currentColor' : 'none'} /></button>)}
-        </div>
-        <p className={`mt-2 text-center text-[10px] font-extrabold ${rating ? 'text-[#08783f]' : 'text-pull-400'}`}>{rating ? ratingLabel : 'Pilih bintang untuk memberikan rating'}</p>
-      </section>
+        <header className="pr-10">
+          <h2 id="modal-title" className="text-2xl font-extrabold text-[#07130e]">Beri Rating</h2>
+          <p className="mt-2 text-[11px] font-medium text-[#52625b] sm:text-xs">Bagaimana pengalaman kerja Anda bersama UMKM ini?</p>
+        </header>
 
-      <section className="mt-5"><p className="form-label">Apa yang paling berkesan? <span className="normal-case tracking-normal text-pull-300">(opsional)</span></p><div className="mt-2 flex flex-wrap gap-2">{ratingTags.map((tag) => { const selected = selectedTags.includes(tag); return <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`rounded-xl border px-3 py-2 text-[9px] font-bold transition ${selected ? 'border-[#4fa673] bg-[#edf8f1] text-[#08783f]' : 'border-pull-100 text-pull-500 hover:border-pull-200'}`}>{tag}{selected ? ' ✓' : ''}</button> })}</div></section>
+        <section className="mt-6 flex items-center gap-4 rounded-xl border border-[#dfe6e2] bg-white p-4">
+          <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-pull-100 text-xs font-black text-pull-700">{application.logoImage ? <Image src={application.logoImage} alt={`Logo ${application.company}`} fill sizes="64px" className="object-cover" /> : application.company.split(' ').slice(0, 2).map((word) => word[0]).join('')}</div>
+          <div className="min-w-0"><div className="flex items-center gap-2"><p className="truncate text-sm font-extrabold text-[#101d17]">{application.company}</p><VerifiedUmkmIcon className="size-4 shrink-0" /></div><p className="mt-1.5 text-[10px] font-semibold text-[#65746e]">{application.role}</p><p className="mt-2 flex flex-wrap items-center gap-2 text-[9px] font-semibold text-[#53645c]"><CalendarDays size={13} /><span>{application.workPeriod || application.time}</span><span aria-hidden="true">•</span><span>{application.duration || '1 hari'}</span></p></div>
+        </section>
 
-      <label className="mt-5 block"><span className="form-label">Ulasan <span className="normal-case tracking-normal text-pull-300">(opsional)</span></span><textarea maxLength={200} className="form-textarea min-h-28" value={review} onChange={(event) => setReview(event.target.value)} placeholder="Ceritakan pengalaman kerja kamu..." /><span className="mt-1 block text-right text-[8px] font-bold text-pull-300">{review.length}/200</span></label>
-      <div className="info-note mt-4"><CircleAlert size={15} /><p>Rating ditampilkan publik di profil UMKM setelah dikirim.</p></div>
-      <div className="modal-footer"><button onClick={onClose} className="secondary-button">Lewati</button><button disabled={!rating} onClick={() => onEvent('submit-rating', { id: application.id, rating, review, tags: selectedTags })} className="primary-button">Kirim rating</button></div>
+        <section className="mt-6">
+          <h3 className="text-xs font-extrabold text-[#17231e]">Rating Keseluruhan</h3>
+          <div className="mt-4 flex items-center justify-center gap-1.5 sm:gap-3" aria-label="Pilih rating">
+            {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" onClick={() => setRating(value)} className={`grid size-11 place-items-center transition hover:scale-110 sm:size-12 ${value <= rating ? 'text-[#ffb400]' : 'text-[#bcc3c8]'}`} aria-label={`${value} bintang`} aria-pressed={value <= rating}><Star size={40} strokeWidth={1.7} fill={value <= rating ? 'currentColor' : 'none'} /></button>)}
+          </div>
+          <p className={`mt-2 text-center text-[10px] font-extrabold ${rating ? 'text-[#08783f]' : 'text-[#66766f]'}`}>{rating ? ratingLabel : 'Pilih bintang untuk memberikan rating'}</p>
+        </section>
+
+        <section className="mt-6">
+          <h3 className="text-xs font-extrabold text-[#17231e]">Apa yang paling berkesan? <span className="font-medium text-[#6d7a75]">(opsional)</span></h3>
+          <div className="mt-3 grid grid-cols-2 items-stretch gap-2 sm:grid-cols-[1.15fr_1.15fr_0.9fr]">{ratingTags.map((tag) => { const selected = selectedTags.includes(tag); return <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`rating-tag-button flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-center font-bold leading-4 transition ${selected ? 'border-[#3f9b65] bg-[#eff9f2] text-[#08783f]' : 'border-[#d9e1dd] bg-white text-[#53635c] hover:border-pull-300'}`} aria-pressed={selected}><span className="break-words">{tag}</span>{selected ? <Check size={10} className="shrink-0" strokeWidth={3} /> : null}</button> })}</div>
+        </section>
+
+        <label className="mt-6 block"><span className="text-xs font-extrabold text-[#17231e]">Ulasan <span className="font-medium text-[#6d7a75]">(opsional)</span></span><span className="relative mt-3 block"><textarea maxLength={200} className="min-h-32 w-full resize-none rounded-xl border border-[#d9e1dd] bg-white px-4 pb-8 pt-3 text-[10px] font-medium leading-5 text-[#25342d] outline-none transition placeholder:text-[#8b9892] focus:border-pull-300 focus:ring-4 focus:ring-pull-100/50" value={review} onChange={(event) => setReview(event.target.value)} placeholder="Ceritakan pengalaman kerja Anda..." /><span className="pointer-events-none absolute bottom-3 right-3 text-[8px] font-bold text-[#89958f]">{review.length} / 200</span></span></label>
+
+        <p className="mt-4 flex items-center gap-2 text-[9px] font-medium text-[#687770]"><CircleAlert size={14} className="shrink-0" /> Rating Anda ditampilkan publik di profil UMKM.</p>
+
+        <div className="mt-7 grid grid-cols-[0.7fr_1.3fr] items-center gap-3"><button type="button" onClick={saveAndClose} className="h-11 rounded-lg text-xs font-extrabold text-[#596860] transition hover:bg-pull-50">Lewati</button><button type="button" disabled={!rating} onClick={() => onEvent('submit-rating', { id: application.id, company: application.company, rating, review, tags: selectedTags })} className="h-11 rounded-lg bg-[#07843f] px-4 text-xs font-extrabold text-white transition hover:bg-[#066f36] disabled:cursor-not-allowed disabled:bg-[#e1e4e6] disabled:text-[#9ba3a8]">Kirim Rating</button></div>
+      </div>
     </ModalShell>
   )
+}
+
+function SuccessMark() {
+  return <Image src="/Profile(Selesai).png" alt="Profil berhasil disiapkan" width={260} height={190} className="h-36 w-auto max-w-full object-contain sm:h-44" priority />
 }
 
 function SummaryValue({ label, value }) {
-  return <div className="grid grid-cols-[76px_1fr] gap-2"><span className="font-bold text-pull-400">{label}</span><strong className="text-pull-800">: {value}</strong></div>
+  return <><dt className="font-medium text-[#52625b]">{label}</dt><dd className="min-w-0 break-words font-bold text-[#17231e]">: {value}</dd></>
 }
 
 function ConfirmationParty({ icon: Icon, label, status, done }) {
-  return <div className="flex items-center gap-3 rounded-[16px] border border-pull-100 p-3"><span className={`grid size-10 shrink-0 place-items-center rounded-full ${done ? 'bg-[#e8f5ec] text-[#08783f]' : 'bg-[#fff0df] text-[#d96800]'}`}><Icon size={18} /></span><div className="min-w-0"><p className="truncate text-[10px] font-extrabold text-pull-800">{label}</p><p className={`mt-1 text-[9px] font-bold ${done ? 'text-[#08783f]' : 'text-[#d96800]'}`}>{status}{done ? ' ✓' : ''}</p></div></div>
+  return <div className="relative z-10 flex min-w-0 items-center gap-3 rounded-xl border border-[#d8e1dc] bg-white p-3.5"><span className={`grid size-11 shrink-0 place-items-center rounded-full ${done ? 'bg-[#e8f5ec] text-[#08783f]' : 'bg-[#fff0df] text-[#d96800]'}`}><Icon size={21} /></span><div className="min-w-0"><p className="truncate text-[11px] font-extrabold text-[#1a2822]">{label}</p><span className={`mt-1.5 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-extrabold ${done ? 'bg-[#dbf6df] text-[#0a913f]' : 'bg-[#fff0df] text-[#dc6d00]'}`}>{status}{done ? <Check size={11} strokeWidth={3} /> : null}</span></div></div>
 }
 
 function Benefit({ icon: Icon, label }) {
-  return <div className="flex items-center gap-2"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#08783f]"><Icon size={16} /></span><span className="text-[9px] font-extrabold leading-4 text-pull-700">{label}</span></div>
+  return <div className="flex min-w-0 items-center gap-3 sm:px-3 sm:first:pl-0 sm:last:pr-0"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#08783f]"><Icon size={19} /></span><span className="text-[9px] font-semibold leading-4 text-[#365247]">{label}</span></div>
 }
 
 function ApplicationDetail({ application, stage, onClose, onEvent }) {
@@ -487,7 +584,7 @@ function FiltersForm({ filters, onClose, onEvent }) {
         <label><span className="form-label">Kategori</span><select className="form-input" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Semua kategori</option><option>F&B</option><option>Administrasi</option><option>Produksi</option><option>Retail</option><option>Logistik</option></select></label>
         <label><span className="form-label">Jarak maksimum</span><select className="form-input" value={form.distance} onChange={(event) => setForm({ ...form, distance: event.target.value })}><option>Semua jarak</option><option>5 km</option><option>10 km</option><option>20 km</option></select></label>
         <label><span className="form-label">Tipe kerja</span><select className="form-input" value={form.workType} onChange={(event) => setForm({ ...form, workType: event.target.value })}><option>Semua tipe</option><option>Harian lepas</option><option>Paruh waktu</option><option>Kontrak</option><option>Proyek</option></select></label>
-        <label><span className="form-label">Minimal kecocokan</span><select className="form-input" value={form.minMatch} onChange={(event) => setForm({ ...form, minMatch: Number(event.target.value) })}><option value={0}>Semua</option><option value={70}>70%</option><option value={80}>80%</option><option value={90}>90%</option></select></label>
+        <label><span className="form-label">Minimal skor</span><select className="form-input" value={form.minMatch} onChange={(event) => setForm({ ...form, minMatch: Number(event.target.value) })}><option value={0}>Semua</option><option value={70}>70%</option><option value={80}>80%</option><option value={90}>90%</option></select></label>
       </div>
       <label className="mt-4 flex items-center justify-between rounded-xl border border-pull-100 p-3"><span><span className="block text-[11px] font-extrabold text-pull-800">Hanya rekrut cepat</span><span className="mt-0.5 block text-[9px] text-pull-400">Employer butuh pekerja segera</span></span><input type="checkbox" className="size-4 accent-pull-800" checked={form.urgentOnly} onChange={(event) => setForm({ ...form, urgentOnly: event.target.checked })} /></label>
       <div className="modal-footer"><button onClick={() => setForm({ category: 'Semua kategori', distance: 'Semua jarak', workType: 'Semua tipe', minMatch: 0, urgentOnly: false })} className="secondary-button">Atur ulang</button><button onClick={() => onEvent('save-filters', form)} className="primary-button">Terapkan filter <Check size={14} /></button></div>
@@ -554,14 +651,59 @@ function SettingToggle({ label, detail, checked, onChange }) {
 
 
 function TrustGuide({ onClose }) {
-  return <ModalShell title="Cara kerja Trust Score" eyebrow="Reputasi terverifikasi" description="Skor tidak dibuat dari kelengkapan profil atau badge KYC. Keduanya ditampilkan terpisah." onClose={onClose}>
-    <div className="rounded-[18px] bg-pull-950 p-5 text-white"><div className="flex items-end gap-2"><strong className="font-display text-5xl font-semibold">4,8</strong><span className="mb-1 text-xs font-bold text-white/45">/ 5 · 12 ulasan</span></div><p className="mt-2 text-[10px] leading-relaxed text-white/60">Rata-rata tertimbang dari pekerjaan yang benar-benar terkonfirmasi.</p></div>
-    <div className="mt-5 space-y-3"><GuideRow icon={CheckCircle2} title="Pekerjaan harus selesai" detail="Pekerja dan UMKM wajib mengonfirmasi selesai di Pull." /><GuideRow icon={Star} title="Rating baru terbuka" detail="Tidak ada rating untuk lamaran, interview, atau pekerjaan yang belum terjadi." /><GuideRow icon={ShieldCheck} title="Riwayat tidak dipalsukan" detail="Akun baru memakai badge verifikasi untuk kredibilitas awal, bukan skor buatan." /></div>
+  const steps = [
+    { number: 1, image: '/illustrations/trust-score/step-1-complete-work.png', title: 'Selesaikan Pekerjaan', detail: 'Kerjakan tugas dari UMKM sampai tuntas.' },
+    { number: 2, image: '/illustrations/trust-score/step-2-mutual-confirmation.png', title: 'Konfirmasi Kedua Pihak', detail: "Kamu dan UMKM sama-sama menekan tombol 'Selesai' di Pull." },
+    { number: 3, image: '/illustrations/trust-score/step-3-score-updated.png', title: 'Skor Diperbarui', detail: 'Sistem otomatis menghitung ulang Trust Score dari rata-rata ulasan terbaru.' },
+  ]
+  const tips = [
+    { icon: CalendarDays, label: 'Selesaikan pekerjaan tepat waktu' },
+    { icon: CheckCircle2, label: 'Selalu kembali ke Pull untuk konfirmasi selesai' },
+    { icon: MessageCircle, label: 'Jaga komunikasi baik dengan pemberi kerja' },
+    { icon: ShieldCheck, label: 'Lengkapi verifikasi Level 2 untuk kredibilitas tambahan' },
+  ]
+
+  return <ModalShell title="Apa itu Trust Score?" onClose={onClose} wide bare panelClassName="sm:max-w-[808px]">
+    <div className="relative min-h-0 overflow-y-auto px-5 pb-5 pt-6 sm:px-9 sm:pb-8 sm:pt-8">
+      <button type="button" onClick={onClose} className="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full border border-[#d9e2dd] bg-white text-[#14211c] transition hover:bg-[#f4f8f5] sm:right-6 sm:top-6" aria-label="Tutup dialog"><X size={22} /></button>
+
+      <header className="grid grid-cols-[58px_minmax(0,1fr)] items-center gap-x-3 pr-11 sm:grid-cols-[76px_minmax(0,1fr)] sm:items-start sm:gap-x-5 sm:pr-12">
+        <span className="relative grid size-14 place-items-center sm:size-16">
+          <ShieldCheck size={52} fill="#07843f" className="text-[#07843f] sm:size-[60px]" strokeWidth={1.8} />
+          <Check size={25} className="absolute text-white sm:size-7" strokeWidth={3.5} />
+          <Sparkles size={12} className="absolute -left-1 top-1 text-[#a6d9ad]" fill="currentColor" />
+          <Sparkles size={10} className="absolute right-0 top-0 text-[#a6d9ad]" fill="currentColor" />
+        </span>
+        <h2 id="modal-title" className="text-[22px] font-extrabold leading-tight text-[#07130e] sm:pt-1 sm:text-[30px]">Apa itu Trust Score?</h2>
+        <p className="col-span-2 mt-4 text-center text-[11px] font-medium leading-[1.65] text-[#26362f] sm:col-span-1 sm:col-start-2 sm:mt-3 sm:max-w-[590px] sm:text-left sm:text-[12px]">Trust Score adalah skor kepercayaan yang terbentuk dari rating dan ulasan nyata setiap kali kamu menyelesaikan pekerjaan lewat Pull.<br /><strong className="font-extrabold text-[#101d17]">Semakin banyak transaksi terkonfirmasi dengan rating baik, semakin tinggi skormu.</strong></p>
+      </header>
+
+      <section className="mt-5 border-t border-[#dfe7e2] pt-5 sm:mt-6 sm:pt-5">
+        <h3 className="text-[15px] font-extrabold text-[#101d17] sm:text-lg">3 Langkah Cara Kerja</h3>
+        <div className="mt-3 grid items-stretch gap-1.5 md:mt-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:gap-2">
+          {steps.map((step, index) => <div key={step.number} className="contents"><TrustGuideStep {...step} />{index < steps.length - 1 ? <span className="grid h-5 place-items-center text-[#07843f] md:h-auto"><ArrowRight size={21} className="rotate-90 md:rotate-0" /></span> : null}</div>)}
+        </div>
+      </section>
+
+      <section className="mt-5 sm:mt-6">
+        <h3 className="text-[15px] font-extrabold text-[#101d17] sm:text-lg">Tips Meningkatkan Trust Score</h3>
+        <div className="mt-3 hidden min-h-[140px] rounded-xl border border-[#d9e4dd] bg-[#f7fbf8] px-4 py-4 md:grid md:grid-cols-4 md:divide-x md:divide-[#d9e4dd]">{tips.map((tip) => <TrustTip key={tip.label} {...tip} />)}</div>
+        <div className="mt-3 space-y-2 rounded-lg border border-[#d9e4dd] bg-[#f7fbf8] p-3 md:hidden">{tips.map((tip) => <div key={tip.label} className="flex items-start gap-2 text-[10px] font-semibold leading-4 text-[#283a32]"><span className="mt-px grid size-[18px] shrink-0 place-items-center rounded-full bg-[#07843f] text-white"><Check size={11} strokeWidth={3} /></span>{tip.label}</div>)}</div>
+      </section>
+
+      <section className="mt-5 flex items-center gap-4 rounded-xl border border-[#dce3df] bg-[#f7f8f8] p-4 sm:px-5"><span className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-dashed border-[#9aa8a1] text-[#17231e]"><LockKeyhole size={22} /></span><div><h3 className="text-xs font-extrabold text-[#17231e]">Catatan Transparansi</h3><p className="mt-1 text-[10px] font-medium leading-5 text-[#43564d]">Trust Score dihitung otomatis oleh sistem dan tidak bisa dibeli atau dimanipulasi secara sepihak.</p></div></section>
+
+      <button type="button" onClick={onClose} className="mt-5 h-12 w-full rounded-lg bg-[#07843f] text-sm font-extrabold text-white transition hover:bg-[#066f36] sm:mt-6">Mengerti</button>
+    </div>
   </ModalShell>
 }
 
-function GuideRow({ icon: Icon, title, detail }) {
-  return <div className="flex gap-3 rounded-xl border border-pull-100 p-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-pull-50 text-pull-700"><Icon size={16} /></span><div><p className="text-[11px] font-extrabold text-pull-800">{title}</p><p className="mt-1 text-[9px] leading-relaxed text-pull-400">{detail}</p></div></div>
+function TrustGuideStep({ number, image, title, detail }) {
+  return <article className="relative grid min-h-[88px] min-w-0 grid-cols-[92px_minmax(0,1fr)] items-center gap-2 rounded-lg border border-[#d9e4dd] bg-[#fbfdfb] px-3 py-2.5 md:block md:min-h-[240px] md:rounded-xl md:p-4 md:text-center"><span className="absolute left-2 top-2 z-10 grid size-7 place-items-center rounded-full bg-[#076c35] text-xs font-extrabold text-white">{number}</span><div className="relative h-16 overflow-hidden md:h-28"><Image src={image} alt="" fill sizes="(min-width: 768px) 210px, 92px" className="object-contain" /></div><div><h4 className="text-xs font-extrabold text-[#101d17]">{title}</h4><p className="mt-1 text-[10px] font-medium leading-[1.55] text-[#263a31] md:mt-1.5">{detail}</p></div></article>
+}
+
+function TrustTip({ icon: Icon, label }) {
+  return <div className="flex min-w-0 flex-col items-center px-3 text-center"><span className="grid size-12 place-items-center rounded-full bg-[#e4f4e8] text-[#07843f]"><Icon size={22} /></span><p className="mt-3 text-[10px] font-semibold leading-4 text-[#263a31]">{label}</p></div>
 }
 
 
@@ -594,7 +736,8 @@ function HelpPanel({ onClose, onEvent }) {
       ['Apakah KTP wajib?', 'Tidak untuk pekerja. KTP opsional dan hanya memberi badge serta boost visibilitas.'],
       ['Kapan rating bisa diberikan?', 'Setelah pekerja dan employer sama-sama menekan Konfirmasi Selesai Kerja.'],
     ].map(([question, answer]) => <details key={question} className="rounded-xl border border-pull-100 p-3"><summary className="cursor-pointer text-[11px] font-extrabold text-pull-800">{question}</summary><p className="mt-2 text-[9px] leading-relaxed text-pull-400">{answer}</p></details>)}</div>
-    <button onClick={() => onEvent('contact-support')} className="secondary-button mt-4 w-full justify-center"><HelpCircle size={14} /> Hubungi tim Pull</button>
+    <button onClick={() => onEvent('contact-support')} className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-[14px] bg-[#07843f] px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(7,132,63,.18)] transition hover:bg-[#066f36]"><FaWhatsapp size={27} /> Hubungi CS via WhatsApp</button>
+    <p className="mt-4 flex items-center justify-center gap-2 text-[11px] font-medium text-[#7b8490]"><Clock3 size={18} /> Respon biasanya dalam 1×24 jam</p>
   </ModalShell>
 }
 
@@ -602,7 +745,7 @@ function StatusPanel({ icon: Icon, title, detail, success = false }) {
   return <div className={`mt-4 rounded-[18px] border p-4 ${success ? 'border-pull-100 bg-pull-50' : 'border-[#e8dfcc] bg-[#fffaf0]'}`}><Icon size={24} className={success ? 'text-pull-700' : 'text-[#99723a]'} /><p className="mt-3 text-sm font-extrabold text-pull-900">{title}</p><p className="mt-1 text-[10px] leading-relaxed text-pull-500">{detail}</p></div>
 }
 
-export default function FeatureModal({ dialog, onClose, onEvent, profile, applications, skills, certificates, portfolio, experiences, filters }) {
+export default function FeatureModal({ dialog, onClose, onEvent, profile, applications, appliedJobIds, skills, certificates, portfolio, experiences, filters }) {
   const application = useMemo(() => dialog?.appId ? applications[dialog.stage]?.find((item) => item.id === dialog.appId) : null, [dialog, applications])
   if (!dialog) return null
 
@@ -620,13 +763,13 @@ export default function FeatureModal({ dialog, onClose, onEvent, profile, applic
     case 'experience':
       return <ExperienceForm onClose={onClose} onEvent={onEvent} />
     case 'job-detail':
-      return <JobQuickDetail job={dialog.job} onClose={onClose} onEvent={onEvent} />
+      return <JobQuickDetail job={dialog.job} applied={appliedJobIds.includes(dialog.job.id)} profile={profile} onClose={onClose} onEvent={onEvent} />
     case 'job-apply':
       return <JobApplyForm job={dialog.job} onClose={onClose} onEvent={onEvent} />
     case 'work-confirmation':
-      return <WorkConfirmationFlow application={application} onClose={onClose} onEvent={onEvent} />
+      return <WorkConfirmationFlow application={dialog.application || application} profile={profile} onClose={onClose} onEvent={onEvent} />
     case 'work-rating':
-      return <WorkRatingForm application={application} onClose={onClose} onEvent={onEvent} />
+      return <WorkRatingForm application={dialog.application || application} onClose={onClose} onEvent={onEvent} />
     case 'application':
       return <ApplicationDetail application={application} stage={dialog.stage} onClose={onClose} onEvent={onEvent} />
     case 'messages':

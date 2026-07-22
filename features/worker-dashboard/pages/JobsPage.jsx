@@ -1,8 +1,9 @@
+import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-  Bookmark,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -12,14 +13,13 @@ import {
   MapPin,
   MoreHorizontal,
   Search,
-  ShieldCheck,
-  Sparkles,
+  Star,
   Users,
 } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa'
 import { jobs } from '../data/mockData'
 import { useWorkspace } from '../context/WorkspaceContext'
-import { EmptyState, PageHeader } from '../components/UI'
+import { EmptyState, VerifiedUmkmIcon } from '../components/UI'
 import JobsMap from '../components/JobsMap'
 
 const pageSize = 3
@@ -28,7 +28,7 @@ const districts = ['Semua kecamatan', ...new Set(jobs.filter((job) => !job.remot
 
 export default function JobsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { savedJobIds, appliedJobIds, toggleSavedJob, openDialog } = useWorkspace()
+  const { appliedJobIds, openDialog, handleModalEvent } = useWorkspace()
   const [category, setCategory] = useState('Semua kategori')
   const [district, setDistrict] = useState('Semua kecamatan')
   const [payType, setPayType] = useState('Semua upah')
@@ -61,7 +61,6 @@ export default function JobsPage() {
     })
 
     return filtered.sort((first, second) => {
-      if (sort === 'Kecocokan') return second.match - first.match
       if (sort === 'Terdekat') return parseDistance(first.distance) - parseDistance(second.distance)
       return first.id - second.id
     })
@@ -83,8 +82,6 @@ export default function JobsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Papan loker" title="Temukan pekerjaan di Solo Raya" description="Lowongan lokal terverifikasi dengan detail upah, jadwal, dan reputasi UMKM." actions={<span className="availability-pill"><Sparkles size={14} /> {filteredJobs.length} lowongan</span>} />
-
       <section className="card">
         <label className="flex h-14 items-center gap-3 rounded-[16px] border border-pull-100 bg-white px-4 transition focus-within:border-pull-300 focus-within:ring-4 focus-within:ring-pull-100/45">
           <Search size={21} className="text-pull-500" />
@@ -92,21 +89,21 @@ export default function JobsPage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari jenis pekerjaan, UMKM, atau lokasi..." className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-pull-900 outline-none placeholder:text-pull-400" />
         </label>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3">
           <FilterSelect label="Kategori" value={category} onChange={(value) => { setCategory(value); setCurrentPage(1) }} options={categories} />
           <FilterSelect label="Kecamatan" value={district} onChange={(value) => { setDistrict(value); setCurrentPage(1) }} options={districts} />
           <FilterSelect label="Upah" value={payType} onChange={(value) => { setPayType(value); setCurrentPage(1) }} options={['Semua upah', 'Upah harian', 'Upah bulanan']} />
           <FilterSelect label="Durasi" value={duration} onChange={(value) => { setDuration(value); setCurrentPage(1) }} options={['Semua durasi', 'Harian', 'Kontrak', 'Proyek']} />
-          <div className="grid grid-cols-2 overflow-hidden rounded-[15px] border border-pull-100 bg-white p-1">
-            <button type="button" onClick={() => setView('list')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-[10px] font-extrabold transition ${view === 'list' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-500 hover:bg-pull-50'}`}><List size={16} /> List</button>
-            <button type="button" onClick={() => setView('map')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-[10px] font-extrabold transition ${view === 'map' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-500 hover:bg-pull-50'}`}><MapIcon size={16} /> Map</button>
+          <div className="grid h-[52px] min-w-[190px] grid-cols-[1.18fr_0.82fr] items-center rounded-[15px] border border-pull-100 bg-white p-1 shadow-xs">
+            <button type="button" onClick={() => setView('list')} className={`flex h-full min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-[11px] font-extrabold transition-all ${view === 'list' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-600 hover:bg-pull-50 hover:text-pull-900'}`}><List size={14} className="shrink-0" /><span className="truncate">List View</span></button>
+            <button type="button" onClick={() => setView('map')} className={`flex h-full min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-[11px] font-extrabold transition-all ${view === 'map' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-600 hover:bg-pull-50 hover:text-pull-900'}`}><MapIcon size={14} className="shrink-0" /><span className="truncate">Map</span></button>
           </div>
         </div>
       </section>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[11px] font-bold text-pull-500">Menampilkan <strong className="text-pull-900">{filteredJobs.length}</strong> lowongan di Solo Raya</p>
-        <label className="flex items-center gap-2 text-[10px] font-bold text-pull-500">Urutkan:<select value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1) }} className="h-10 rounded-xl border border-pull-100 bg-white px-3 font-extrabold text-pull-700 outline-none"><option>Terbaru</option><option>Kecocokan</option><option>Terdekat</option></select></label>
+        <label className="flex items-center gap-2 text-[10px] font-bold text-pull-500">Urutkan:<select value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1) }} className="h-10 rounded-xl border border-pull-100 bg-white px-3 font-extrabold text-pull-700 outline-none cursor-pointer"><option>Terbaru</option><option>Terdekat</option></select></label>
       </div>
 
       {view === 'list' ? (
@@ -116,11 +113,9 @@ export default function JobsPage() {
               <JobBoardCard
                 key={job.id}
                 job={job}
-                saved={savedJobIds.includes(job.id)}
                 applied={appliedJobIds.includes(job.id)}
-                onToggleSaved={() => toggleSavedJob(job.id)}
                 onOpenDetail={() => openDialog('job-detail', { job })}
-                onApply={() => openDialog('job-apply', { job })}
+                onApply={() => handleModalEvent('contact-job', { job })}
               />
             )) : (
               <div className="md:col-span-2 xl:col-span-3"><EmptyState illustration="/illustrations/store-profile.webp" illustrationAlt="Ilustrasi profil UMKM lokal" title="Belum ada loker yang cocok" description="Ubah kata kunci atau longgarkan filter pencarian." action={<button onClick={resetFilters} className="secondary-button">Atur ulang pencarian</button>} /></div>
@@ -131,9 +126,9 @@ export default function JobsPage() {
       ) : (
         <section className="relative isolate z-0 mt-4 min-h-[620px] overflow-hidden rounded-[24px] border border-pull-100 bg-pull-50 shadow-[0_18px_50px_rgba(18,59,48,.08)]">
           <JobsMap jobs={mappableJobs} radius={mapRadius} focusRequest={focusRequest} onSelectJob={setSelectedMapJob} />
-          <label className="absolute right-4 top-4 z-[500] rounded-[16px] border border-pull-100 bg-white/95 p-3 shadow-lg backdrop-blur-md"><span className="block text-[9px] font-extrabold text-pull-500">Jarak maksimal</span><select value={mapRadius} onChange={(event) => setMapRadius(Number(event.target.value))} className="mt-1 h-9 bg-transparent text-sm font-extrabold text-pull-900 outline-none"><option value={3}>3 km</option><option value={5}>5 km</option><option value={10}>10 km</option></select></label>
-          <button type="button" onClick={() => setFocusRequest((value) => value + 1)} className="absolute bottom-40 right-4 z-[500] flex h-11 items-center gap-2 rounded-xl border border-pull-100 bg-white px-4 text-[10px] font-extrabold text-pull-700 shadow-lg"><LocateFixed size={16} /> Lokasi saya</button>
-          {activeMapJob ? <MapJobCard job={activeMapJob} onDetail={() => openDialog('job-detail', { job: activeMapJob })} onApply={() => openDialog('job-apply', { job: activeMapJob })} /> : null}
+          <label className="absolute right-4 top-4 z-[500] rounded-[16px] border border-pull-100 bg-white/95 p-3 shadow-lg backdrop-blur-md"><span className="block text-[9px] font-extrabold text-pull-500">Jarak maksimal</span><select value={mapRadius} onChange={(event) => setMapRadius(Number(event.target.value))} className="mt-1 h-9 bg-transparent text-sm font-extrabold text-pull-900 outline-none cursor-pointer"><option value={3}>3 km</option><option value={5}>5 km</option><option value={10}>10 km</option></select></label>
+          <button type="button" onClick={() => setFocusRequest((value) => value + 1)} className="absolute bottom-40 right-4 z-[500] flex h-11 items-center gap-2 rounded-xl border border-pull-100 bg-white px-4 text-[10px] font-extrabold text-pull-700 shadow-lg hover:bg-pull-50 transition-colors"><LocateFixed size={16} /> Lokasi saya</button>
+          {activeMapJob ? <MapJobCard job={activeMapJob} onDetail={() => openDialog('job-detail', { job: activeMapJob })} onApply={() => handleModalEvent('contact-job', { job: activeMapJob })} /> : null}
         </section>
       )}
     </>
@@ -142,25 +137,28 @@ export default function JobsPage() {
 
 function FilterSelect({ label, value, onChange, options }) {
   return (
-    <label className="rounded-[15px] border border-pull-100 bg-white px-3.5 py-2.5">
-      <span className="block text-[8px] font-extrabold text-pull-500">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-7 w-full bg-transparent text-[10px] font-extrabold text-pull-800 outline-none">
-        {options.map((option) => <option key={option}>{option}</option>)}
-      </select>
+    <label className="flex h-[52px] min-w-0 flex-col justify-center rounded-[15px] border border-pull-100 bg-white px-3.5 py-1.5 transition-colors hover:border-pull-200 focus-within:border-pull-300">
+      <span className="block text-[9px] font-extrabold uppercase tracking-wider text-pull-400">{label}</span>
+      <span className="relative mt-0.5 flex min-w-0 items-center">
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent pr-7 text-xs font-bold leading-5 text-pull-900 outline-none">
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+        <ChevronDown size={14} className="pointer-events-none absolute right-0 shrink-0 text-pull-700" />
+      </span>
     </label>
   )
 }
 
-function JobBoardCard({ job, saved, applied, onToggleSaved, onOpenDetail, onApply }) {
+function JobBoardCard({ job, applied, onOpenDetail, onApply }) {
   const trustScore = Math.round(job.employerTrust * 20)
   const nearlyFull = job.applicants >= 8
 
   return (
-    <article className="flex min-h-[440px] flex-col rounded-[20px] border border-pull-100 bg-white p-4 shadow-[0_10px_28px_rgba(18,59,48,.035)] transition duration-200 hover:-translate-y-1 hover:border-pull-200 hover:shadow-[0_18px_38px_rgba(18,59,48,.08)]">
+    <article className="flex min-h-[440px] flex-col rounded-[20px] border border-pull-100 bg-white p-4 shadow-[0_10px_28px_rgba(18,59,48,.035)] transition duration-200 hover:border-pull-200 hover:shadow-[0_18px_38px_rgba(18,59,48,.08)]">
       <div className="flex items-start gap-3">
-        <div className={`grid size-12 shrink-0 place-items-center rounded-full text-xs font-black ${job.tone}`}>{job.logo}</div>
-        <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><p className="truncate text-xs font-extrabold text-pull-950">{job.company}</p><ShieldCheck size={14} className="shrink-0 text-[#0e9855]" fill="currentColor" /></div><p className="mt-1 text-[9px] font-bold text-pull-400">Trust Score: {trustScore}</p></div>
-        <div className="flex items-center gap-1"><button type="button" onClick={onToggleSaved} className={`grid size-8 place-items-center rounded-lg ${saved ? 'bg-pull-50 text-pull-700' : 'text-pull-300 hover:bg-pull-50'}`} aria-label={saved ? 'Hapus dari tersimpan' : 'Simpan loker'}><Bookmark size={15} fill={saved ? 'currentColor' : 'none'} /></button><button type="button" onClick={onOpenDetail} className="grid size-8 place-items-center rounded-lg text-pull-500 hover:bg-pull-50" aria-label={`Buka detail cepat ${job.role}`}><MoreHorizontal size={18} /></button></div>
+        <div className={`relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-full text-xs font-black ${job.tone}`}>{job.logoImage ? <Image src={job.logoImage} alt={`Logo ${job.company}`} fill sizes="48px" className="object-cover" /> : job.logo}</div>
+        <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><p className="truncate text-xs font-extrabold text-pull-950">{job.company}</p>{job.verified ? <VerifiedUmkmIcon className="size-[15px] shrink-0" /> : null}</div><p className="mt-1 flex items-center gap-1 text-[9px] font-bold text-pull-500"><Star size={11} className="shrink-0 fill-[#e6a700] text-[#e6a700]" /> Trust Score: {trustScore}</p></div>
+        <button type="button" onClick={onOpenDetail} className="grid size-8 place-items-center rounded-lg text-pull-500 hover:bg-pull-50" aria-label={`Buka detail cepat ${job.role}`}><MoreHorizontal size={18} /></button>
       </div>
 
       <Link to={`/jobs/${job.id}`} className="mt-6 font-display text-[22px] font-semibold leading-tight tracking-[-0.03em] text-pull-950 hover:text-pull-600">{job.role}</Link>
@@ -185,7 +183,7 @@ function CheckCircleLabel() {
 function MapJobCard({ job, onDetail, onApply }) {
   return (
     <div className="absolute bottom-4 left-4 right-4 z-[500] max-w-xl rounded-[20px] border border-pull-100 bg-white/95 p-4 shadow-[0_18px_45px_rgba(12,38,28,.18)] backdrop-blur-md">
-      <div className="flex items-start gap-3"><div className={`grid size-12 shrink-0 place-items-center rounded-full text-xs font-black ${job.tone}`}>{job.logo}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-pull-950">{job.company}</p><p className="mt-1 text-[9px] font-bold text-pull-400">Trust Score: {Math.round(job.employerTrust * 20)}</p></div><button type="button" onClick={onDetail} className="icon-button size-9"><MoreHorizontal size={17} /></button></div>
+      <div className="flex items-start gap-3"><div className={`relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-full text-xs font-black ${job.tone}`}>{job.logoImage ? <Image src={job.logoImage} alt={`Logo ${job.company}`} fill sizes="48px" className="object-cover" /> : job.logo}</div><div className="min-w-0 flex-1"><p className="flex items-center gap-1.5 truncate text-xs font-extrabold text-pull-950"><span className="truncate">{job.company}</span>{job.verified ? <VerifiedUmkmIcon className="size-[15px] shrink-0" /> : null}</p><p className="mt-1 flex items-center gap-1 text-[9px] font-bold text-pull-500"><Star size={11} className="shrink-0 fill-[#e6a700] text-[#e6a700]" /> Trust Score: {Math.round(job.employerTrust * 20)}</p></div><button type="button" onClick={onDetail} className="icon-button size-9" aria-label={`Buka detail cepat ${job.role}`}><MoreHorizontal size={17} /></button></div>
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="font-display text-xl font-semibold text-pull-950">{job.role}</h2><p className="mt-1 text-lg font-extrabold text-[#08783f]">{job.pay}</p></div><button type="button" onClick={onApply} className="whatsapp-button size-12 self-end px-0" aria-label={`Lamar ${job.role} via WhatsApp`}><FaWhatsapp size={20} /></button></div>
     </div>
   )

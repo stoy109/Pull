@@ -5,6 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Check, X } from "lucide-react";
 import { FormFeedback, FormHelper, FormLabel } from "@/components/form-ui";
+import { useClientMounted } from "@/components/use-client-mounted";
 import { updatePasswordAction, type AuthActionState } from "@/features/auth/actions";
 
 const initialAuthState: AuthActionState = {
@@ -50,6 +51,7 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const isMounted = useClientMounted();
 
   const score = useMemo(() => getScore(password), [password]);
   const strength = STRENGTH_MAP[score];
@@ -93,12 +95,13 @@ export default function ResetPasswordPage() {
               </p>
             </div>
 
-            <form
-              action={formAction}
-              className="space-y-4"
-              data-lpignore="true"
-              data-form-type="other"
-            >
+            {isMounted ? (
+              <form
+                action={formAction}
+                className="space-y-4"
+                data-lpignore="true"
+                data-form-type="other"
+              >
               <div className="form-field space-y-2">
                 <FormLabel htmlFor="new-password" required>Kata Sandi Baru</FormLabel>
 
@@ -242,7 +245,14 @@ export default function ResetPasswordPage() {
               >
                 {isPending ? "Memperbarui..." : "Perbarui Kata Sandi"}
               </button>
-            </form>
+              </form>
+            ) : (
+              <div className="space-y-4" aria-hidden="true">
+                <div className="h-[82px]" />
+                <div className="h-[82px]" />
+                <div className="h-12" />
+              </div>
+            )}
 
             <p className="text-center text-xs text-[#91a79d]">
               Sudah ingat kata sandi?{" "}

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, ShieldCheck, Star, TrendingUp } from 'lucide-react'
 import { reviews, trustFactors } from '../data/mockData'
@@ -7,9 +8,17 @@ import { PageHeader, SectionHeading } from '../components/UI'
 export default function TrustPage() {
   const { applications, openDialog } = useWorkspace()
   const engagement = applications.Selesai.find((item) => item.id === 'app-7')
+  const guideOpened = useRef(false)
+
+  useEffect(() => {
+    if (guideOpened.current) return
+    guideOpened.current = true
+    openDialog('trust-guide')
+  }, [openDialog])
+
   return (
     <>
-      <PageHeader eyebrow="Reputasi terverifikasi" title="Trust Score" description="Skor hanya dihitung dari pekerjaan yang dikonfirmasi kedua pihak. KYC dan kelengkapan profil ditampilkan terpisah." actions={<button onClick={() => openDialog('trust-guide')} className="secondary-button"><ShieldCheck size={14} /> Cara kerja skor</button>} />
+      <PageHeader icon={ShieldCheck} eyebrow="Reputasi terverifikasi" title="Trust Score" description="Skor hanya dihitung dari pekerjaan yang dikonfirmasi kedua pihak. KYC dan kelengkapan profil ditampilkan terpisah." actions={<button onClick={() => openDialog('trust-guide')} className="secondary-button"><ShieldCheck size={14} /> Cara kerja skor</button>} />
       <div className="grid grid-cols-12 gap-4 2xl:gap-5">
         <section className="trust-score-panel col-span-12 min-h-64 xl:col-span-4"><div className="flex items-center justify-between"><span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/55">Skor saat ini</span><span className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[9px] font-extrabold text-[#a9d8bd]"><TrendingUp size={11} /> +0,2</span></div><div className="mt-8 flex items-end gap-2"><strong className="font-display text-7xl font-semibold leading-none tracking-[-0.06em] text-white">4,8</strong><span className="mb-2 text-xs font-bold text-white/42">/ 5</span></div><p className="mt-3 text-sm font-extrabold text-[#afe0c3]">Sangat dipercaya · 12 ulasan</p><svg className="mt-6 h-20 w-full" viewBox="0 0 300 80"><path d="M2 68 C35 64 48 52 72 54 S112 43 138 46 S178 30 206 34 S248 19 298 10" fill="none" stroke="#8ed0aa" strokeWidth="3" strokeLinecap="round" /><circle cx="298" cy="10" r="5" fill="#b8e5ca" /></svg></section>
         <section className="card col-span-12 xl:col-span-8"><SectionHeading eyebrow="Transparansi" title="Penyusun skor" description="Rincian performa dari pekerjaan terverifikasi." /><div className="space-y-4">{trustFactors.map((factor) => <div key={factor.label}><div className="mb-1.5 flex items-center justify-between gap-3 text-[10px]"><span className="font-bold text-pull-700">{factor.label}</span><span className="font-extrabold text-pull-500">{String(factor.value).replace('.', ',')}/{factor.max} · {factor.status}</span></div><div className="h-2 overflow-hidden rounded-full bg-pull-50"><div className="h-full rounded-full bg-pull-600" style={{ width: `${(factor.value / factor.max) * 100}%` }} /></div></div>)}</div></section>

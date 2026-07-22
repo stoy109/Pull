@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
-  Bell,
   BriefcaseBusiness,
   CircleHelp,
   ClipboardList,
@@ -185,14 +184,6 @@ export default async function DashboardPage() {
             </div>
 
             <div className="flex w-full flex-wrap items-center gap-3 xl:w-auto xl:flex-nowrap">
-              <button
-                type="button"
-                aria-label="Buka notifikasi"
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-transparent bg-transparent text-[#36544a] transition-colors hover:text-[#05723c]"
-              >
-                <Bell className="h-5 w-5" />
-              </button>
-
               <div className="flex h-16 w-full items-center gap-3 rounded-2xl border border-[#e1e9e4] bg-white px-4 shadow-sm shadow-emerald-950/5 sm:w-[220px]">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#edf8f1]">
                   <Image

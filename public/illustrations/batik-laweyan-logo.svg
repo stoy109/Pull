@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Logo Batik Laweyan Bu Sari</title>
+  <desc id="desc">Motif batik cokelat berbentuk lingkaran.</desc>
+  <defs>
+    <clipPath id="circle"><circle cx="80" cy="80" r="80"/></clipPath>
+    <pattern id="batik" width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(16)">
+      <rect width="48" height="48" fill="#2e160d"/>
+      <path d="M24 2C15 9 10 17 10 24s5 15 14 22c9-7 14-15 14-22S33 9 24 2Z" fill="none" stroke="#d58a3d" stroke-width="5"/>
+      <path d="M24 10c-5 5-7 9-7 14s2 9 7 14c5-5 7-9 7-14s-2-9-7-14Z" fill="none" stroke="#f0b65e" stroke-width="2"/>
+      <circle cx="24" cy="24" r="4" fill="#d58a3d"/>
+      <path d="M0 0 12 12M48 0 36 12M0 48l12-12M48 48 36 36" stroke="#a75525" stroke-width="4"/>
+    </pattern>
+    <radialGradient id="shade" cx="36%" cy="30%" r="76%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".18"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#circle)">
+    <rect width="160" height="160" fill="url(#batik)"/>
+    <path d="M-8 126c34-28 48-14 70-35 18-17 23-43 47-55 18-10 37-7 58 4" fill="none" stroke="#efb35a" stroke-width="8" opacity=".75"/>
+    <path d="M-5 134c38-25 52-10 75-32 19-18 22-43 46-55 16-8 32-7 48-1" fill="none" stroke="#5c2b15" stroke-width="4"/>
+    <rect width="160" height="160" fill="url(#shade)"/>
+  </g>
+</svg>

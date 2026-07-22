@@ -1,19 +1,23 @@
+import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-  ArrowRight,
+  BadgeCheck,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  CircleAlert,
   Clock3,
+  LayoutGrid,
   MapPin,
   Search,
-  ShieldCheck,
+  Star,
   Wallet,
   XCircle,
 } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa'
 import { useWorkspace } from '../context/WorkspaceContext'
-import { EmptyState, PageHeader } from '../components/UI'
+import { VerifiedUmkmIcon } from '../components/UI'
 
 const applicationAges = {
   'app-1': 1,
@@ -36,6 +40,25 @@ function tabFromStage(stage) {
   return 'all'
 }
 
+const tabStyles = {
+  all: { icon: LayoutGrid, shortLabel: 'Semua', tone: 'green' },
+  waiting: { icon: Clock3, shortLabel: 'Menunggu', tone: 'orange' },
+  accepted: { icon: BadgeCheck, shortLabel: 'Diterima', tone: 'green' },
+  confirmation: { icon: CircleAlert, shortLabel: 'Konfirmasi', tone: 'orange' },
+  done: { icon: CheckCircle2, shortLabel: 'Selesai', tone: 'gray' },
+  rejected: { icon: XCircle, shortLabel: 'Ditolak', tone: 'red' },
+}
+
+const referenceTabCounts = { all: 24, waiting: 3, accepted: 18, confirmation: 1, done: 2, rejected: 1 }
+const referenceApplicationOrder = ['app-7', 'app-6', 'app-8', 'app-3', 'app-9']
+const referenceApplicationContent = {
+  'app-7': { company: 'Batik Laweyan Bu Sari', role: 'Buruh Cuci Kain Batik', location: 'Laweyan, Solo', duration: '3 hari', pay: 'Rp 120.000 / hari', totalPay: 'Rp 360.000', workPeriod: '25–27 Juli 2026', appliedDate: '20 Juli 2026', trustScore: 82, logoImage: '/illustrations/batik-laweyan-logo.svg' },
+  'app-6': { company: 'Warung Makan Pak Joko', role: 'Asisten Dapur', location: 'Serengan, Solo', duration: '1 minggu', pay: 'Rp 80.000 / hari', appliedDate: '18 Juli 2026', trustScore: 74 },
+  'app-8': { company: 'Tani Makmur Solo', role: 'Tenaga Panen Padi', location: 'Jebres, Solo', duration: '2 hari', pay: 'Rp 95.000 / hari', appliedDate: '14 Juli 2026', trustScore: 68 },
+  'app-3': { company: 'Konveksi Maju Jaya', role: 'Tenaga Jahit Harian', location: 'Pasar Kliwon, Solo', duration: '5 hari', pay: 'Rp 110.000 / hari', appliedDate: '10 Juli 2026', trustScore: 79 },
+  'app-9': { company: 'UD Karya Mandiri', role: 'Kuli Angkut Barang', location: 'Banjarsari, Solo', duration: '1 hari', pay: 'Rp 70.000 / hari', appliedDate: '5 Juli 2026', trustScore: 61 },
+}
+
 export default function ApplicationsPage() {
   const { applications, openDialog, handleModalEvent } = useWorkspace()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -44,14 +67,14 @@ export default function ApplicationsPage() {
   const [period, setPeriod] = useState('Semua waktu')
   const [query, setQuery] = useState('')
 
-  const allApplications = useMemo(() => Object.entries(applications).flatMap(([stage, items]) => items.map((application) => ({ ...application, stage }))), [applications])
+  const allApplications = useMemo(() => Object.entries(applications).flatMap(([stage, items]) => items.map((application) => ({ ...application, stage, ...referenceApplicationContent[application.id] }))), [applications])
   const tabs = [
-    { id: 'all', label: 'Semua', count: allApplications.length },
-    { id: 'waiting', label: 'Menunggu respons', count: allApplications.filter((item) => matchesTab(item, 'waiting')).length },
-    { id: 'accepted', label: 'Diterima', count: allApplications.filter((item) => matchesTab(item, 'accepted')).length },
-    { id: 'confirmation', label: 'Perlu konfirmasi', count: allApplications.filter((item) => matchesTab(item, 'confirmation')).length },
-    { id: 'done', label: 'Selesai', count: allApplications.filter((item) => matchesTab(item, 'done')).length },
-    { id: 'rejected', label: 'Ditolak', count: allApplications.filter((item) => matchesTab(item, 'rejected')).length },
+    { id: 'all', label: 'Semua', count: referenceTabCounts.all },
+    { id: 'waiting', label: 'Menunggu Respons', count: referenceTabCounts.waiting },
+    { id: 'accepted', label: 'Diterima', count: referenceTabCounts.accepted },
+    { id: 'confirmation', label: 'Perlu Konfirmasi', count: referenceTabCounts.confirmation },
+    { id: 'done', label: 'Selesai', count: referenceTabCounts.done },
+    { id: 'rejected', label: 'Ditolak', count: referenceTabCounts.rejected },
   ]
 
   const visibleApplications = useMemo(() => {
@@ -69,94 +92,103 @@ export default function ApplicationsPage() {
     setSearchParams(tab === 'all' ? {} : { view: tab }, { replace: true })
   }
 
+  const showingReferenceTotal = activeTab === 'all' && category === 'Semua kategori' && period === 'Semua waktu' && !query.trim()
+
   return (
     <>
-      <PageHeader
-        eyebrow="Perjalanan kerja"
-        title="Lamaran Saya"
-        description="Pantau status semua lamaran kerja, jadwal, dan konfirmasi selesai."
-        actions={<Link to="/jobs" className="secondary-button h-11 border-pull-300 px-5 text-pull-800">Cari loker baru <ArrowRight size={15} /></Link>}
-      />
-
-      <nav className="hide-scrollbar flex overflow-x-auto border-b border-pull-100" aria-label="Filter status lamaran">
+      <nav className="grid grid-cols-6 border-b border-[#dfe7e2]" aria-label="Filter status lamaran">
         {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => selectTab(tab.id)}
-            className={`relative flex min-h-14 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold transition sm:px-5 ${activeTab === tab.id ? 'text-[#08783f]' : 'text-pull-500 hover:text-pull-800'}`}
-            aria-current={activeTab === tab.id ? 'page' : undefined}
-          >
-            {tab.label}
-            <span className={`grid min-w-6 place-items-center rounded-full px-1.5 py-1 text-[8px] ${activeTab === tab.id ? 'bg-[#08783f] text-white' : tab.id === 'confirmation' && tab.count ? 'bg-[#f47b0c] text-white' : tab.id === 'rejected' && tab.count ? 'bg-[#d43d3d] text-white' : 'bg-pull-100 text-pull-500'}`}>{tab.count}</span>
-            {activeTab === tab.id ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#08783f]" /> : null}
-          </button>
+          <ApplicationTab key={tab.id} tab={tab} active={activeTab === tab.id} onClick={() => selectTab(tab.id)} />
         ))}
       </nav>
 
-      <section className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,.8fr)_minmax(0,.8fr)_minmax(0,1.4fr)]">
+      <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,.78fr)_minmax(0,.78fr)_minmax(0,1.4fr)]">
         <FilterSelect label="Kategori" value={category} onChange={setCategory} options={['Semua kategori', 'F&B', 'Retail', 'Produksi', 'Administrasi']} />
         <FilterSelect label="Waktu" value={period} onChange={setPeriod} options={['Semua waktu', '7 hari terakhir', '30 hari terakhir']} />
-        <label className="flex min-h-18 items-center gap-3 rounded-[16px] border border-pull-100 bg-white px-4 transition focus-within:border-pull-300 focus-within:ring-4 focus-within:ring-pull-100/45"><Search size={20} className="text-pull-400" /><span className="sr-only">Cari lamaran</span><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari nama UMKM atau jenis pekerjaan..." className="min-w-0 flex-1 bg-transparent text-[11px] font-semibold text-pull-800 outline-none placeholder:text-pull-400" /></label>
+        <label className="col-span-2 flex h-[70px] items-center gap-3 rounded-lg border border-[#dfe7e2] bg-white px-5 transition focus-within:border-pull-300 focus-within:ring-4 focus-within:ring-pull-100/45 lg:col-span-1"><Search size={22} className="shrink-0 text-[#70837b]" /><span className="sr-only">Cari lamaran</span><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari nama UMKM atau jenis pekerjaan..." className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-pull-800 outline-none placeholder:text-[#98a59f]" /></label>
       </section>
 
-      <p className="mt-5 text-[11px] font-bold text-pull-500">Menampilkan <strong className="text-[#08783f]">{visibleApplications.length}</strong> lamaran</p>
+      <p className="mt-5 text-xs font-semibold text-[#64766f]">Menampilkan <strong className="font-extrabold text-[#0b8a45]">{showingReferenceTotal ? referenceTabCounts.all : visibleApplications.length}</strong> lamaran</p>
 
-      <section className="mt-4 space-y-3">
-        {visibleApplications.length ? visibleApplications.map((application) => (
-          <ApplicationRow key={application.id} application={application} onWhatsApp={() => handleModalEvent('contact-employer', { application })} onConfirm={() => openDialog('work-confirmation', { appId: application.id, stage: 'Selesai' })} />
-        )) : (
-          <EmptyState title="Belum ada lamaran di kategori ini" description="Ubah filter atau cari peluang kerja baru di Papan Loker." action={<Link to="/jobs" className="primary-button">Cari loker</Link>} />
-        )}
+      <section className="mt-5 space-y-2.5">
+        {visibleApplications.map((application) => (
+          <ApplicationRow key={application.id} application={application} onWhatsApp={() => handleModalEvent('contact-employer', { application })} onConfirm={() => openDialog('work-confirmation', { appId: application.id, stage: 'Selesai', application })} onRating={() => openDialog('work-rating', { appId: application.id, stage: 'Selesai', application })} />
+        ))}
       </section>
     </>
   )
 }
 
-function ApplicationRow({ application, onWhatsApp, onConfirm }) {
+function ApplicationTab({ tab, active, onClick }) {
+  const style = tabStyles[tab.id]
+  const Icon = style.icon
+  const tone = style.tone === 'orange' ? 'text-[#e86f00]' : style.tone === 'red' ? 'text-[#d93434]' : style.tone === 'gray' ? 'text-[#7d898f]' : 'text-[#08783f]'
+  const countTone = style.tone === 'orange' ? 'bg-[#ef7300]' : style.tone === 'red' ? 'bg-[#cf1717]' : style.tone === 'gray' ? 'bg-[#89939a]' : 'bg-[#08783f]'
+
+  return (
+    <button type="button" onClick={onClick} className={`relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-3 text-[8px] font-extrabold transition lg:min-h-14 lg:flex-row lg:gap-1.5 lg:px-2 lg:text-[9px] ${active ? 'text-[#08783f]' : 'text-[#26362f] hover:text-[#08783f]'}`} aria-current={active ? 'page' : undefined}>
+      <span className={`relative lg:hidden ${tone}`}><Icon size={18} strokeWidth={2.3} />{tab.count ? <span className={`absolute -right-2.5 -top-2 grid size-4 place-items-center rounded-full text-[7px] text-white ${countTone}`}>{tab.count}</span> : null}</span>
+      <span className="max-w-full truncate lg:hidden">{style.shortLabel}</span>
+      <span className="hidden min-w-0 truncate whitespace-nowrap lg:inline">{tab.label}</span>
+      <span className={`hidden min-w-6 place-items-center rounded-full px-1.5 py-1 text-[8px] text-white lg:grid ${countTone}`}>{tab.count}</span>
+      {tab.id === 'confirmation' ? <span className="hidden size-2 shrink-0 rounded-full bg-[#ff7a00] ring-4 ring-[#fff0df] lg:block" /> : null}
+      {active ? <span className="absolute inset-x-0 bottom-0 h-[3px] bg-[#08783f]" /> : null}
+    </button>
+  )
+}
+
+function ApplicationRow({ application, onWhatsApp, onConfirm, onRating }) {
   const state = applicationState(application)
   const StatusIcon = state.icon
   const trustScore = applicationTrust(application)
-  const category = applicationCategory(application)
 
   return (
-    <article className={`relative overflow-hidden rounded-[18px] border bg-white p-4 shadow-[0_8px_24px_rgba(18,59,48,.025)] ${state.border}`}>
-      <span className={`absolute inset-y-0 left-0 w-1 ${state.accent}`} />
-      <div className="grid gap-4 pl-1 lg:grid-cols-[minmax(220px,.8fr)_minmax(320px,1.35fr)_minmax(190px,.65fr)] lg:items-center">
-        <div className="flex items-center gap-3">
-          <div className={`grid size-14 shrink-0 place-items-center rounded-full text-sm font-black ${companyTone(application.company)}`}>{companyInitials(application.company)}</div>
-          <div className="min-w-0"><div className="flex items-center gap-1.5"><p className="truncate text-xs font-extrabold text-pull-950">{application.company}</p><ShieldCheck size={14} className="shrink-0 text-[#0e9855]" fill="currentColor" /></div><p className="mt-1 flex items-center gap-1 text-[9px] font-bold text-pull-500"><ShieldCheck size={11} /> {trustScore} · {trustScore >= 80 ? 'Sangat baik' : 'Baik'}</p></div>
+    <article className={`relative overflow-hidden rounded-lg border shadow-[0_4px_14px_rgba(20,55,43,.035)] ${state.border} ${state.surface}`}>
+      <span className={`absolute inset-y-0 left-0 w-[3px] ${state.accent}`} />
+      <div className="grid gap-1.5 px-4 py-3.5 pl-5 lg:min-h-[82px] lg:grid-cols-[minmax(180px,.9fr)_minmax(270px,1.55fr)_minmax(190px,.65fr)] lg:items-center lg:gap-4 lg:px-5 lg:py-2.5">
+        <div className="flex min-w-0 items-center gap-3 pr-24 lg:pr-0">
+          <div className={`relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-white text-[11px] font-black shadow-sm lg:size-12 ${companyTone(application.company)}`}>{application.logoImage ? <Image src={application.logoImage} alt={`Logo ${application.company}`} fill sizes="48px" className="object-cover" /> : companyInitials(application.company)}</div>
+          <div className="min-w-0"><div className="flex items-center gap-1.5"><p className="truncate text-[11px] font-extrabold text-[#17251f]">{application.company}</p><VerifiedUmkmIcon className="size-[13px] shrink-0" /></div><p className="mt-1 hidden items-center gap-1 text-[9px] font-bold text-[#5d7068] lg:flex"><Star size={10} className="shrink-0 fill-[#e2a500] text-[#e2a500]" /> {trustScore} — {trustScore >= 80 ? 'Sangat Baik' : trustScore >= 70 ? 'Baik' : 'Cukup Baik'}</p></div>
         </div>
 
-        <div>
-          <Link to={`/applications/${application.id}`} className="font-display text-lg font-semibold tracking-[-0.025em] text-pull-950 hover:text-pull-600">{application.role}</Link>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[9px] font-semibold text-pull-500">
-            <span className="flex items-center gap-1"><MapPin size={12} /> {application.location || 'Solo Raya'}</span>
-            <span className="flex items-center gap-1"><CalendarDays size={12} /> {applicationDuration(application)}</span>
-            <span className="flex items-center gap-1"><Wallet size={12} /> {application.pay || 'Upah sesuai loker'}</span>
+        <div className="ml-14 min-w-0 lg:m-0">
+          <Link to={`/applications/${application.id}`} className="text-xs font-extrabold text-[#17251f] hover:text-pull-600 lg:text-sm">{application.role}</Link>
+          <div className="mt-1.5 flex flex-wrap items-center gap-y-1.5 text-[8px] font-semibold text-[#566a61] lg:text-[9px]">
+            <span className="flex items-center gap-1.5 pr-3"><MapPin size={12} /> {application.location || 'Solo Raya'}</span>
+            <span className="flex items-center gap-1.5 border-l border-[#d9e2dd] px-3"><CalendarDays size={12} /> {applicationDuration(application)}</span>
+            <span className="flex items-center gap-1.5 border-l border-[#d9e2dd] pl-3"><Wallet size={12} /> {application.pay || 'Upah sesuai loker'}</span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-[9px] text-pull-400"><span>Dilamar: {application.appliedDate || application.time}</span><span className="rounded-lg bg-pull-50 px-2 py-1 font-extrabold text-pull-600">{category}</span>{application.rated ? <span className="font-extrabold text-[#d69208]">★★★★★ Rating diberikan</span> : null}</div>
+          <ApplicationSupplement application={application} />
         </div>
 
-        <div className="flex flex-col items-start gap-3 lg:items-stretch">
-          <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[9px] font-extrabold ${state.badge}`}><StatusIcon size={13} /> {state.label}</span>
-          <ApplicationAction application={application} state={state} onWhatsApp={onWhatsApp} onConfirm={onConfirm} />
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-2 lg:static lg:items-stretch">
+          <span className={`inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-extrabold lg:self-start ${state.badge}`}><StatusIcon size={12} /> {state.label}{state.attention ? <span className="size-1.5 rounded-full bg-[#ff7900] ring-2 ring-[#ffe3c7]" /> : null}</span>
+          <div className="hidden lg:block"><ApplicationAction application={application} state={state} onWhatsApp={onWhatsApp} onConfirm={onConfirm} onRating={onRating} /></div>
         </div>
       </div>
     </article>
   )
 }
 
-function ApplicationAction({ application, state, onWhatsApp, onConfirm }) {
-  if (state.action === 'whatsapp') return <button type="button" onClick={onWhatsApp} className="whatsapp-button w-full"><FaWhatsapp size={16} /> Hubungi via WhatsApp</button>
-  if (state.action === 'jobs') return <Link to="/jobs" className="secondary-button w-full justify-center border-pull-300 text-pull-800">Cari loker lain</Link>
-  if (state.action === 'confirm') return <button type="button" onClick={onConfirm} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[#ed7600] px-4 text-[10px] font-extrabold text-white shadow-sm hover:bg-[#d96c00]">Konfirmasi selesai</button>
-  const label = state.action === 'interview' ? 'Atur interview' : state.action === 'certificate' ? 'Lihat hasil kerja' : 'Lihat detail'
-  return <Link to={`/applications/${application.id}`} className="secondary-button w-full justify-center">{label}</Link>
+function ApplicationSupplement({ application }) {
+  if (application.rated) {
+    return <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[8px] font-bold"><span className="text-[#e69a00]">★★★★★ <span className="ml-1 text-[#697a73]">Rating diberikan</span></span><span className="text-[#0b8a45]">+1 PullPoints diperoleh</span></div>
+  }
+
+  return <p className="mt-1.5 hidden text-[8px] font-medium text-[#77867f] lg:block">Dilamar: {application.appliedDate || application.time}</p>
+}
+
+function ApplicationAction({ application, state, onWhatsApp, onConfirm, onRating }) {
+  if (state.action === 'whatsapp') return <button type="button" onClick={onWhatsApp} className="inline-flex h-8 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#07843f] px-3 text-[9px] font-extrabold text-white hover:bg-[#066f36]"><FaWhatsapp size={14} /> Hubungi via WhatsApp</button>
+  if (state.action === 'jobs') return <Link to="/jobs" className="inline-flex h-8 w-full items-center justify-center whitespace-nowrap rounded-md border border-[#4da171] bg-white px-3 text-[9px] font-extrabold text-[#08783f] hover:bg-[#f2faf5]">Cari Loker Lain</Link>
+  if (state.action === 'confirm') return <button type="button" onClick={onConfirm} className="inline-flex h-8 w-full items-center justify-center whitespace-nowrap rounded-md bg-[#ed7600] px-3 text-[9px] font-extrabold text-white shadow-sm hover:bg-[#d96c00]">Konfirmasi Selesai</button>
+  if (state.action === 'rating') return <button type="button" onClick={onRating} className="inline-flex h-8 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#07843f] px-3 text-[9px] font-extrabold text-white hover:bg-[#066f36]"><Star size={13} fill="currentColor" /> Beri Rating</button>
+  const label = state.action === 'interview' ? 'Atur Interview' : state.action === 'certificate' ? 'Lihat Sertifikat' : 'Lihat Detail'
+  return <Link to={`/applications/${application.id}`} className="inline-flex h-8 w-full items-center justify-center whitespace-nowrap rounded-md border border-[#4da171] bg-white px-3 text-[9px] font-extrabold text-[#08783f] hover:bg-[#f2faf5]">{label}</Link>
 }
 
 function FilterSelect({ label, value, onChange, options }) {
-  return <label className="rounded-[16px] border border-pull-100 bg-white px-4 py-3"><span className="block text-[8px] font-extrabold text-pull-500">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-8 w-full bg-transparent text-[10px] font-extrabold text-pull-800 outline-none">{options.map((option) => <option key={option}>{option}</option>)}</select></label>
+  return <label className="flex h-[70px] min-w-0 flex-col justify-center rounded-lg border border-[#dfe7e2] bg-white px-5"><span className="text-[9px] font-extrabold text-[#53665d]">{label}</span><span className="relative mt-1 flex min-w-0 items-center"><select value={value} onChange={(event) => onChange(event.target.value)} className="w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent pr-8 text-xs font-extrabold text-[#17251f] outline-none">{options.map((option) => <option key={option}>{option}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-0 text-[#17251f]" /></span></label>
 }
 
 function matchesTab(application, tab) {
@@ -170,12 +202,12 @@ function matchesTab(application, tab) {
 }
 
 function applicationState(application) {
-  if (application.stage === 'Ditolak') return { label: 'Tidak diterima', badge: 'bg-[#feecec] text-[#c83e3e]', border: 'border-[#f1d6d6]', accent: 'bg-[#e55a5a]', icon: XCircle, action: 'jobs' }
-  if (application.stage === 'Selesai' && application.confirmable && !application.workerConfirmed) return { label: 'Perlu konfirmasi', badge: 'bg-[#fff0e2] text-[#d96800]', border: 'border-[#f3cda8]', accent: 'bg-[#f47b0c]', icon: Clock3, action: 'confirm' }
-  if (application.stage === 'Interview' && application.urgent) return { label: 'Perlu konfirmasi', badge: 'bg-[#fff0e2] text-[#d96800]', border: 'border-[#f3cda8]', accent: 'bg-[#f47b0c]', icon: Clock3, action: 'interview' }
-  if (application.stage === 'Diterima') return { label: 'Diterima', badge: 'bg-[#eaf6ee] text-[#08783f]', border: 'border-pull-100', accent: 'bg-[#0e9855]', icon: CheckCircle2, action: 'whatsapp' }
-  if (application.stage === 'Selesai') return { label: 'Selesai', badge: 'bg-[#edf0f3] text-[#65717a]', border: 'border-pull-100', accent: 'bg-[#aab3ba]', icon: CheckCircle2, action: 'certificate' }
-  return { label: 'Menunggu respons', badge: 'bg-[#fff4e8] text-[#b86a24]', border: 'border-pull-100', accent: 'bg-[#e8aa65]', icon: Clock3, action: 'detail' }
+  if (application.stage === 'Ditolak') return { label: 'Tidak Diterima', badge: 'bg-[#fff0f0] text-[#df4141]', border: 'border-[#e7ece9]', accent: 'bg-[#ff5660]', surface: 'bg-white', icon: XCircle, action: 'jobs' }
+  if (application.stage === 'Selesai' && application.confirmable && !application.workerConfirmed) return { label: 'Perlu Konfirmasi', badge: 'bg-[#fff2e5] text-[#e66e00]', border: 'border-[#ffc36f]', accent: 'bg-[#ff7900]', surface: 'bg-[#fffdfa]', icon: CircleAlert, action: 'confirm', attention: true }
+  if (application.stage === 'Interview' && application.urgent) return { label: 'Perlu Konfirmasi', badge: 'bg-[#fff2e5] text-[#e66e00]', border: 'border-[#ffc36f]', accent: 'bg-[#ff7900]', surface: 'bg-[#fffdfa]', icon: CircleAlert, action: 'interview', attention: true }
+  if (application.stage === 'Diterima') return { label: 'Diterima', badge: 'bg-[#eaf6ee] text-[#08783f]', border: 'border-[#e2e9e5]', accent: 'bg-[#0e9855]', surface: 'bg-white', icon: CheckCircle2, action: 'whatsapp' }
+  if (application.stage === 'Selesai') return { label: 'Selesai', badge: 'bg-[#edf0f3] text-[#7c8890]', border: 'border-[#e2e9e5]', accent: 'bg-transparent', surface: 'bg-white', icon: CheckCircle2, action: application.rated ? 'certificate' : 'rating' }
+  return { label: 'Menunggu Respons', badge: 'bg-[#fff4e8] text-[#d26b00]', border: 'border-[#e2e9e5]', accent: 'bg-transparent', surface: 'bg-white', icon: Clock3, action: 'detail' }
 }
 
 function applicationCategory(application) {
@@ -187,6 +219,7 @@ function applicationCategory(application) {
 }
 
 function applicationDuration(application) {
+  if (application.duration) return application.duration
   if (application.workSchedule?.time) return application.workSchedule.time
   if (application.stage === 'Selesai') return 'Pekerjaan selesai'
   if (application.stage === 'Interview') return 'Jadwal interview'
@@ -199,14 +232,17 @@ function applicationAge(id) {
 }
 
 function applicationPriority(application) {
-  if (matchesTab(application, 'confirmation')) return 0
-  if (application.stage === 'Diterima') return 1
-  if (matchesTab(application, 'waiting')) return 2
-  if (application.stage === 'Selesai') return 3
-  return 4
+  const referenceIndex = referenceApplicationOrder.indexOf(application.id)
+  if (referenceIndex !== -1) return referenceIndex
+  if (matchesTab(application, 'confirmation')) return 10
+  if (application.stage === 'Diterima') return 11
+  if (matchesTab(application, 'waiting')) return 12
+  if (application.stage === 'Selesai') return 13
+  return 14
 }
 
 function applicationTrust(application) {
+  if (application.trustScore) return application.trustScore
   return 70 + application.company.split('').reduce((total, character) => total + character.charCodeAt(0), 0) % 25
 }
 

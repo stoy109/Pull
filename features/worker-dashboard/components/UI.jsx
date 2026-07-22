@@ -3,49 +3,67 @@ import { useLayoutEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { Link } from 'react-router-dom'
 import {
-  ArrowRight,
   Award,
   BadgeCheck,
   Bell,
-  Bookmark,
   BriefcaseBusiness,
   CalendarDays,
   Camera,
   Check,
   CheckCircle2,
-  Clock3,
-  Eye,
   GraduationCap,
   IdCard,
-  MapPin,
-  Phone,
   Search,
   ShieldCheck,
   Sparkles,
   Star,
   UserRound,
-  Wallet,
+  X,
 } from 'lucide-react'
-import { useWorkspace } from '../context/WorkspaceContext'
 
 export function Brand({ inverse = false }) {
+  if (inverse) {
+    return (
+      <Link to="/dashboard" className="flex items-center gap-3" aria-label="Pull dashboard">
+        <Image
+          src="/Logo(Pull).svg"
+          alt="Pull"
+          width={40}
+          height={40}
+          className="h-10 w-10 shrink-0 rounded-lg"
+          priority
+        />
+        <span className="text-2xl font-extrabold tracking-normal text-white">Pull</span>
+      </Link>
+    )
+  }
+
   return (
     <Link to="/dashboard" className="flex items-center gap-2.5" aria-label="Pull dashboard">
-      <Image src="/pull-icon.svg" alt="" width={52} height={40} className={`h-10 w-[52px] shrink-0 object-contain ${inverse ? 'brightness-0 invert' : ''}`} aria-hidden="true" />
+      <Image src="/pull-icon.svg" alt="" width={52} height={40} className="h-10 w-[52px] shrink-0 object-contain" aria-hidden="true" />
       <div>
-        <p className={`font-display text-[22px] font-bold leading-none tracking-[-0.04em] ${inverse ? 'text-white' : 'text-pull-950'}`}>Pull</p>
-        <p className={`mt-1 text-[9px] font-extrabold uppercase tracking-[0.2em] ${inverse ? 'text-white/50' : 'text-pull-500'}`}>Worker space</p>
+        <p className="font-display text-[22px] font-bold leading-none tracking-[-0.04em] text-pull-950">Pull</p>
+        <p className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.2em] text-pull-500">Worker space</p>
       </div>
     </Link>
   )
 }
 
-export function PageHeader({ eyebrow, title, description, actions }) {
+export function VerifiedUmkmIcon({ className = 'size-4', label = 'UMKM terverifikasi' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} role="img" aria-label={label}>
+      <path fill="#087a41" d="M12 2.15 20 5.3v6.25c0 5.05-3.28 8.45-8 10.3-4.72-1.85-8-5.25-8-10.3V5.3l8-3.15Z" />
+      <path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.3" d="m8.25 11.8 2.45 2.35 5.1-5.05" />
+    </svg>
+  )
+}
+
+export function PageHeader({ eyebrow, title, description, actions, icon: Icon }) {
   return (
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {eyebrow ? <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-pull-500">{eyebrow}</p> : null}
-        <h1 className="font-display text-[29px] font-semibold leading-tight tracking-[-0.04em] text-pull-950 sm:text-[34px]">{title}</h1>
+        <h1 className="flex items-center gap-2 font-display text-[29px] font-semibold leading-tight tracking-[-0.04em] text-pull-950 sm:text-[34px]">{Icon ? <Icon size={22} className="fill-[#087a41] text-white" strokeWidth={2.2} /> : null}{title}</h1>
         {description ? <p className="mt-1.5 max-w-2xl text-xs font-medium leading-6 text-pull-500 sm:text-sm">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -61,53 +79,12 @@ export function SectionHeading({ eyebrow, title, description, action, actionLabe
         <h2 className="section-title">{title}</h2>
         {description ? <p className="section-description">{description}</p> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : actionLabel ? <span className="text-button">{actionLabel}</span> : null}
+      {action ? <div>{actionLabel ? <span className="sr-only">{actionLabel}</span> : null}{action}</div> : null}
     </div>
   )
 }
 
-export function JobCard({ job, compact = false }) {
-  const { savedJobIds, appliedJobIds, toggleSavedJob, openDialog } = useWorkspace()
-  const saved = savedJobIds.includes(job.id)
-  const applied = appliedJobIds.includes(job.id)
-
-  return (
-    <article className={`job-card group ${compact ? 'h-full' : ''}`}>
-      <div className="flex min-w-0 flex-1 gap-3.5">
-        <div className={`grid size-11 shrink-0 place-items-center rounded-[14px] text-xs font-black ${job.tone}`}>{job.logo}</div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link to={`/jobs/${job.id}`} className="text-sm font-extrabold tracking-[-0.01em] text-pull-950 hover:text-pull-600">{job.role}</Link>
-                {job.urgent ? <span className="urgent-label">Rekrut cepat</span> : null}
-              </div>
-              <p className="mt-1 text-[11px] font-bold text-pull-600">{job.company} · <span className="font-semibold text-pull-400">{job.category}</span></p>
-            </div>
-            <div className="match-score"><Sparkles size={12} /> {job.match}% cocok</div>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-semibold text-pull-500">
-            <span className="flex items-center gap-1.5"><MapPin size={13} /> {job.location} · {job.distance}</span>
-            <span className="flex items-center gap-1.5"><Clock3 size={13} /> {job.type}</span>
-            <span className="flex items-center gap-1.5 font-extrabold text-pull-700"><Wallet size={13} /> {job.pay}</span>
-          </div>
-
-          {!compact ? <p className="mt-3 flex items-start gap-1.5 text-[10px] leading-4 text-pull-600"><Sparkles size={13} className="mt-0.5 shrink-0 text-pull-600" /><span><strong className="font-extrabold text-pull-800">Kenapa cocok:</strong> {job.reason}</span></p> : null}
-        </div>
-      </div>
-
-      <div className="job-actions">
-        <button onClick={() => toggleSavedJob(job.id)} className={`icon-button size-9 ${saved ? 'border-pull-200 bg-pull-50 text-pull-800' : ''}`} aria-label={saved ? `Hapus ${job.role} dari tersimpan` : `Simpan ${job.role}`}><Bookmark size={16} fill={saved ? 'currentColor' : 'none'} /></button>
-        {applied ? <Link to="/applications" className="secondary-button min-w-22"><Check size={14} /> Dilamar</Link> : <button onClick={() => openDialog('job-apply', { job })} className="primary-button min-w-22"><Phone size={14} /> Lamar</button>}
-        <Link to={`/jobs/${job.id}`} className="icon-button size-9" aria-label={`Lihat detail ${job.role}`}><ArrowRight size={15} /></Link>
-      </div>
-    </article>
-  )
-}
-
 const activityIcons = {
-  eye: Eye,
   briefcase: BriefcaseBusiness,
   badge: BadgeCheck,
   shield: ShieldCheck,
@@ -167,7 +144,7 @@ export function MetricCard({ label, value, detail, icon: Icon = Sparkles, tone =
   )
 }
 
-export function Toast({ message }) {
+export function Toast({ message, onClose }) {
   const toastRef = useRef(null)
 
   useLayoutEffect(() => {
@@ -180,5 +157,14 @@ export function Toast({ message }) {
   }, [message])
 
   if (!message) return null
+  if (typeof message === 'object') {
+    return (
+      <div ref={toastRef} className="fixed right-4 top-4 z-[100] flex min-h-[88px] w-[calc(100%-2rem)] max-w-[420px] items-center gap-3 rounded-2xl bg-[#087b3d] px-4 py-4 text-white shadow-[0_18px_45px_rgba(4,73,35,.3)] sm:right-6 sm:top-6 sm:gap-4 sm:px-5" role="status" aria-live="polite">
+        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-white text-[#07843f] shadow-[0_2px_8px_rgba(0,0,0,.08)] sm:size-[52px]"><Check size={28} strokeWidth={3} className="sm:size-[31px]" /></span>
+        <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold leading-tight sm:text-base">{message.title}</strong><span className="mt-2 block text-xs font-medium leading-tight text-white/90 sm:text-[13px]">{message.detail}</span></span>
+        <button type="button" onClick={onClose} className="grid size-8 shrink-0 place-items-center text-white transition hover:text-white/75 sm:size-9" aria-label="Tutup notifikasi"><X size={24} strokeWidth={2} className="sm:size-7" /></button>
+      </div>
+    )
+  }
   return <div ref={toastRef} className="toast" role="status" aria-live="polite"><CheckCircle2 size={17} /><span>{message}</span></div>
 }

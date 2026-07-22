@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
 import { FormFeedback, FormHelper, FormLabel } from "@/components/form-ui";
+import { useClientMounted } from "@/components/use-client-mounted";
 import {
   requestPasswordResetAction,
   type AuthActionState,
@@ -21,6 +22,7 @@ export default function ForgotPasswordPage() {
     initialAuthState,
   );
   const [email, setEmail] = useState("");
+  const isMounted = useClientMounted();
 
   return (
     <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
@@ -54,12 +56,13 @@ export default function ForgotPasswordPage() {
             </div>
 
             {/* Forgot Password Form */}
-            <form
-              action={formAction}
-              className="space-y-4"
-              data-lpignore="true"
-              data-form-type="other"
-            >
+            {isMounted ? (
+              <form
+                action={formAction}
+                className="space-y-4"
+                data-lpignore="true"
+                data-form-type="other"
+              >
 
               {/* Email Field */}
               <div className="form-field space-y-1.5">
@@ -100,7 +103,13 @@ export default function ForgotPasswordPage() {
                 {isPending ? "Mengirim..." : "Kirim Kode Reset"}
               </button>
 
-            </form>
+              </form>
+            ) : (
+              <div className="space-y-4" aria-hidden="true">
+                <div className="h-[98px]" />
+                <div className="h-12" />
+              </div>
+            )}
 
             {/* Back to Login (Light Ghost Link) */}
             <div className="pt-1 text-center">
