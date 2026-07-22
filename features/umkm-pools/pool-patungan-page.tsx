@@ -1,38 +1,26 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  Bell,
-  BriefcaseBusiness,
   Check,
   ChevronDown,
-  ChevronRight,
-  CircleHelp,
-  ClipboardList,
   Clock3,
   FlaskConical,
-  Home,
   LayoutList,
   LocateFixed,
-  LogOut,
   Map,
   MapPin,
   MoreHorizontal,
   PackageOpen,
   Plus,
   Search,
-  Settings,
   Share2,
-  ShieldCheck,
   ShoppingBag,
-  Store,
   TrendingUp,
   UsersRound,
   X,
 } from "lucide-react";
-import { signOutAction } from "@/features/auth/actions";
+import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
 import { PoolMap } from "./pool-map";
 
 type ViewMode = "list" | "map";
@@ -132,15 +120,6 @@ const INITIAL_POOLS: PoolItem[] = [
   },
 ];
 
-const NAVIGATION = [
-  { label: "Homepage", icon: Home, href: "/dashboard" },
-  { label: "Pool Patungan", icon: UsersRound, href: "/dashboard/pools", active: true },
-  { label: "Papan Loker", icon: BriefcaseBusiness, href: "#" },
-  { label: "Lamaran Saya", icon: ClipboardList, href: "#" },
-  { label: "Profil Usaha", icon: Store, href: "#" },
-  { label: "Trust Score", icon: ShieldCheck, href: "#" },
-];
-
 const CATEGORY_OPTIONS = [
   "Semua kategori",
   "Tekstil & Kain",
@@ -177,128 +156,12 @@ function distanceKm(first: [number, number], second: [number, number]) {
   return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
-}
-
 function PoolIcon({ pool, small = false }: { pool: PoolItem; small?: boolean }) {
   const Icon = pool.icon === "dye" ? FlaskConical : pool.icon === "package" ? ShoppingBag : PackageOpen;
   return (
     <span className={`grid shrink-0 place-items-center rounded-full ${small ? "h-10 w-10" : "h-14 w-14"} ${pool.iconTone}`}>
       <Icon className={small ? "h-5 w-5" : "h-7 w-7"} strokeWidth={1.9} />
     </span>
-  );
-}
-
-function Sidebar({ ownerName, businessName }: { ownerName: string; businessName: string }) {
-  return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[232px] bg-gradient-to-b from-[#075f42] via-[#005236] to-[#003e2a] text-white lg:block">
-      <div className="flex h-full flex-col px-4 py-7">
-        <Link href="/dashboard" className="flex items-center gap-3 px-2">
-          <Image src="/Logo(Pull).svg" alt="Pull" width={42} height={42} className="h-11 w-11 rounded-xl" priority />
-          <span className="text-[28px] font-extrabold tracking-[-0.03em]">Pull</span>
-        </Link>
-
-        <nav className="mt-8 flex-1 space-y-2" aria-label="Navigasi utama UMKM">
-          {NAVIGATION.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition ${
-                  item.active ? "bg-[#07933f] text-white shadow-lg shadow-black/10" : "text-white/90 hover:bg-white/10"
-                }`}
-              >
-                <Icon className="h-[19px] w-[19px] shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <nav className="space-y-2 border-t border-white/10 pt-4" aria-label="Bantuan dan pengaturan">
-          <a href="#" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold text-white/90 hover:bg-white/10"><CircleHelp className="h-[19px] w-[19px]" /> Bantuan</a>
-          <a href="#" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold text-white/90 hover:bg-white/10"><Settings className="h-[19px] w-[19px]" /> Pengaturan</a>
-        </nav>
-
-        <div className="mt-5 rounded-xl border border-white/20 bg-white/[0.06] p-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#4c9664] text-xs font-extrabold">{initials(ownerName)}</span>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-extrabold">{ownerName}</p>
-              <p className="mt-1 truncate text-[10px] text-white/70">{businessName}</p>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between text-[9px] font-bold"><span>78% profil lengkap</span><ChevronRight className="h-3.5 w-3.5" /></div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20"><div className="h-full w-[78%] rounded-full bg-[#7eba39]" /></div>
-        </div>
-        <form action={signOutAction} className="mt-2">
-          <button type="submit" className="flex h-11 w-full items-center gap-3 rounded-lg border border-white/20 px-3 text-xs font-bold text-white/90 transition hover:bg-white/10"><LogOut className="h-4 w-4" /> Keluar dari akun</button>
-        </form>
-      </div>
-    </aside>
-  );
-}
-
-function Topbar({ ownerName, businessName }: { ownerName: string; businessName: string }) {
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function close(event: PointerEvent) {
-      if (!profileRef.current?.contains(event.target as Node)) setProfileOpen(false);
-    }
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, []);
-
-  return (
-    <header className="sticky top-0 z-30 flex min-h-[82px] items-center gap-3 border-b border-[#e3e8e5] bg-white px-4 sm:px-6 xl:px-8">
-      <Link href="/dashboard" className="mr-auto flex items-center gap-2 lg:hidden">
-        <Image src="/Logo(Pull).svg" alt="Pull" width={36} height={36} className="rounded-lg" />
-        <span className="text-xl font-extrabold text-[#145c46]">Pull</span>
-      </Link>
-      <label className="hidden h-12 min-w-0 max-w-[500px] flex-1 items-center gap-3 rounded-xl border border-[#dfe5e1] bg-white px-4 text-[#7b8781] md:flex">
-        <Search className="h-5 w-5 shrink-0" />
-        <input className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#1a2c25] outline-none placeholder:text-[#7b8781]" placeholder="Cari UMKM, bahan baku, atau pekerjaan..." />
-      </label>
-
-      <button type="button" className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[#46534d] transition hover:bg-[#f0f5f1]" aria-label="Notifikasi">
-        <Bell className="h-5 w-5" />
-        <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[#e3343f] px-1 text-[9px] font-extrabold text-white">3</span>
-      </button>
-
-      <div className="hidden h-14 items-center gap-3 rounded-xl border border-[#e1e7e3] px-3 sm:flex">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#e7f5eb] text-[#08783f]"><ShieldCheck className="h-5 w-5 fill-[#08783f] text-white" /></span>
-        <div><p className="text-[10px] font-bold text-[#596760]">Trust Score</p><p className="mt-0.5 text-sm font-extrabold text-[#10231d]">92 <span className="ml-1 text-[9px] text-[#11834a]">Sangat Baik</span></p></div>
-      </div>
-      <div className="hidden h-14 items-center gap-3 rounded-xl border border-[#e1e7e3] px-3 xl:flex">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#eef6e6] text-[#4e8c3c]"><ShoppingBag className="h-4 w-4" /></span>
-        <div><p className="text-[10px] font-bold text-[#596760]">PullPoints</p><p className="mt-0.5 text-sm font-extrabold text-[#10231d]">1.250</p></div>
-      </div>
-
-      <div ref={profileRef} className="relative">
-        <button type="button" onClick={() => setProfileOpen((open) => !open)} className="flex h-14 items-center gap-3 rounded-xl px-2 text-left transition hover:bg-[#f5f8f6]" aria-expanded={profileOpen} aria-haspopup="menu">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#08783d] text-xs font-extrabold text-white">{initials(ownerName)}</span>
-          <span className="hidden min-w-0 sm:block"><span className="block max-w-28 truncate text-xs font-extrabold text-[#111b17]">{ownerName}</span><span className="mt-1 block max-w-28 truncate text-[10px] font-medium text-[#69756f]">{businessName}</span></span>
-          <ChevronDown className={`hidden h-4 w-4 text-[#24332d] transition sm:block ${profileOpen ? "rotate-180" : ""}`} />
-        </button>
-        {profileOpen ? (
-          <div role="menu" className="absolute right-0 top-[calc(100%+8px)] w-64 rounded-xl border border-[#dfe6e2] bg-white p-3 shadow-[0_18px_48px_rgba(12,38,28,.16)]">
-            <p className="text-xs font-extrabold text-[#10231d]">{ownerName}</p>
-            <p className="mt-1 text-[10px] text-[#69756f]">{businessName} · Pemilik UMKM</p>
-            <Link href="/dashboard" className="mt-3 flex h-10 items-center gap-2 rounded-lg bg-[#f0f5f1] px-3 text-[11px] font-bold text-[#28543e]"><Home className="h-4 w-4" /> Kembali ke dashboard</Link>
-          </div>
-        ) : null}
-      </div>
-    </header>
   );
 }
 
@@ -338,9 +201,9 @@ function FilterBar({ filters, setFilters, viewMode, setViewMode, onCreate }: {
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex h-[52px] w-full rounded-[15px] border border-[#dfe5e1] bg-white p-1 sm:w-[232px]">
-          <button type="button" onClick={() => setViewMode("list")} className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition ${viewMode === "list" ? "bg-[#08783f] text-white shadow-sm" : "text-[#38694e] hover:bg-[#f0f5f1]"}`}><LayoutList className="h-4 w-4" /> List View</button>
-          <button type="button" onClick={() => setViewMode("map")} className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition ${viewMode === "map" ? "bg-[#08783f] text-white shadow-sm" : "text-[#38694e] hover:bg-[#f0f5f1]"}`}><Map className="h-4 w-4" /> Map</button>
+        <div className="flex h-[52px] w-full rounded-[15px] border border-[#dfe5e1] bg-white p-1 sm:w-[252px]">
+          <button type="button" onClick={() => setViewMode("list")} className={`flex min-w-[122px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold leading-none transition ${viewMode === "list" ? "bg-[#08783f] text-white shadow-sm" : "text-[#38694e] hover:bg-[#f0f5f1]"}`}><LayoutList className="h-4 w-4 shrink-0" /><span className="whitespace-nowrap">List View</span></button>
+          <button type="button" onClick={() => setViewMode("map")} className={`flex min-w-[112px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold leading-none transition ${viewMode === "map" ? "bg-[#08783f] text-white shadow-sm" : "text-[#38694e] hover:bg-[#f0f5f1]"}`}><Map className="h-4 w-4 shrink-0" /><span className="whitespace-nowrap">Map</span></button>
         </div>
         <button type="button" onClick={onCreate} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(8,120,63,.18)] transition hover:bg-[#066b36]">Buat Pool <Plus className="h-4 w-4" /></button>
       </div>
@@ -538,7 +401,15 @@ function DetailModal({ pool, joined, onClose, onJoin, onShare }: { pool: PoolIte
   );
 }
 
-export function PoolPatunganPage({ ownerName, businessName }: { ownerName: string; businessName: string }) {
+export function PoolPatunganPage({
+  ownerName,
+  businessName,
+  profileCompletion,
+}: {
+  ownerName: string;
+  businessName: string;
+  profileCompletion: number;
+}) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
   const [selectedPoolId, setSelectedPoolId] = useState<string | null>(null);
@@ -621,12 +492,9 @@ export function PoolPatunganPage({ ownerName, businessName }: { ownerName: strin
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9f8] font-[family-name:var(--font-worker-sans)] text-[#10231d]">
+    <>
       <style jsx global>{`.pool-input{height:46px;width:100%;border:1px solid #dfe5e1;border-radius:10px;background:white;padding:0 12px;font-size:12px;font-weight:600;color:#26372f;outline:none;transition:.2s}.pool-input:focus{border-color:#71a987;box-shadow:0 0 0 4px #e7f3eb}.pool-input::placeholder{color:#98a29d}.pool-map-marker{background:transparent!important;border:0!important}`}</style>
-      <Sidebar ownerName={ownerName} businessName={businessName} />
-      <div className="lg:pl-[232px]">
-        <Topbar ownerName={ownerName} businessName={businessName} />
-        <main className="mx-auto max-w-[1480px] px-4 pb-16 pt-6 sm:px-6 xl:px-8">
+      <UmkmDashboardShell ownerName={ownerName} businessName={businessName} profileCompletion={profileCompletion}>
           <FilterBar filters={filters} setFilters={setFilters} viewMode={viewMode} setViewMode={setViewMode} onCreate={() => setActiveModal("create")} />
 
           <div className="mt-5 flex items-center justify-between gap-4 text-[11px] font-bold text-[#507f63]">
@@ -661,12 +529,11 @@ export function PoolPatunganPage({ ownerName, businessName }: { ownerName: strin
               <EmptyState />
             )}
           </div>
-        </main>
-      </div>
+      </UmkmDashboardShell>
 
       {activeModal === "create" ? <CreatePoolModal onClose={() => setActiveModal(null)} onSubmit={createPool} /> : null}
       {activeModal === "detail" && selectedPool ? <DetailModal pool={selectedPool} joined={joinedPoolIds.includes(selectedPool.id)} onClose={() => setActiveModal(null)} onJoin={joinPool} onShare={sharePool} /> : null}
       {toast ? <div role="status" className="fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-xl bg-[#0c261c] px-4 py-3 text-xs font-bold text-white shadow-[0_16px_45px_rgba(7,29,21,.28)]"><Check className="h-4 w-4 text-[#9ad2aa]" />{toast}</div> : null}
-    </div>
+    </>
   );
 }
