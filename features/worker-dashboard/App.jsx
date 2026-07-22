@@ -17,7 +17,7 @@ const CertificatesPage = lazy(() => import('./pages/CertificatesPage'))
 const TrustPage = lazy(() => import('./pages/TrustPage'))
 const SkillsPage = lazy(() => import('./pages/SkillsPage'))
 const ActivityPage = lazy(() => import('./pages/ActivityPage'))
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 
 const subscribe = () => () => {}
@@ -67,8 +67,8 @@ function AppRoutes({ initialProfile }) {
           <Route path="trust" element={<PageSuspense><TrustPage /></PageSuspense>} />
           <Route path="skills" element={<PageSuspense><SkillsPage /></PageSuspense>} />
           <Route path="activity" element={<PageSuspense><ActivityPage /></PageSuspense>} />
-          <Route path="notifications" element={<PageSuspense><NotificationsPage /></PageSuspense>} />
-          <Route path="settings" element={<PageSuspense><SettingsPage /></PageSuspense>} />
+
+          <Route path="settings/*" element={<PageSuspense><SettingsPage /></PageSuspense>} />
           <Route path="*" element={<EmptyState title="Halaman tidak ditemukan" description="Alamat yang kamu buka tidak tersedia di ruang kerja pekerja." />} />
         </Route>
       </Routes>

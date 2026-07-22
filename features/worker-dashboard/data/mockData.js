@@ -206,6 +206,9 @@ export const jobs = [
   },
 ]
 
+const applicationSectionCounts = { waiting: 3, confirmation: 1, accepted: 18, done: 2, rejected: 1 }
+export const applicationTabCounts = { all: Object.values(applicationSectionCounts).reduce((total, count) => total + count, 0), ...applicationSectionCounts }
+
 export const initialApplications = {
   Dilamar: [
     { id: 'app-1', company: 'Dapur Mami Solo', role: 'Asisten Dapur', time: 'Dilamar kemarin', status: 'Lamaran terkirim', location: 'Serengan', pay: 'Rp120 rb / hari' },
@@ -275,13 +278,18 @@ export const initialActivities = [
 export const initialProfile = {
   name: 'Dimas Pratama',
   email: 'dimas.pratama@email.com',
+  phone: '+6281234564821',
   title: 'Staf Toko & Pelayanan Pelanggan',
   district: 'Banjarsari',
   bio: 'Pekerja ritel yang terbiasa melayani pelanggan, menata display, mengoperasikan kasir dasar, dan membantu proses packing.',
   experienceLevel: '1–3 tahun',
-  workPreference: 'Harian / paruh waktu',
+  workPreference: 'Harian',
+  workTypes: ['daily'],
   radius: '10 km',
-  minimumPay: 'Rp100.000 / hari',
+  minimumPay: 'Rp100.000 /hari',
+  minimumPayDaily: 'Rp100.000 /hari',
+  minimumPayMonthly: '',
+  minimumPayProject: '',
   pushEnabled: true,
   whatsappUpdates: true,
   whatsappVerified: true,

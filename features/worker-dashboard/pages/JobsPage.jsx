@@ -1,9 +1,10 @@
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Bookmark,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +35,7 @@ export default function JobsPage() {
   const [district, setDistrict] = useState('Semua kecamatan')
   const [payType, setPayType] = useState('Semua upah')
   const [duration, setDuration] = useState('Semua durasi')
+  const [savedOnly, setSavedOnly] = useState(false)
   const [sort, setSort] = useState('Terbaru')
   const [view, setView] = useState('list')
   const [currentPage, setCurrentPage] = useState(1)
@@ -58,7 +60,8 @@ export default function JobsPage() {
       const matchesDistrict = district === 'Semua kecamatan' || job.district === district
       const matchesPay = payType === 'Semua upah' || (payType === 'Upah harian' ? job.daily : !job.daily)
       const matchesDuration = duration === 'Semua durasi' || (duration === 'Harian' ? job.daily : job.duration.toLowerCase().includes(duration.toLowerCase()))
-      return matchesSearch && matchesCategory && matchesDistrict && matchesPay && matchesDuration
+      const matchesSaved = !savedOnly || savedJobIds.includes(job.id)
+      return matchesSearch && matchesCategory && matchesDistrict && matchesPay && matchesDuration && matchesSaved
     })
 
     return filtered.sort((first, second) => {
@@ -66,7 +69,7 @@ export default function JobsPage() {
       if (sort === 'Terdekat') return parseDistance(first.distance) - parseDistance(second.distance)
       return first.id - second.id
     })
-  }, [query, category, district, payType, duration, sort])
+  }, [query, category, district, payType, duration, savedOnly, savedJobIds, sort])
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / pageSize))
   const safePage = Math.min(currentPage, totalPages)
@@ -80,6 +83,7 @@ export default function JobsPage() {
     setDistrict('Semua kecamatan')
     setPayType('Semua upah')
     setDuration('Semua durasi')
+    setSavedOnly(false)
   }
 
   return (
@@ -96,6 +100,7 @@ export default function JobsPage() {
           <FilterSelect label="Kecamatan" value={district} onChange={(value) => { setDistrict(value); setCurrentPage(1) }} options={districts} />
           <FilterSelect label="Upah" value={payType} onChange={(value) => { setPayType(value); setCurrentPage(1) }} options={['Semua upah', 'Upah harian', 'Upah bulanan']} />
           <FilterSelect label="Durasi" value={duration} onChange={(value) => { setDuration(value); setCurrentPage(1) }} options={['Semua durasi', 'Harian', 'Kontrak', 'Proyek']} />
+          <button type="button" aria-pressed={savedOnly} onClick={() => { setSavedOnly((current) => !current); setCurrentPage(1) }} className={`flex h-[52px] min-w-[190px] items-center gap-3 rounded-[15px] border px-3.5 text-left shadow-[0_5px_16px_rgba(18,59,48,.025)] transition ${savedOnly ? 'border-[#5ba079] bg-[#e8f5ec] text-[#08783f] ring-4 ring-[#dff0e5]' : 'border-pull-100 bg-white text-pull-900 hover:border-pull-200'}`}><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${savedOnly ? 'bg-[#08783f] text-white' : 'bg-pull-50 text-pull-500'}`}><Bookmark size={15} fill={savedOnly ? 'currentColor' : 'none'} /></span><span className="min-w-0 flex-1"><span className="block text-[9px] font-extrabold uppercase tracking-wider text-pull-400">Bookmark</span><span className="mt-0.5 block truncate text-xs font-extrabold leading-5">Tersimpan ({savedJobIds.length})</span></span>{savedOnly ? <Check size={15} strokeWidth={2.8} /> : null}</button>
           <div className="grid h-[52px] min-w-[190px] grid-cols-[1.18fr_0.82fr] items-center rounded-[15px] border border-pull-100 bg-white p-1 shadow-xs">
             <button type="button" onClick={() => setView('list')} className={`flex h-full min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-[11px] font-extrabold transition-all ${view === 'list' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-600 hover:bg-pull-50 hover:text-pull-900'}`}><List size={14} className="shrink-0" /><span className="truncate">List View</span></button>
             <button type="button" onClick={() => setView('map')} className={`flex h-full min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-[11px] font-extrabold transition-all ${view === 'map' ? 'bg-[#08783f] text-white shadow-sm' : 'text-pull-600 hover:bg-pull-50 hover:text-pull-900'}`}><MapIcon size={14} className="shrink-0" /><span className="truncate">Map</span></button>
@@ -105,7 +110,7 @@ export default function JobsPage() {
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[11px] font-bold text-pull-500">Menampilkan <strong className="text-pull-900">{filteredJobs.length}</strong> lowongan di Solo Raya</p>
-        <label className="flex items-center gap-2 text-[10px] font-bold text-pull-500">Urutkan:<select value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1) }} className="h-10 rounded-xl border border-pull-100 bg-white px-3 font-extrabold text-pull-700 outline-none cursor-pointer"><option>Terbaru</option><option>Kecocokan</option><option>Terdekat</option></select></label>
+        <div className="w-full sm:w-48"><FilterSelect label="Urutkan" value={sort} onChange={(value) => { setSort(value); setCurrentPage(1) }} options={['Terbaru', 'Kecocokan', 'Terdekat']} /></div>
       </div>
 
       {view === 'list' ? (
@@ -122,7 +127,7 @@ export default function JobsPage() {
                 onApply={() => handleModalEvent('contact-job', { job })}
               />
             )) : (
-              <div className="md:col-span-2 xl:col-span-3"><EmptyState illustration="/illustrations/store-profile.webp" illustrationAlt="Ilustrasi profil UMKM lokal" title="Belum ada loker yang cocok" description="Ubah kata kunci atau longgarkan filter pencarian." action={<button onClick={resetFilters} className="secondary-button">Atur ulang pencarian</button>} /></div>
+              <div className="md:col-span-2 xl:col-span-3"><EmptyState illustration="/illustrations/store-profile.webp" illustrationAlt="Ilustrasi profil UMKM lokal" title={savedOnly ? 'Bookmark tidak ditemukan' : 'Belum ada loker yang cocok'} description={savedOnly ? 'Belum ada loker tersimpan yang cocok dengan filter aktif.' : 'Ubah kata kunci atau longgarkan filter pencarian.'} action={<button onClick={resetFilters} className="secondary-button">Atur ulang pencarian</button>} /></div>
             )}
           </section>
           {filteredJobs.length ? <Pagination page={safePage} totalPages={totalPages} onChange={setCurrentPage} /> : null}
@@ -130,7 +135,7 @@ export default function JobsPage() {
       ) : (
         <section className="relative isolate z-0 mt-4 min-h-[620px] overflow-hidden rounded-[24px] border border-pull-100 bg-pull-50 shadow-[0_18px_50px_rgba(18,59,48,.08)]">
           <JobsMap jobs={mappableJobs} radius={mapRadius} focusRequest={focusRequest} onSelectJob={setSelectedMapJob} />
-          <label className="absolute right-4 top-4 z-[500] rounded-[16px] border border-pull-100 bg-white/95 p-3 shadow-lg backdrop-blur-md"><span className="block text-[9px] font-extrabold text-pull-500">Jarak maksimal</span><select value={mapRadius} onChange={(event) => setMapRadius(Number(event.target.value))} className="mt-1 h-9 bg-transparent text-sm font-extrabold text-pull-900 outline-none cursor-pointer"><option value={3}>3 km</option><option value={5}>5 km</option><option value={10}>10 km</option></select></label>
+          <div className="absolute right-4 top-4 z-[500] w-44"><FilterSelect label="Jarak maksimal" value={`${mapRadius} km`} onChange={(value) => setMapRadius(Number.parseInt(value, 10))} options={['3 km', '5 km', '10 km']} /></div>
           <button type="button" onClick={() => setFocusRequest((value) => value + 1)} className="absolute bottom-40 right-4 z-[500] flex h-11 items-center gap-2 rounded-xl border border-pull-100 bg-white px-4 text-[10px] font-extrabold text-pull-700 shadow-lg hover:bg-pull-50 transition-colors"><LocateFixed size={16} /> Lokasi saya</button>
           {activeMapJob ? <MapJobCard job={activeMapJob} onDetail={() => openDialog('job-detail', { job: activeMapJob })} onApply={() => handleModalEvent('contact-job', { job: activeMapJob })} /> : null}
         </section>
@@ -140,16 +145,33 @@ export default function JobsPage() {
 }
 
 function FilterSelect({ label, value, onChange, options }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+    const closeOutside = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false)
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
   return (
-    <label className="flex h-[52px] min-w-0 flex-col justify-center rounded-[15px] border border-pull-100 bg-white px-3.5 py-1.5 transition-colors hover:border-pull-200 focus-within:border-pull-300">
-      <span className="block text-[9px] font-extrabold uppercase tracking-wider text-pull-400">{label}</span>
-      <span className="relative mt-0.5 flex min-w-0 items-center">
-        <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent pr-7 text-xs font-bold leading-5 text-pull-900 outline-none">
-          {options.map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown size={14} className="pointer-events-none absolute right-0 shrink-0 text-pull-700" />
-      </span>
-    </label>
+    <div ref={rootRef} className={`relative min-w-0 ${open ? 'z-[600]' : ''}`}>
+      <button type="button" onClick={() => setOpen((current) => !current)} className={`flex h-[52px] w-full min-w-0 flex-col justify-center rounded-[15px] border bg-white px-3.5 py-1.5 text-left shadow-[0_5px_16px_rgba(18,59,48,.025)] transition ${open ? 'border-[#5ba079] ring-4 ring-[#dff0e5]' : 'border-pull-100 hover:border-pull-200'}`} aria-haspopup="listbox" aria-expanded={open}>
+        <span className="block text-[9px] font-extrabold uppercase tracking-wider text-pull-400">{label}</span>
+        <span className="mt-0.5 flex min-w-0 items-center gap-2"><span className="min-w-0 flex-1 truncate text-xs font-extrabold leading-5 text-pull-900">{value}</span><ChevronDown size={15} className={`shrink-0 text-[#08783f] transition-transform ${open ? 'rotate-180' : ''}`} /></span>
+      </button>
+      {open ? <div role="listbox" aria-label={label} className="absolute left-0 right-0 top-[calc(100%+8px)] min-w-[190px] overflow-hidden rounded-[15px] border border-[#cfe2d6] bg-white p-1.5 shadow-[0_20px_50px_rgba(12,38,28,.16)]"><div className="max-h-60 space-y-1 overflow-y-auto">{options.map((option) => { const active = option === value; return <button key={option} type="button" role="option" aria-selected={active} onClick={() => { onChange(option); setOpen(false) }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[11px] font-bold transition ${active ? 'bg-[#e8f5ec] text-[#08783f]' : 'text-[#34473e] hover:bg-[#f2f8f4] hover:text-[#08783f]'}`}><span className="min-w-0 flex-1 truncate">{option}</span>{active ? <Check size={15} strokeWidth={2.8} /> : null}</button> })}</div></div> : null}
+    </div>
   )
 }
 

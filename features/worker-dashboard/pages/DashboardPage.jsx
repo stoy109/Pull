@@ -95,27 +95,7 @@ function ActivityPanel({ activities }) {
   )
 }
 
-function NotificationPanel({ activities }) {
-  const notifications = activities.filter((activity) => !activity.read).slice(0, 4)
 
-  return (
-    <section className="h-full min-h-[358px] rounded-[18px] border border-pull-100 bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.03)] sm:p-6">
-      <div className="mb-1 flex items-center justify-between gap-4 border-b border-pull-100 pb-5">
-        <h2 className="font-display text-xl font-semibold tracking-[-0.025em] text-pull-950">Notifikasi baru</h2>
-        <Link to="/notifications" className="text-button">Lihat semua</Link>
-      </div>
-      <div>
-        {notifications.map((activity) => (
-          <Link key={activity.id} to={activityPath(activity)} className="group flex items-start gap-3.5 border-b border-pull-100 py-[19px] last:border-0">
-            <span className="mt-1.5 size-2.5 shrink-0 rounded-full bg-[#0e9855]" />
-            <div className="min-w-0 flex-1"><p className="text-xs font-bold leading-5 text-pull-800 transition group-hover:text-pull-600">{activity.title}</p><p className="mt-1 text-[10px] font-medium leading-4 text-pull-400">{activity.detail}</p></div>
-            <span className="shrink-0 pt-1 text-[10px] font-semibold text-pull-400">{activity.time}</span>
-          </Link>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 function activityPath(activity) {
   if (activity.title.includes('Interview')) return '/applications/app-4'
@@ -151,8 +131,7 @@ export default function DashboardPage() {
         </div>
         <div className="col-span-12 xl:col-span-3"><TrustGauge /></div>
 
-        <div className="col-span-12 xl:col-span-6"><ActivityPanel activities={activities} /></div>
-        <div className="col-span-12 xl:col-span-6"><NotificationPanel activities={activities} /></div>
+        <div className="col-span-12"><ActivityPanel activities={activities} /></div>
       </div>
     </>
   )

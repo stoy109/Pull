@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  applicationTabCounts,
   defaultAdvancedFilters,
   initialActivities,
   initialApplications,
@@ -44,30 +45,62 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;')
 }
 
+function calculateProfileCompletion(profile) {
+  const requiredFields = ['name', 'phone', 'title', 'bio', 'experienceLevel', 'workPreference', 'radius', 'minimumPay', 'postalCode', 'province', 'city', 'district', 'village', 'whatsappVerified']
+  const completed = requiredFields.filter((field) => field === 'whatsappVerified' ? profile.whatsappVerified === true : String(profile[field] || '').trim()).length
+  return Math.round((completed / requiredFields.length) * 100)
+}
+
 export function WorkspaceProvider({ children, initialProfile }) {
   const navigate = useNavigate()
-  const [profile, setProfile] = usePersistentState('pull-worker-profile-v2', { ...mockInitialProfile, ...initialProfile })
-  const [applications, setApplications] = usePersistentState('pull-worker-applications-v4', initialApplications)
-  const [activities, setActivities] = usePersistentState('pull-worker-activities-v2', initialActivities)
-  const [portfolio, setPortfolio] = usePersistentState('pull-worker-portfolio-v2', initialPortfolio)
-  const [certificates, setCertificates] = usePersistentState('pull-worker-certificates-v2', initialCertificates)
-  const [experiences, setExperiences] = usePersistentState('pull-worker-experiences-v2', initialExperiences)
-  const [skills, setSkills] = usePersistentState('pull-worker-skills-v2', initialSkills)
-  const [savedJobIds, setSavedJobIds] = usePersistentState('pull-worker-saved-jobs-v2', [2])
-  const [appliedJobIds, setAppliedJobIds] = usePersistentState('pull-worker-applied-jobs-v2', [])
-  const [advancedFilters, setAdvancedFilters] = usePersistentState('pull-worker-filters-v2', defaultAdvancedFilters)
-  const [availability, setAvailability] = usePersistentState('pull-worker-availability-v2', 'Siap menerima tawaran')
+  const { skills: serverSkills = [], ...serverProfile } = initialProfile || {}
+  const hasServerVerification = Object.hasOwn(serverProfile, 'whatsappVerified')
+  const storageScope = encodeURIComponent(String(serverProfile.email || mockInitialProfile.email || 'demo').toLowerCase())
+  const seededSkills = Array.isArray(serverSkills) && serverSkills.length
+    ? serverSkills.map((name) => ({ name, verified: false }))
+    : initialSkills
+  const seededProfile = {
+    ...mockInitialProfile,
+    ...serverProfile,
+    ...(initialProfile && !hasServerVerification ? { whatsappVerified: false } : {}),
+  }
+  const [profile, setProfile] = usePersistentState(`pull-worker-profile-v3-${storageScope}`, seededProfile)
+  const [applications, setApplications] = usePersistentState(`pull-worker-applications-v4-${storageScope}`, initialApplications)
+  const [activities, setActivities] = usePersistentState(`pull-worker-activities-v2-${storageScope}`, initialActivities)
+  const [portfolio, setPortfolio] = usePersistentState(`pull-worker-portfolio-v2-${storageScope}`, initialPortfolio)
+  const [certificates, setCertificates] = usePersistentState(`pull-worker-certificates-v2-${storageScope}`, initialCertificates)
+  const [experiences, setExperiences] = usePersistentState(`pull-worker-experiences-v2-${storageScope}`, initialExperiences)
+  const [skills, setSkills] = usePersistentState(`pull-worker-skills-v2-${storageScope}`, seededSkills)
+  const [savedJobIds, setSavedJobIds] = usePersistentState(`pull-worker-saved-jobs-v2-${storageScope}`, [2])
+  const [appliedJobIds, setAppliedJobIds] = usePersistentState(`pull-worker-applied-jobs-v2-${storageScope}`, [])
+  const [advancedFilters, setAdvancedFilters] = usePersistentState(`pull-worker-filters-v2-${storageScope}`, defaultAdvancedFilters)
+  const [availability, setAvailability] = usePersistentState(`pull-worker-availability-v2-${storageScope}`, 'Siap menerima tawaran')
   const [dialog, setDialog] = useState(null)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
 
-  const unreadCount = activities.filter((activity) => !activity.read).length
+
   const activeApplicationCount = applications.Dilamar.length + applications.Ditinjau.length + applications.Interview.length + applications.Diterima.length
 
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
   useEffect(() => {
-    const migrationKey = 'pull-worker-confirmation-demo-v2'
+    if (!initialProfile || hasServerVerification) return
+    const migrationKey = `pull-worker-whatsapp-verification-source-v1-${storageScope}`
+    try {
+      if (window.localStorage.getItem(migrationKey)) return
+      window.localStorage.setItem(migrationKey, 'migrated')
+    } catch {
+      // Keep the conservative unverified state when storage is unavailable.
+    }
+    setProfile((current) => {
+      const nextProfile = { ...current, whatsappVerified: false }
+      return { ...nextProfile, completion: calculateProfileCompletion(nextProfile) }
+    })
+  }, [hasServerVerification, initialProfile, setProfile, storageScope])
+
+  useEffect(() => {
+    const migrationKey = `pull-worker-confirmation-demo-v2-${storageScope}`
     try {
       if (window.localStorage.getItem(migrationKey)) return
     } catch {
@@ -84,7 +117,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
     } catch {
       // In-memory state is enough for the current session.
     }
-  }, [setApplications])
+  }, [setApplications, storageScope])
 
   const showToast = (message) => {
     setToast(message)
@@ -108,14 +141,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
     setSavedJobIds((current) => current.includes(jobId) ? current.filter((id) => id !== jobId) : [...current, jobId])
   }
 
-  const markActivityRead = (id) => {
-    setActivities((current) => current.map((activity) => activity.id === id ? { ...activity, read: true } : activity))
-  }
 
-  const markAllActivitiesRead = () => {
-    setActivities((current) => current.map((activity) => ({ ...activity, read: true })))
-    showToast('Semua notifikasi ditandai dibaca')
-  }
 
   const updateApplication = (stage, id, patch) => {
     setApplications((current) => ({
@@ -170,6 +196,17 @@ export function WorkspaceProvider({ children, initialProfile }) {
       return
     }
 
+    if (type === 'verify-phone') {
+      setProfile((current) => {
+        const nextProfile = { ...current, whatsappVerified: true }
+        return { ...nextProfile, completion: calculateProfileCompletion(nextProfile) }
+      })
+      addActivity('Nomor WhatsApp terverifikasi', `${profile.phone} berhasil diverifikasi ulang.`, 'check', 'brand')
+      closeDialog()
+      showToast('Nomor WhatsApp berhasil diverifikasi')
+      return
+    }
+
     if (type === 'add-certificate') {
       const certificate = { id: `certificate-${Date.now()}`, ...payload, status: 'Menunggu verifikasi' }
       setCertificates((current) => [certificate, ...current])
@@ -181,7 +218,10 @@ export function WorkspaceProvider({ children, initialProfile }) {
     }
 
     if (type === 'update-profile') {
-      setProfile((current) => ({ ...current, ...payload, completion: Math.max(current.completion, 92) }))
+      setProfile((current) => {
+        const nextProfile = { ...current, ...payload }
+        return { ...nextProfile, completion: calculateProfileCompletion(nextProfile) }
+      })
       addActivity('Profil diperbarui', 'Preferensi dan informasi profesional berhasil disimpan.', 'user', 'brand')
       closeDialog()
       showToast('Profil berhasil diperbarui')
@@ -270,15 +310,18 @@ export function WorkspaceProvider({ children, initialProfile }) {
         urgent: false,
       })
       addActivity('Pekerjaan ditandai selesai', `${payload.company} perlu mengonfirmasi sebelum rating dibuka.`, 'check', 'brand')
+      closeDialog()
       navigate(`/applications/${payload.id}`)
       showToast('Pekerjaan ditandai selesai')
       return
     }
 
     if (type === 'confirm-work') {
-      updateApplication('Selesai', payload.id, { workerConfirmed: true, status: 'Rating sudah terbuka' })
-      addActivity('Pekerjaan selesai dikonfirmasi', 'Kedua pihak sudah mengonfirmasi. Rating dua arah kini terbuka.', 'check', 'brand')
-      showToast('Konfirmasi tersimpan. Rating sekarang terbuka')
+      const application = applications.Selesai.find((item) => item.id === payload.id)
+      const ratingOpen = application?.employerConfirmed === true
+      updateApplication('Selesai', payload.id, { workerConfirmed: true, status: ratingOpen ? 'Rating sudah terbuka' : 'Menunggu konfirmasi UMKM' })
+      addActivity('Pekerjaan selesai dikonfirmasi', ratingOpen ? 'Kedua pihak sudah mengonfirmasi. Rating dua arah kini terbuka.' : 'Konfirmasimu tersimpan. Menunggu konfirmasi UMKM.', 'check', 'brand')
+      showToast(ratingOpen ? 'Konfirmasi tersimpan. Rating sekarang terbuka' : 'Konfirmasi tersimpan. Menunggu UMKM')
       return
     }
 
@@ -313,6 +356,13 @@ export function WorkspaceProvider({ children, initialProfile }) {
       return
     }
 
+    if (type === 'set-skills') {
+      const names = [...new Set((payload.skills || []).map((name) => String(name).trim()).filter(Boolean))].slice(0, 10)
+      setSkills((current) => names.map((name) => current.find((skill) => skill.name.toLowerCase() === name.toLowerCase()) || { name, verified: false }))
+      showToast('Keahlian diperbarui')
+      return
+    }
+
     if (type === 'add-skill') {
       if (!payload.name || skills.some((skill) => skill.name.toLowerCase() === payload.name.toLowerCase())) {
         showToast('Skill sudah ada')
@@ -339,16 +389,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
       return
     }
 
-    if (type === 'save-settings') {
-      setProfile((current) => ({ ...current, ...payload }))
-      closeDialog()
-      if (payload.pushEnabled && 'Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission().then((permission) => showToast(permission === 'granted' ? 'Pengaturan disimpan. Push notification aktif' : 'Pengaturan disimpan. Izin push belum diberikan'))
-      } else {
-        showToast('Pengaturan matching disimpan')
-      }
-      return
-    }
+
 
     if (type === 'set-availability') {
       setAvailability(payload.availability)
@@ -390,12 +431,14 @@ export function WorkspaceProvider({ children, initialProfile }) {
   }
 
   const resetDemo = () => {
-    Object.keys(window.localStorage).filter((key) => key.startsWith('pull-worker-')).forEach((key) => window.localStorage.removeItem(key))
+    Object.keys(window.localStorage).filter((key) => key.startsWith('pull-worker-') && key.endsWith(`-${storageScope}`)).forEach((key) => window.localStorage.removeItem(key))
     window.location.reload()
   }
 
+  const resolvedProfile = { ...profile, completion: calculateProfileCompletion(profile) }
+
   const value = {
-    profile,
+    profile: resolvedProfile,
     applications,
     activities,
     portfolio,
@@ -408,16 +451,16 @@ export function WorkspaceProvider({ children, initialProfile }) {
     availability,
     dialog,
     toast,
-    unreadCount,
+
     activeApplicationCount,
+    allApplicationCount: applicationTabCounts.all,
     openDialog,
     closeDialog,
     showToast,
     dismissToast,
     addActivity,
     toggleSavedJob,
-    markActivityRead,
-    markAllActivitiesRead,
+
     updateApplication,
     findApplication,
     openWhatsApp,

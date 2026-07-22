@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   ArrowRight,
   Award,
-  Bell,
+
   BriefcaseBusiness,
   ChevronDown,
   ChevronRight,
@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Grid2X2,
   Home,
+  History,
   LogOut,
   Menu,
   Search,
@@ -33,7 +34,7 @@ const primaryNavigation = [
 ]
 
 const profileNavigation = [
-  { label: 'Notifikasi', path: '/notifications', icon: Bell, count: 'notifications' },
+  { label: 'Aktivitas', path: '/activity', icon: History },
 ]
 
 const mobileMoreNavigation = [
@@ -49,13 +50,13 @@ function runMotion(animate) {
 }
 
 function SidebarNav({ onNavigate }) {
-  const { activeApplicationCount, openDialog } = useWorkspace()
+  const { allApplicationCount, openDialog } = useWorkspace()
 
   return (
     <div className="worker-sidebar-nav flex h-full flex-col px-5 py-8">
       <div className="px-2"><Brand inverse /></div>
       <nav className="mt-7 flex-1 space-y-2 overflow-y-auto" aria-label="Navigasi utama">
-        {primaryNavigation.map((item) => <SidebarLink key={item.path} item={item} count={item.count ? activeApplicationCount : null} onNavigate={onNavigate} />)}
+        {primaryNavigation.map((item) => <SidebarLink key={item.path} item={item} count={item.count ? allApplicationCount : null} onNavigate={onNavigate} />)}
       </nav>
       <div className="mt-6 border-t border-white/10 pt-3">
         <nav className="flex flex-col gap-2" aria-label="Bantuan dan pengaturan">
@@ -78,14 +79,16 @@ function SidebarLink({ item, count, onNavigate }) {
 
 function Topbar({ onOpenMenu }) {
   const location = useLocation()
-  const { profile, unreadCount, openDialog } = useWorkspace()
+  const { profile, openDialog } = useWorkspace()
   const [profileOpen, setProfileOpen] = useState(false)
   const profileMenuRef = useRef(null)
   const currentPage = [...primaryNavigation, ...profileNavigation, { label: 'Pengaturan', path: '/settings', description: 'Kelola preferensi akun pekerja' }].find((item) => location.pathname.startsWith(item.path))
   const pageTitle = location.pathname === '/dashboard' ? 'Dashboard Overview' : currentPage?.label || 'Dashboard'
   const pageDescription = location.pathname === '/dashboard'
-    ? 'Ringkasan utama profil Anda, aktivitas terbaru, dan notifikasi penting.'
+    ? 'Ringkasan utama profil Anda, aktivitas terbaru, dan tindakan penting.'
     : currentPage?.description
+  const profileComplete = profile.completion >= 100
+  const identityStatus = profile.ktpStatus === 'verified' ? 'KTP terverifikasi' : profile.ktpStatus === 'pending' ? 'KTP sedang diperiksa' : 'KTP belum diverifikasi'
 
   useLayoutEffect(() => {
     if (!profileOpen || !profileMenuRef.current) return undefined
@@ -107,30 +110,31 @@ function Topbar({ onOpenMenu }) {
 
       <div className="hidden w-full flex-wrap items-center gap-3 md:flex xl:w-auto xl:flex-nowrap">
         <div className="relative w-full sm:w-auto">
-          <button onClick={() => setProfileOpen((current) => !current)} className="flex h-16 w-full items-center gap-3 rounded-full border border-[#d8dfdc] bg-white py-2 pl-2.5 pr-4 text-left shadow-[0_3px_12px_rgba(18,59,48,0.07)] transition hover:border-[#b8c9c0] sm:w-[260px]" aria-expanded={profileOpen} aria-haspopup="menu"><span className="relative grid size-12 shrink-0 place-items-center rounded-full bg-[#08783d] text-base font-medium text-white">{profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}{unreadCount ? <span className="absolute right-0 top-0 size-2.5 rounded-full border-2 border-white bg-[#df3443]" aria-label={`${unreadCount} notifikasi baru`} /> : null}</span><span className="min-w-0 flex-1"><span className="block whitespace-nowrap text-sm font-extrabold leading-tight text-[#111b17]">{profile.name}</span><span className="mt-1 block whitespace-nowrap text-xs font-medium leading-tight text-[#69756f]">{profile.completion}% profil lengkap</span></span><ChevronDown size={22} strokeWidth={2.5} className={`shrink-0 text-[#050b08] transition-transform ${profileOpen ? 'rotate-180' : ''}`} /></button>
+          <div className="flex h-16 w-full items-center rounded-full border border-[#d8dfdc] bg-white py-2 pl-2.5 pr-2 shadow-[0_3px_12px_rgba(18,59,48,0.07)] transition hover:border-[#b8c9c0] sm:w-[260px]"><NavLink to="/settings/profile" className="grid size-12 shrink-0 place-items-center rounded-full bg-[#08783d] bg-cover bg-center text-base font-medium text-white ring-offset-2 focus-visible:ring-3 focus-visible:ring-[#9fcbb0]" style={profile.photo ? { backgroundImage: `url(${profile.photo})` } : undefined} aria-label="Ubah profil">{profile.photo ? null : profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</NavLink><button onClick={() => setProfileOpen((current) => !current)} className="flex min-w-0 flex-1 items-center gap-3 px-3 text-left" aria-expanded={profileOpen} aria-haspopup="menu"><span className="min-w-0 flex-1"><span className="block whitespace-nowrap text-sm font-extrabold leading-tight text-[#111b17]">{profile.name}</span><span className="mt-1 block whitespace-nowrap text-xs font-medium leading-tight text-[#69756f]">{profileComplete ? 'Profil lengkap' : `${profile.completion}% profil lengkap`}</span></span><ChevronDown size={22} strokeWidth={2.5} className={`shrink-0 text-[#050b08] transition-transform ${profileOpen ? 'rotate-180' : ''}`} /></button></div>
 
           {profileOpen ? (
             <div ref={profileMenuRef} className="absolute right-0 top-[calc(100%+10px)] z-20 w-[312px] overflow-hidden rounded-xl border border-[#dfe6e2] bg-white px-4 py-5 shadow-[0_22px_60px_rgba(12,38,28,0.16)]" role="menu">
               <div className="flex items-center gap-3">
-                <span className="grid size-[54px] shrink-0 place-items-center rounded-full bg-[#08783d] text-lg font-medium text-white">{profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span>
+                <NavLink to="/settings/profile" onClick={() => setProfileOpen(false)} className="grid size-[54px] shrink-0 place-items-center rounded-full bg-[#08783d] bg-cover bg-center text-lg font-medium text-white" style={profile.photo ? { backgroundImage: `url(${profile.photo})` } : undefined} aria-label="Ubah profil">{profile.photo ? null : profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</NavLink>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold text-[#111b17]">{profile.name}</p>
-                  <span className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-md bg-[#f0f7f2] px-2 py-1 text-[9px] font-semibold text-[#315c45]"><VerifiedUmkmIcon className="size-3 shrink-0" label="WhatsApp terverifikasi" /><span className="truncate">WhatsApp terverifikasi · Worker</span></span>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5"><span className={`inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold ${profile.whatsappVerified ? 'bg-[#f0f7f2] text-[#315c45]' : 'bg-[#fff4e8] text-[#9c6537]'}`}>{profile.whatsappVerified ? <VerifiedUmkmIcon className="size-3 shrink-0" label="WhatsApp terverifikasi" /> : <ShieldCheck size={12} />}<span className="truncate">{profile.whatsappVerified ? 'WhatsApp terverifikasi' : 'WhatsApp perlu diverifikasi'}</span></span><span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold ${profile.ktpStatus === 'verified' ? 'bg-[#f0f7f2] text-[#315c45]' : 'bg-[#f3f5f4] text-[#687770]'}`}><ShieldCheck size={12} /> {identityStatus}</span></div>
                 </div>
               </div>
 
-              <div className="mt-6">
-                <div className="flex items-center justify-between gap-3 text-[10px] font-extrabold"><span className="text-[#2f3e38]">{profile.completion}% profil lengkap</span><NavLink to="/profile" onClick={() => setProfileOpen(false)} className="inline-flex items-center gap-1 whitespace-nowrap text-[#16844c] transition hover:text-[#086f3a]">Lengkapi Profil <ArrowRight size={13} /></NavLink></div>
-                <div className="mt-2 flex items-center gap-3"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#e8ebea]"><div className="h-full rounded-full bg-[#16864c]" style={{ width: `${profile.completion}%` }} /></div><span className="text-[10px] font-extrabold text-[#3e4b46]">{profile.completion}%</span></div>
-              </div>
+              {!profileComplete ? (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between gap-3 text-[10px] font-extrabold"><span className="text-[#2f3e38]">{profile.completion}% profil lengkap</span><NavLink to="/settings/profile" onClick={() => setProfileOpen(false)} className="inline-flex items-center gap-1 whitespace-nowrap text-[#16844c] transition hover:text-[#086f3a]">Lengkapi Profil <ArrowRight size={13} /></NavLink></div>
+                  <div className="mt-2 flex items-center gap-3"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#e8ebea]"><div className="h-full rounded-full bg-[#16864c]" style={{ width: `${profile.completion}%` }} /></div><span className="text-[10px] font-extrabold text-[#3e4b46]">{profile.completion}%</span></div>
+                </div>
+              ) : null}
 
               <div className="mt-5 border-t border-[#e1e7e3] pt-4">
                 <p className="mb-2 text-[9px] font-extrabold uppercase text-[#65736e]">Menu lainnya</p>
                 <nav className="space-y-1" aria-label="Menu profil">
                   {profileNavigation.map((item) => {
                     const Icon = item.icon
-                    const count = item.count === 'notifications' ? unreadCount : null
-                    return <NavLink key={item.path} to={item.path} onClick={() => setProfileOpen(false)} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-lg px-0.5 py-1.5 text-[11px] font-extrabold transition ${isActive ? 'text-[#08783d]' : 'text-[#1d2924] hover:text-[#08783d]'}`} role="menuitem"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#edf7f0] text-[#247b4d]"><Icon size={17} /></span><span className="flex-1">{item.label}</span>{count ? <span className="grid size-[22px] place-items-center rounded-full bg-[#df3443] text-[10px] font-extrabold text-white">{count}</span> : null}<ChevronRight size={17} className="text-[#6f7c77]" /></NavLink>
+                    return <NavLink key={item.path} to={item.path} onClick={() => setProfileOpen(false)} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-lg px-0.5 py-1.5 text-[11px] font-extrabold transition ${isActive ? 'text-[#08783d]' : 'text-[#1d2924] hover:text-[#08783d]'}`} role="menuitem"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#edf7f0] text-[#247b4d]"><Icon size={17} /></span><span className="flex-1">{item.label}</span><ChevronRight size={17} className="text-[#6f7c77]" /></NavLink>
                   })}
                 </nav>
               </div>
@@ -146,20 +150,23 @@ function Topbar({ onOpenMenu }) {
 
 function MobileBottomNav({ onOpenMore }) {
   const location = useLocation()
-  const { unreadCount } = useWorkspace()
   const items = [
     { label: 'Dashboard', path: '/dashboard', icon: Home },
     { label: 'Loker', path: '/jobs', icon: Search },
+    { label: 'Menu', icon: Grid2X2, center: true },
     { label: 'Lamaran', path: '/applications', icon: BriefcaseBusiness },
-    { label: 'Notifikasi', path: '/notifications', icon: Bell, count: unreadCount },
+    { label: 'Aktivitas', path: '/activity', icon: History },
   ]
   const moreActive = mobileMoreNavigation.some((item) => location.pathname.startsWith(item.path))
-  return <nav data-worker-mobile-nav className="fixed inset-x-0 bottom-0 z-40 grid h-[68px] grid-cols-5 border-t border-pull-100 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(12,38,28,.07)] backdrop-blur-xl md:hidden" aria-label="Navigasi mobile">{items.map((item) => { const Icon = item.icon; return <NavLink key={item.path} to={item.path} className={({ isActive }) => `relative flex flex-col items-center justify-center gap-1 text-[8px] font-extrabold ${isActive ? 'text-pull-800' : 'text-pull-400'}`}><span className="relative"><Icon size={18} />{item.count ? <span className="absolute -right-2 -top-1 grid size-4 place-items-center rounded-full bg-[#df754b] text-[7px] text-white">{item.count}</span> : null}</span><span>{item.label}</span></NavLink> })}<button onClick={onOpenMore} className={`flex flex-col items-center justify-center gap-1 text-[8px] font-extrabold ${moreActive ? 'text-pull-800' : 'text-pull-400'}`} aria-label="Buka menu lainnya"><Grid2X2 size={18} /><span>Menu</span></button></nav>
+
+  return <nav data-worker-mobile-nav className="fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-5 border-t border-pull-100 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(12,38,28,.07)] backdrop-blur-xl md:hidden" aria-label="Navigasi mobile">{items.map((item) => { const Icon = item.icon; return item.center ? <button key={item.label} type="button" onClick={onOpenMore} className={`relative flex flex-col items-center justify-end pb-1.5 text-[8px] font-extrabold ${moreActive ? 'text-[#08783f]' : 'text-pull-500'}`} aria-label="Buka menu lainnya"><span className="absolute bottom-7 grid size-14 place-items-center rounded-full bg-[#08783f] text-white shadow-[0_8px_20px_rgba(8,120,63,.3)] ring-[6px] ring-[#f6f8f5]"><Icon size={24} /></span><span className="relative z-10">Menu</span></button> : <NavLink key={item.path} to={item.path} className={({ isActive }) => `relative flex flex-col items-center justify-center gap-1 text-[8px] font-extrabold ${isActive ? 'text-[#08783f]' : 'text-pull-400'}`}><span className="relative"><Icon size={18} />{item.count ? <span className="absolute -right-2 -top-1 grid size-4 place-items-center rounded-full bg-[#df754b] text-[7px] text-white">{item.count}</span> : null}</span><span>{item.label}</span></NavLink> })}</nav>
 }
 
 function MobileMoreSheet({ onClose }) {
   const { profile, openDialog } = useWorkspace()
   const rootRef = useRef(null)
+  const profileComplete = profile.completion >= 100
+  const identityStatus = profile.ktpStatus === 'verified' ? 'KTP terverifikasi' : profile.ktpStatus === 'pending' ? 'KTP diperiksa' : 'KTP belum diverifikasi'
 
   useLayoutEffect(() => runMotion(() => {
     const root = rootRef.current
@@ -173,7 +180,22 @@ function MobileMoreSheet({ onClose }) {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [])
-  return <div ref={rootRef} className="fixed inset-0 z-50 md:hidden"><button data-mobile-scrim className="absolute inset-0 bg-pull-950/40 backdrop-blur-sm" onClick={onClose} aria-label="Tutup menu" /><section className="absolute inset-x-0 bottom-0 rounded-t-[28px] bg-white px-4 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_70px_rgba(12,38,28,.2)]"><div className="mx-auto mb-4 h-1 w-10 rounded-full bg-pull-200" /><div className="mb-4 flex items-center gap-3 rounded-[18px] bg-pull-50 p-3"><span className="avatar">{profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-extrabold text-pull-900">{profile.name}</span><span className="mt-0.5 block text-[9px] font-semibold text-pull-500">{profile.completion}% profil lengkap</span></span><button onClick={onClose} className="icon-button size-9" aria-label="Tutup menu"><X size={16} /></button></div><nav className="grid grid-cols-2 gap-2" aria-label="Menu lainnya">{mobileMoreNavigation.map((item) => { const Icon = item.icon; return <NavLink key={item.path} to={item.path} onClick={onClose} className={({ isActive }) => `flex items-center gap-3 rounded-[16px] border p-3 text-[10px] font-extrabold transition ${isActive ? 'border-pull-300 bg-pull-50 text-pull-900' : 'border-pull-100 text-pull-600'}`}><span className="grid size-8 place-items-center rounded-xl bg-pull-50 text-pull-600"><Icon size={15} /></span><span className="flex-1">{item.label}</span><ChevronRight size={13} className="text-pull-300" /></NavLink> })}</nav><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={() => { onClose(); openDialog('help') }} className="secondary-button justify-center">Pusat bantuan</button><button onClick={() => { onClose(); openDialog('logout') }} className="secondary-button justify-center text-[#a64f37]">Keluar</button></div></section></div>
+
+  return (
+    <div ref={rootRef} className="fixed inset-0 z-50 md:hidden">
+      <button data-mobile-scrim className="absolute inset-0 bg-pull-950/40 backdrop-blur-sm" onClick={onClose} aria-label="Tutup menu" />
+      <section className="absolute inset-x-0 bottom-0 rounded-t-[28px] bg-white px-4 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_70px_rgba(12,38,28,.2)]">
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-pull-200" />
+        <div className="mb-4 flex items-start gap-3 rounded-[18px] bg-pull-50 p-3">
+          <span className="avatar">{profile.name.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span>
+          <span className="min-w-0 flex-1"><span className="block truncate text-xs font-extrabold text-pull-900">{profile.name}</span><span className="mt-0.5 block text-[9px] font-semibold text-pull-500">{profileComplete ? 'Profil lengkap' : `${profile.completion}% profil lengkap`}</span><span className="mt-1.5 flex flex-wrap gap-1"><span className={`rounded px-1.5 py-1 text-[8px] font-bold ${profile.whatsappVerified ? 'bg-[#e8f5ec] text-[#08783f]' : 'bg-[#fff0df] text-[#a35f1d]'}`}>{profile.whatsappVerified ? 'WhatsApp terverifikasi' : 'WhatsApp perlu verifikasi'}</span><span className={`rounded px-1.5 py-1 text-[8px] font-bold ${profile.ktpStatus === 'verified' ? 'bg-[#e8f5ec] text-[#08783f]' : 'bg-white text-[#687770]'}`}>{identityStatus}</span></span></span>
+          <button onClick={onClose} className="icon-button size-9" aria-label="Tutup menu"><X size={16} /></button>
+        </div>
+        <nav className="grid grid-cols-2 gap-2" aria-label="Menu lainnya">{mobileMoreNavigation.map((item) => { const Icon = item.icon; return <NavLink key={item.path} to={item.path} onClick={onClose} className={({ isActive }) => `flex items-center gap-3 rounded-[16px] border p-3 text-[10px] font-extrabold transition ${isActive ? 'border-pull-300 bg-pull-50 text-pull-900' : 'border-pull-100 text-pull-600'}`}><span className="grid size-8 place-items-center rounded-xl bg-pull-50 text-pull-600"><Icon size={15} /></span><span className="flex-1">{item.label}</span><ChevronRight size={13} className="text-pull-300" /></NavLink> })}</nav>
+        <div className="mt-3 grid grid-cols-2 gap-2"><button onClick={() => { onClose(); openDialog('help') }} className="secondary-button justify-center">Pusat bantuan</button><button onClick={() => { onClose(); openDialog('logout') }} className="secondary-button justify-center text-[#a64f37]">Keluar</button></div>
+      </section>
+    </div>
+  )
 }
 
 

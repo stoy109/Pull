@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { FormFeedback, FormHelper, FormLabel } from "@/components/form-ui";
+
+import { SkillPicker } from "@/components/skill-picker";
+import { WORKER_JOB_FIELDS } from "@/lib/worker-profile-options";
 import {
   saveProfileAction,
   type OnboardingActionState,
@@ -32,16 +35,7 @@ const BUSINESS_CATEGORIES = [
   "Lainnya",
 ];
 
-const WORKER_SKILLS = [
-  "Tekstil & Batik",
-  "Kuliner & Masak",
-  "Pertanian & Perkebunan",
-  "Konstruksi & Bangunan",
-  "Kerajinan Tangan",
-  "Jasa Kebersihan",
-  "Transportasi & Pengiriman",
-  "Lainnya",
-];
+
 
 const SUPPLIER_PRODUCT_CATEGORIES = [
   "Bahan Baku Makanan",
@@ -60,6 +54,7 @@ type CompleteProfileFormProps = {
   defaultHeadline?: string;
   defaultDeliveryArea?: string;
   defaultPhone?: string;
+  defaultSkills?: string[];
   role?: string;
 };
 
@@ -96,6 +91,7 @@ export function CompleteProfileForm({
   defaultHeadline,
   defaultDeliveryArea,
   defaultPhone,
+  defaultSkills = [],
   role,
 }: CompleteProfileFormProps) {
   const [state, formAction, isPending] = useActionState(
@@ -115,13 +111,14 @@ export function CompleteProfileForm({
   const [deliveryArea, setDeliveryArea] = useState(() =>
     ensureString(defaultDeliveryArea),
   );
+  const [skills, setSkills] = useState(() => defaultSkills);
   const [phone, setPhone] = useState(() =>
     ensureString(defaultPhone).replace(/^\+?62\s?/, "").replace(/\D/g, ""),
   );
   const phoneDigits = phone.replace(/^0+/, "").replace(/\D/g, "");
   const phoneValue = phoneDigits ? `+62${phoneDigits}` : "";
   const categoryOptions = isWorker
-    ? WORKER_SKILLS
+    ? WORKER_JOB_FIELDS
     : isSupplier
       ? SUPPLIER_PRODUCT_CATEGORIES
       : BUSINESS_CATEGORIES;
@@ -220,7 +217,7 @@ export function CompleteProfileForm({
                 <div className="form-field">
                   <FormLabel htmlFor="profile-category" required>
                     {isWorker
-                      ? "Bidang Keahlian"
+                      ? "Bidang Pekerjaan Utama"
                       : isSupplier
                         ? "Kategori Produk yang Disuplai"
                         : "Kategori Usaha"}
@@ -251,6 +248,18 @@ export function CompleteProfileForm({
                   </div>
                 </div>
               </div>
+
+              {isWorker && (
+                <div className="grid grid-cols-[36px_1fr] items-start gap-3">
+                  <FieldIcon><Tag className="h-5 w-5" /></FieldIcon>
+                  <div className="form-field">
+                    <p className="mb-2 text-[11px] font-extrabold text-[#10231d]">Keahlian Spesifik <span className="text-[#b61f3e]">*</span></p>
+                    <SkillPicker name="skills" value={skills} onChangeAction={setSkills} />
+                  </div>
+                </div>
+              )}
+
+
 
               {isSupplier && (
                 <div className="grid grid-cols-[36px_1fr] items-start gap-3">

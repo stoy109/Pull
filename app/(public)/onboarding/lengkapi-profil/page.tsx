@@ -21,6 +21,13 @@ function readMetadataString(metadata: Record<string, unknown>, key: string) {
   return typeof value === "string" ? value : "";
 }
 
+function readMetadataStrings(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
 export default async function LengkapiProfilPage({
   searchParams,
 }: LengkapiProfilPageProps) {
@@ -57,6 +64,7 @@ export default async function LengkapiProfilPage({
     readSearchString(params.deliveryArea);
   const phone =
     readMetadataString(metadata, "phone") || readSearchString(params.phone);
+  const skills = readMetadataStrings(metadata, "skills");
 
   return (
     <CompleteProfileForm
@@ -65,6 +73,7 @@ export default async function LengkapiProfilPage({
       defaultHeadline={headline}
       defaultDeliveryArea={deliveryArea}
       defaultPhone={phone}
+      defaultSkills={skills}
       role={role}
     />
   );

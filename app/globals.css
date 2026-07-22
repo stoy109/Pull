@@ -309,6 +309,55 @@ textarea {
   letter-spacing: 0;
 }
 
+select {
+  color-scheme: light;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+select:not(.appearance-none) {
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2338694e' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+select:hover:not(:disabled) {
+  border-color: #94b9a1;
+}
+
+select:focus-visible,
+select:open {
+  border-color: #38694e;
+  box-shadow: 0 0 0 4px rgb(191 213 197 / 0.45);
+  outline: none;
+}
+
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+select option,
+select optgroup {
+  background: #ffffff;
+  color: #17392c;
+  font-weight: 600;
+}
+
+select option {
+  padding: 0.75rem 1rem;
+}
+
+select option:checked {
+  background: #e8f5ec linear-gradient(0deg, #e8f5ec 0%, #e8f5ec 100%);
+  color: #08783f;
+  font-weight: 800;
+}
+
 .form-page {
   display: flex;
   min-height: 100vh;

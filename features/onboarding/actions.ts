@@ -15,6 +15,14 @@ function readFormString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function readFormStrings(formData: FormData, key: string) {
+  const values = formData.getAll(key)
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim().slice(0, 60))
+    .filter(Boolean);
+  return [...new Map(values.map((value) => [value.toLowerCase(), value])).values()].slice(0, 10);
+}
+
 function createProfileSuccessPath({
   role,
   displayName,
@@ -102,14 +110,15 @@ export async function saveProfileAction(
   const headline = readFormString(formData, "headline");
   const deliveryArea = readFormString(formData, "deliveryArea");
   const phone = readFormString(formData, "phone");
+  const skills = readFormStrings(formData, "skills");
   const formRole = readFormString(formData, "role");
   const role = validRoles.has(formRole) ? formRole : "umkm";
   const profileName = role === "pekerja" ? displayName : businessName;
 
-  if (role === "pekerja" && (!displayName || !headline || !phone)) {
+  if (role === "pekerja" && (!displayName || !headline || !phone || !skills.length)) {
     return {
       status: "error",
-      message: "Nama lengkap, bidang keahlian, dan nomor WhatsApp wajib diisi.",
+      message: "Nama, bidang kerja, keahlian, dan nomor WhatsApp wajib diisi.",
     };
   }
 
@@ -150,6 +159,7 @@ export async function saveProfileAction(
       business_name: profileName,
       headline,
       delivery_area: deliveryArea,
+      ...(role === "pekerja" ? { skills } : {}),
       phone,
       role,
       onboarding_step: "complete",

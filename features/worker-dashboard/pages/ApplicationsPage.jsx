@@ -16,6 +16,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa'
+import { applicationTabCounts } from '../data/mockData'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { VerifiedUmkmIcon } from '../components/UI'
 
@@ -41,15 +42,14 @@ function tabFromStage(stage) {
 }
 
 const tabStyles = {
-  all: { icon: LayoutGrid, shortLabel: 'Semua', tone: 'green' },
+  all: { icon: LayoutGrid, shortLabel: 'Semua', tone: 'plain' },
   waiting: { icon: Clock3, shortLabel: 'Menunggu', tone: 'orange' },
-  accepted: { icon: BadgeCheck, shortLabel: 'Diterima', tone: 'green' },
   confirmation: { icon: CircleAlert, shortLabel: 'Konfirmasi', tone: 'orange' },
-  done: { icon: CheckCircle2, shortLabel: 'Selesai', tone: 'gray' },
-  rejected: { icon: XCircle, shortLabel: 'Ditolak', tone: 'red' },
+  accepted: { icon: BadgeCheck, shortLabel: 'Diterima', tone: 'green' },
+  done: { icon: CheckCircle2, shortLabel: 'Selesai', tone: 'green' },
+  rejected: { icon: XCircle, shortLabel: 'Ditolak', tone: 'gray' },
 }
 
-const referenceTabCounts = { all: 24, waiting: 3, accepted: 18, confirmation: 1, done: 2, rejected: 1 }
 const referenceApplicationOrder = ['app-7', 'app-6', 'app-8', 'app-3', 'app-9']
 const referenceApplicationContent = {
   'app-7': { company: 'Batik Laweyan Bu Sari', role: 'Buruh Cuci Kain Batik', location: 'Laweyan, Solo', duration: '3 hari', pay: 'Rp 120.000 / hari', totalPay: 'Rp 360.000', workPeriod: '25–27 Juli 2026', appliedDate: '20 Juli 2026', trustScore: 82, logoImage: '/illustrations/batik-laweyan-logo.svg' },
@@ -69,12 +69,12 @@ export default function ApplicationsPage() {
 
   const allApplications = useMemo(() => Object.entries(applications).flatMap(([stage, items]) => items.map((application) => ({ ...application, stage, ...referenceApplicationContent[application.id] }))), [applications])
   const tabs = [
-    { id: 'all', label: 'Semua', count: referenceTabCounts.all },
-    { id: 'waiting', label: 'Menunggu Respons', count: referenceTabCounts.waiting },
-    { id: 'accepted', label: 'Diterima', count: referenceTabCounts.accepted },
-    { id: 'confirmation', label: 'Perlu Konfirmasi', count: referenceTabCounts.confirmation },
-    { id: 'done', label: 'Selesai', count: referenceTabCounts.done },
-    { id: 'rejected', label: 'Ditolak', count: referenceTabCounts.rejected },
+    { id: 'all', label: 'Semua', count: applicationTabCounts.all },
+    { id: 'waiting', label: 'Menunggu Respons', count: applicationTabCounts.waiting },
+    { id: 'confirmation', label: 'Perlu Konfirmasi', count: applicationTabCounts.confirmation },
+    { id: 'accepted', label: 'Diterima', count: applicationTabCounts.accepted },
+    { id: 'done', label: 'Selesai', count: applicationTabCounts.done },
+    { id: 'rejected', label: 'Ditolak', count: applicationTabCounts.rejected },
   ]
 
   const visibleApplications = useMemo(() => {
@@ -108,7 +108,7 @@ export default function ApplicationsPage() {
         <label className="col-span-2 flex h-[70px] items-center gap-3 rounded-lg border border-[#dfe7e2] bg-white px-5 transition focus-within:border-pull-300 focus-within:ring-4 focus-within:ring-pull-100/45 lg:col-span-1"><Search size={22} className="shrink-0 text-[#70837b]" /><span className="sr-only">Cari lamaran</span><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari nama UMKM atau jenis pekerjaan..." className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-pull-800 outline-none placeholder:text-[#98a59f]" /></label>
       </section>
 
-      <p className="mt-5 text-xs font-semibold text-[#64766f]">Menampilkan <strong className="font-extrabold text-[#0b8a45]">{showingReferenceTotal ? referenceTabCounts.all : visibleApplications.length}</strong> lamaran</p>
+      <p className="mt-5 text-xs font-semibold text-[#64766f]">Menampilkan <strong className="font-extrabold text-[#0b8a45]">{showingReferenceTotal ? applicationTabCounts.all : visibleApplications.length}</strong> lamaran</p>
 
       <section className="mt-5 space-y-2.5">
         {visibleApplications.map((application) => (
@@ -122,15 +122,16 @@ export default function ApplicationsPage() {
 function ApplicationTab({ tab, active, onClick }) {
   const style = tabStyles[tab.id]
   const Icon = style.icon
-  const tone = style.tone === 'orange' ? 'text-[#e86f00]' : style.tone === 'red' ? 'text-[#d93434]' : style.tone === 'gray' ? 'text-[#7d898f]' : 'text-[#08783f]'
-  const countTone = style.tone === 'orange' ? 'bg-[#ef7300]' : style.tone === 'red' ? 'bg-[#cf1717]' : style.tone === 'gray' ? 'bg-[#89939a]' : 'bg-[#08783f]'
+  const plainCount = style.tone === 'plain'
+  const tone = style.tone === 'orange' ? 'text-[#e86f00]' : style.tone === 'gray' || plainCount ? 'text-[#7d898f]' : 'text-[#08783f]'
+  const countTone = style.tone === 'orange' ? 'bg-[#ef7300] text-white' : style.tone === 'gray' ? 'bg-[#89939a] text-white' : plainCount ? 'text-[#52645c]' : 'bg-[#08783f] text-white'
 
   return (
     <button type="button" onClick={onClick} className={`relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-3 text-[8px] font-extrabold transition lg:min-h-14 lg:flex-row lg:gap-1.5 lg:px-2 lg:text-[9px] ${active ? 'text-[#08783f]' : 'text-[#26362f] hover:text-[#08783f]'}`} aria-current={active ? 'page' : undefined}>
-      <span className={`relative lg:hidden ${tone}`}><Icon size={18} strokeWidth={2.3} />{tab.count ? <span className={`absolute -right-2.5 -top-2 grid size-4 place-items-center rounded-full text-[7px] text-white ${countTone}`}>{tab.count}</span> : null}</span>
+      <span className={`relative lg:hidden ${tone}`}><Icon size={18} strokeWidth={2.3} />{tab.count ? <span className={`absolute grid place-items-center text-[7px] ${plainCount ? '-right-3 -top-1 font-black' : '-right-2.5 -top-2 size-4 rounded-full'} ${countTone}`}>{tab.count}</span> : null}</span>
       <span className="max-w-full truncate lg:hidden">{style.shortLabel}</span>
       <span className="hidden min-w-0 truncate whitespace-nowrap lg:inline">{tab.label}</span>
-      <span className={`hidden min-w-6 place-items-center rounded-full px-1.5 py-1 text-[8px] text-white lg:grid ${countTone}`}>{tab.count}</span>
+      <span className={`hidden place-items-center px-1.5 py-1 text-[8px] lg:grid ${plainCount ? 'min-w-0 font-black' : 'min-w-6 rounded-full'} ${countTone}`}>{tab.count}</span>
       {tab.id === 'confirmation' ? <span className="hidden size-2 shrink-0 rounded-full bg-[#ff7a00] ring-4 ring-[#fff0df] lg:block" /> : null}
       {active ? <span className="absolute inset-x-0 bottom-0 h-[3px] bg-[#08783f]" /> : null}
     </button>
@@ -204,6 +205,7 @@ function matchesTab(application, tab) {
 function applicationState(application) {
   if (application.stage === 'Ditolak') return { label: 'Tidak Diterima', badge: 'bg-[#fff0f0] text-[#df4141]', border: 'border-[#e7ece9]', accent: 'bg-[#ff5660]', surface: 'bg-white', icon: XCircle, action: 'jobs' }
   if (application.stage === 'Selesai' && application.confirmable && !application.workerConfirmed) return { label: 'Perlu Konfirmasi', badge: 'bg-[#fff2e5] text-[#e66e00]', border: 'border-[#ffc36f]', accent: 'bg-[#ff7900]', surface: 'bg-[#fffdfa]', icon: CircleAlert, action: 'confirm', attention: true }
+  if (application.stage === 'Selesai' && application.confirmable && !application.employerConfirmed) return { label: 'Menunggu UMKM', badge: 'bg-[#fff4e8] text-[#d26b00]', border: 'border-[#e2e9e5]', accent: 'bg-transparent', surface: 'bg-white', icon: Clock3, action: 'detail' }
   if (application.stage === 'Interview' && application.urgent) return { label: 'Perlu Konfirmasi', badge: 'bg-[#fff2e5] text-[#e66e00]', border: 'border-[#ffc36f]', accent: 'bg-[#ff7900]', surface: 'bg-[#fffdfa]', icon: CircleAlert, action: 'interview', attention: true }
   if (application.stage === 'Diterima') return { label: 'Diterima', badge: 'bg-[#eaf6ee] text-[#08783f]', border: 'border-[#e2e9e5]', accent: 'bg-[#0e9855]', surface: 'bg-white', icon: CheckCircle2, action: 'whatsapp' }
   if (application.stage === 'Selesai') return { label: 'Selesai', badge: 'bg-[#edf0f3] text-[#7c8890]', border: 'border-[#e2e9e5]', accent: 'bg-transparent', surface: 'bg-white', icon: CheckCircle2, action: application.rated ? 'certificate' : 'rating' }

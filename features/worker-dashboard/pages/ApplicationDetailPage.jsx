@@ -40,10 +40,7 @@ export default function ApplicationDetailPage() {
   const bothConfirmed = application.employerConfirmed && application.workerConfirmed
   const progressStages = stage === 'Ditolak' ? ['Dilamar', 'Ditinjau', 'Ditolak'] : standardStages
 
-  const finishWork = () => {
-    const confirmed = window.confirm('Tandai pekerjaan ini selesai? Employer tetap perlu mengonfirmasi sebelum rating dibuka.')
-    if (confirmed) handleModalEvent('finish-work', { id: application.id, company: application.company })
-  }
+  const finishWork = () => openDialog('finish-work', { application })
 
   return (
     <>
