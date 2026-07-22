@@ -1,12 +1,25 @@
-'use client'
+"use client";
 
-import dynamic from 'next/dynamic'
-
-const JobsMapInner = dynamic(() => import('./JobsMapInner'), {
-  ssr: false,
-  loading: () => <div className="grid min-h-[620px] place-items-center bg-pull-50 text-[11px] font-extrabold text-pull-500">Memuat peta Solo Raya...</div>,
-})
+import PullMap from "../../dashboard/components/pull-map";
 
 export default function JobsMap(props) {
-  return <JobsMapInner {...props} />
+  const items = props.jobs.map((job) => ({
+    id: String(job.id),
+    coordinates: job.coordinates,
+    title: job.role,
+    subtitle: `${job.company} · ${job.distance}`,
+    value: job.pay,
+  }));
+
+  return (
+    <PullMap
+      items={items}
+      radius={props.radius}
+      focusRequest={props.focusRequest}
+      onSelectItem={(id) => {
+        const job = props.jobs.find((item) => String(item.id) === id);
+        if (job) props.onSelectJob(job);
+      }}
+    />
+  );
 }
