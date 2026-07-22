@@ -3,6 +3,14 @@
 import PullMap from "@/features/dashboard/components/pull-map";
 import type { PoolItem } from "./pool-patungan-page";
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export function PoolMap({
   pools,
   radius,
@@ -21,7 +29,7 @@ export function PoolMap({
         coordinates: pool.coordinates,
         title: pool.name,
         subtitle: `${pool.location} · ${pool.memberCount} UMKM`,
-        value: `Estimasi hemat ${pool.savings}%`,
+        value: `Harga normal ${formatCurrency(pool.unitPrice)}/${pool.unit}`,
       }))}
       radius={radius}
       focusRequest={focusRequest}

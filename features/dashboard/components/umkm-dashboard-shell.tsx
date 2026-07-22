@@ -22,7 +22,7 @@ const SIDEBAR_ITEMS = [
   { label: "Dashboard", icon: Home, href: "/dashboard" },
   { label: "Pool Patungan", icon: UsersRound, href: "/dashboard/pools" },
   { label: "Papan Loker", icon: BriefcaseBusiness, href: "/dashboard/jobs" },
-  { label: "Profil Bisnis", icon: Store, href: "/dashboard#profil-bisnis" },
+  { label: "Profil Bisnis", icon: Store, href: "/dashboard/profile" },
   { label: "Trust Score", icon: ShieldCheck, href: "/dashboard#trust-score" },
 ];
 
@@ -30,7 +30,7 @@ const UMKM_FAQS = [
   {
     question: "Bagaimana cara membuat Pool Patungan?",
     answer:
-      "Buka menu Pool Patungan, pilih Buat Pool, lalu lengkapi bahan baku, target volume, satuan, batas waktu, dan deskripsinya. Pool akan tampil agar UMKM lain dapat bergabung.",
+      "Buka menu Pool Patungan, pilih Buat Pool, lalu lengkapi bahan baku, harga normal supplier per satuan, diskon maksimum supplier, target volume, satuan, batas waktu, dan deskripsinya. Estimasi diskon anggota akan menyesuaikan jumlah pesanannya terhadap target pool.",
   },
   {
     question: "Bagaimana cara meninjau dan menerima pelamar?",
@@ -74,10 +74,10 @@ export function UmkmDashboardShell({
   const initials = getInitials(ownerName) || "PU";
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
-  const headerContent = activeHash === "#profil-bisnis" && pathname === "/dashboard"
+  const headerContent = pathname.startsWith("/dashboard/profile")
     ? {
         title: "Profil Bisnis",
-        description: "Kelola identitas usaha, data pemilik, dan kelengkapan profil agar bisnis Anda lebih dipercaya.",
+        description: "Kelola informasi usaha dan produk yang tampil pada profil publik Anda.",
       }
     : activeHash === "#trust-score" && pathname === "/dashboard"
       ? {
@@ -139,13 +139,11 @@ export function UmkmDashboardShell({
           <nav className="mt-7 flex-1 space-y-2" aria-label="Navigasi utama UMKM">
             {SIDEBAR_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = item.href === "/dashboard/pools"
-                ? pathname.startsWith("/dashboard/pools")
-                : item.href === "/dashboard/jobs"
-                  ? pathname.startsWith("/dashboard/jobs")
-                  : item.href.includes("#")
-                    ? pathname === "/dashboard" && activeHash === item.href.slice(item.href.indexOf("#"))
-                  : item.href === "/dashboard" && pathname === "/dashboard";
+              const isActive = item.href.includes("#")
+                ? pathname === "/dashboard" && activeHash === item.href.slice(item.href.indexOf("#"))
+                : item.href === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname.startsWith(item.href);
 
               return (
                 <Link

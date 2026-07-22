@@ -5,11 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   ArrowRight,
-  Bell,
   ChevronDown,
-  ChevronRight,
   LogOut,
-  Store,
 } from "lucide-react";
 import { signOutAction } from "@/features/auth/actions";
 
@@ -110,7 +107,7 @@ export function ProfileMenu({
           <div className="mt-6">
             <div className="flex items-center justify-between gap-3 text-[10px] font-extrabold">
               <span className="text-[#2f3e38]">{profileCompletion}% profil lengkap</span>
-              <Link href="/dashboard#profil-bisnis" onClick={() => setIsOpen(false)} className="inline-flex items-center gap-1 whitespace-nowrap text-[#16844c] transition hover:text-[#086f3a]">
+              <Link href="/dashboard/profile" onClick={() => setIsOpen(false)} className="inline-flex items-center gap-1 whitespace-nowrap text-[#16844c] transition hover:text-[#086f3a]">
                 Lengkapi profil <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -122,22 +119,7 @@ export function ProfileMenu({
             </div>
           </div>
 
-          <div className="mt-5 border-t border-[#e1e7e3] pt-4">
-            <p className="mb-2 text-[9px] font-extrabold uppercase text-[#65736e]">Menu lainnya</p>
-            <Link href="/dashboard#profil-bisnis" role="menuitem" onClick={() => setIsOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg py-1.5 text-[11px] font-extrabold text-[#1d2924] transition hover:text-[#08783d]">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#edf7f0] text-[#247b4d]"><Store className="h-4 w-4" /></span>
-              <span className="flex-1">Profil bisnis</span>
-              <ChevronRight className="h-4 w-4 text-[#6f7c77]" />
-            </Link>
-            <Link href="/dashboard#profil-bisnis" role="menuitem" onClick={() => setIsOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg py-1.5 text-[11px] font-extrabold text-[#1d2924] transition hover:text-[#08783d]">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#edf7f0] text-[#247b4d]"><Bell className="h-4 w-4" /></span>
-              <span className="flex-1">Notifikasi</span>
-              <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-[#df3443] text-[10px] font-extrabold text-white">3</span>
-              <ChevronRight className="h-4 w-4 text-[#6f7c77]" />
-            </Link>
-          </div>
-
-          <form action={signOutAction}>
+          <form action={signOutAction} className="mt-5 border-t border-[#e1e7e3] pt-4">
             <SignOutButton />
           </form>
         </div>

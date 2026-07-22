@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -21,7 +21,13 @@ import {
   X,
 } from "lucide-react";
 import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
+import { calculatePoolOrder } from "./pool-calculations";
 import { PoolMap } from "./pool-map";
+import {
+  POOL_STATUS_LABELS,
+  resolvePoolStatus,
+  type PoolStatus,
+} from "./pool-status";
 
 type ViewMode = "list" | "map";
 type ActiveModal = "create" | "detail" | null;
@@ -34,18 +40,19 @@ export type PoolItem = {
   target: number;
   unit: string;
   percentage: number;
-  savings: number;
   memberCount: number;
   location: string;
   district: string;
   deadline: string;
+  deadlineAt: string;
+  status: PoolStatus;
   description: string;
   icon: "fabric" | "dye" | "package";
   iconTone: string;
   iconColor: string;
   coordinates: [number, number];
   unitPrice: number;
-  poolPrice: number;
+  maximumSupplierDiscount: number;
 };
 
 type Filters = {
@@ -53,6 +60,10 @@ type Filters = {
   category: string;
   district: string;
 };
+
+function futureDeadline(days: number) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
 
 const INITIAL_POOLS: PoolItem[] = [
   {
@@ -63,18 +74,19 @@ const INITIAL_POOLS: PoolItem[] = [
     target: 500,
     unit: "kg",
     percentage: 70,
-    savings: 22,
     memberCount: 8,
     location: "Laweyan, Solo",
     district: "Laweyan",
     deadline: "3 hari lagi",
+    deadlineAt: futureDeadline(3),
+    status: "waiting",
     description: "Kain katun combed 30s untuk kebutuhan produksi garmen dan batik.",
     icon: "fabric",
     iconTone: "bg-[#e1f1e4] text-[#08783f]",
     iconColor: "#08783f",
     coordinates: [-7.5662, 110.7974],
     unitPrice: 37500,
-    poolPrice: 29300,
+    maximumSupplierDiscount: 22,
   },
   {
     id: "pool-2",
@@ -84,18 +96,19 @@ const INITIAL_POOLS: PoolItem[] = [
     target: 200,
     unit: "kg",
     percentage: 60,
-    savings: 18,
     memberCount: 5,
     location: "Pasar Kliwon, Solo",
     district: "Pasar Kliwon",
     deadline: "5 hari lagi",
+    deadlineAt: futureDeadline(5),
+    status: "waiting",
     description: "Pewarna sintetis konsentrat untuk kebutuhan produksi batik skala UMKM.",
     icon: "dye",
     iconTone: "bg-[#fff0df] text-[#df710e]",
     iconColor: "#ee8615",
     coordinates: [-7.5831, 110.8311],
     unitPrice: 68000,
-    poolPrice: 55700,
+    maximumSupplierDiscount: 18,
   },
   {
     id: "pool-3",
@@ -105,18 +118,19 @@ const INITIAL_POOLS: PoolItem[] = [
     target: 10000,
     unit: "pcs",
     percentage: 80,
-    savings: 28,
     memberCount: 12,
     location: "Serengan, Solo",
     district: "Serengan",
     deadline: "1 hari lagi",
+    deadlineAt: futureDeadline(1),
+    status: "waiting",
     description: "Kemasan standing pouch transparan untuk makanan kering dan produk rumahan.",
     icon: "package",
     iconTone: "bg-[#eee9fb] text-[#7057b8]",
     iconColor: "#775bc1",
     coordinates: [-7.575, 110.8167],
     unitPrice: 1850,
-    poolPrice: 1330,
+    maximumSupplierDiscount: 28,
   },
 ];
 
@@ -142,6 +156,14 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatDeadlineDate(value: string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 function distanceKm(first: [number, number], second: [number, number]) {
   const toRadians = (value: number) => (value * Math.PI) / 180;
   const latitudeDelta = toRadians(second[0] - first[0]);
@@ -161,6 +183,21 @@ function PoolIcon({ pool, small = false }: { pool: PoolItem; small?: boolean }) 
   return (
     <span className={`grid shrink-0 place-items-center rounded-full ${small ? "h-10 w-10" : "h-14 w-14"} ${pool.iconTone}`}>
       <Icon className={small ? "h-5 w-5" : "h-7 w-7"} strokeWidth={1.9} />
+    </span>
+  );
+}
+
+function PoolStatusBadge({ status }: { status: PoolStatus }) {
+  const tone = status === "successful"
+    ? "bg-[#e4f4e8] text-[#08783f]"
+    : status === "cancelled"
+      ? "bg-[#fde8e6] text-[#b63b32]"
+      : "bg-[#fff3db] text-[#a7600b]";
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-extrabold ${tone}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {POOL_STATUS_LABELS[status]}
     </span>
   );
 }
@@ -211,27 +248,45 @@ function FilterBar({ filters, setFilters, viewMode, setViewMode, onCreate }: {
   );
 }
 
-function PoolCard({ pool, onOpen }: { pool: PoolItem; onOpen: () => void }) {
+function PoolCard({ pool, joined, onOpen }: { pool: PoolItem; joined: boolean; onOpen: () => void }) {
+  const actionLabel = pool.status === "successful"
+    ? "Pool Berhasil"
+    : pool.status === "cancelled"
+      ? "Pool Dibatalkan"
+      : joined
+        ? "Sudah Bergabung"
+        : "Gabung Pool";
+  const actionTone = pool.status === "cancelled"
+    ? "bg-[#f9e8e6] text-[#b63b32]"
+    : pool.status === "successful" || joined
+      ? "bg-[#e5f3e9] text-[#08783f] group-hover:bg-[#dceee2]"
+      : "bg-[#08783f] text-white group-hover:bg-[#066b36]";
+
   return (
     <button type="button" onClick={onOpen} className="group flex min-h-[328px] w-full flex-col rounded-xl border border-[#dfe5e1] bg-white p-5 text-left shadow-[0_5px_18px_rgba(18,59,48,.03)] transition hover:-translate-y-0.5 hover:border-[#9ac4aa] hover:shadow-[0_12px_28px_rgba(18,59,48,.08)]">
       <div className="flex items-start gap-3.5">
         <PoolIcon pool={pool} />
         <div className="min-w-0 flex-1">
           <h3 className="line-clamp-2 text-[15px] font-extrabold leading-5 text-[#10231d]">{pool.name}</h3>
-          <span className="mt-2 inline-flex rounded bg-[#f1f3f2] px-2 py-1 text-[9px] font-bold text-[#46534d]">{pool.category}</span>
+          <div className="mt-2 flex flex-wrap items-center gap-2"><span className="inline-flex rounded bg-[#f1f3f2] px-2 py-1 text-[9px] font-bold text-[#46534d]">{pool.category}</span><PoolStatusBadge status={pool.status} /></div>
         </div>
       </div>
       <div className="mt-7">
         <div className="flex items-center justify-between gap-3 text-[11px] font-bold text-[#34463e]"><span><strong>{formatNumber(pool.current)}{pool.unit}</strong> / {formatNumber(pool.target)}{pool.unit} target</span><strong className="text-[#10231d]">{pool.percentage}%</strong></div>
         <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#e8ecea]"><div className="h-full rounded-full bg-[#08783f] transition-all" style={{ width: `${pool.percentage}%` }} /></div>
       </div>
-      <div className="mt-4 flex h-11 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(90deg,#f0f7e9,#f5f9ef)] text-xs font-extrabold text-[#1c663a]"><TrendingUp className="h-4 w-4" /> Estimasi hemat {pool.savings}%</div>
+      <div className="mt-4 rounded-lg bg-[linear-gradient(90deg,#f0f7e9,#f5f9ef)] px-3 py-2.5 text-[#1c663a]">
+        <div className="flex items-center justify-between gap-3 text-[9px] font-bold"><span>Harga normal supplier</span><strong className="text-[11px]">{formatCurrency(pool.unitPrice)}/{pool.unit}</strong></div>
+        <p className="mt-1 flex items-center gap-1.5 text-[9px] font-extrabold"><TrendingUp className="h-3.5 w-3.5" /> Diskon maks. {pool.maximumSupplierDiscount}%</p>
+      </div>
       <div className="mt-5 grid grid-cols-3 gap-2 text-[9px] font-semibold leading-4 text-[#53625b]">
         <span className="flex items-start gap-1.5"><UsersRound className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {pool.memberCount} UMKM bergabung</span>
         <span className="flex items-start gap-1.5"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {pool.location}</span>
         <span className="flex items-start gap-1.5"><Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {pool.deadline}</span>
       </div>
-      <span className="mt-4 flex h-11 w-full items-center justify-center rounded-lg bg-[#08783f] text-xs font-extrabold text-white transition group-hover:bg-[#066b36]">Gabung Pool</span>
+      <span className={`mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg text-xs font-extrabold transition ${actionTone}`}>
+        {(joined || pool.status === "successful") && pool.status !== "cancelled" ? <Check className="h-4 w-4" /> : null}{actionLabel}
+      </span>
     </button>
   );
 }
@@ -255,7 +310,8 @@ function MapPoolCard({ pool, onDetail }: { pool: PoolItem; onDetail: () => void 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between text-[10px] font-bold text-pull-600"><span>{formatNumber(pool.current)}{pool.unit} / {formatNumber(pool.target)}{pool.unit}</span><span>{pool.percentage}%</span></div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-pull-100"><div className="h-full rounded-full bg-[#08783f]" style={{ width: `${pool.percentage}%` }} /></div>
-          <p className="mt-2 text-xs font-extrabold text-[#08783f]">Estimasi hemat {pool.savings}%</p>
+          <p className="mt-2 text-xs font-extrabold text-[#08783f]">Harga normal {formatCurrency(pool.unitPrice)}/{pool.unit}</p>
+          <p className="mt-1 text-[9px] font-bold text-[#5d7466]">Diskon maks. supplier {pool.maximumSupplierDiscount}%</p>
         </div>
         <button type="button" onClick={onDetail} className="h-10 rounded-xl bg-[#08783f] px-4 text-[10px] font-extrabold text-white transition hover:bg-[#066b36]">Lihat detail</button>
       </div>
@@ -280,34 +336,46 @@ function EmptyState() {
 
 function CreatePoolModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (pool: PoolItem) => void }) {
   const [description, setDescription] = useState("");
+  const [estimatedPrice, setEstimatedPrice] = useState("");
+  const [unit, setUnit] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const target = Number(form.get("target_volume"));
-    const unit = String(form.get("satuan"));
+    const unitValue = String(form.get("satuan"));
     const category = String(form.get("kategori"));
+    const unitPrice = Number(String(form.get("normal_unit_price")).replace(/\D/g, ""));
+    const maximumSupplierDiscount = Number(form.get("maximum_supplier_discount"));
+    const deadlineValue = String(form.get("deadline"));
+    const deadlineAt = `${deadlineValue}T23:59:59+07:00`;
     onSubmit({
       id: `pool-${Date.now()}`,
       name: String(form.get("nama_bahan")),
       category,
       current: 0,
       target,
-      unit,
+      unit: unitValue,
       percentage: 0,
-      savings: 15,
       memberCount: 1,
       location: "Laweyan, Solo",
       district: "Laweyan",
-      deadline: "Baru dibuat",
+      deadline: formatDeadlineDate(deadlineAt),
+      deadlineAt,
+      status: resolvePoolStatus({ currentQuantity: 0, targetQuantity: target, deadlineAt }),
       description: description || "Pool bahan baku baru dari komunitas UMKM Pull.",
       icon: category === "Kemasan" ? "package" : category === "Bahan Kerajinan" ? "dye" : "fabric",
       iconTone: "bg-[#e1f1e4] text-[#08783f]",
       iconColor: "#08783f",
       coordinates: [-7.569, 110.805],
-      unitPrice: 0,
-      poolPrice: 0,
+      unitPrice,
+      maximumSupplierDiscount,
     });
+  }
+
+  function updateEstimatedPrice(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 12);
+    setEstimatedPrice(digits ? formatNumber(Number(digits)) : "");
   }
 
   return (
@@ -316,8 +384,16 @@ function CreatePoolModal({ onClose, onSubmit }: { onClose: () => void; onSubmit:
         <div className="grid gap-5 p-6 sm:grid-cols-2">
           <Field label="Nama Bahan Baku *"><input name="nama_bahan" required placeholder="Contoh: Kain Katun Combed 30s" className="pool-input" /></Field>
           <Field label="Kategori *"><select name="kategori" required className="pool-input"><option value="">Pilih kategori</option>{CATEGORY_OPTIONS.slice(1).map((option) => <option key={option}>{option}</option>)}</select></Field>
+          <Field label="Harga Normal Supplier per satuan *">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs font-extrabold text-[#52635a]">Rp</span>
+              <input name="normal_unit_price" value={estimatedPrice} onChange={(event) => updateEstimatedPrice(event.target.value)} inputMode="numeric" pattern="[0-9.]+" required placeholder="Contoh: 10.000" className="pool-input pool-currency-input" />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[10px] font-bold text-[#7b8781]">/ {unit || "satuan"}</span>
+            </div>
+          </Field>
+          <Field label="Diskon Maksimum Supplier *"><div className="relative"><input name="maximum_supplier_discount" type="number" min="0" max="100" step="0.1" required placeholder="Contoh: 10" className="pool-input pool-percentage-input" /><span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-extrabold text-[#52635a]">%</span></div></Field>
           <Field label="Target Volume *"><input name="target_volume" type="number" min="1" required placeholder="Masukkan jumlah target" className="pool-input" /></Field>
-          <Field label="Satuan *"><select name="satuan" required className="pool-input"><option value="">Pilih satuan</option><option>kg</option><option>pcs</option><option>liter</option><option>meter</option></select></Field>
+          <Field label="Satuan *"><select name="satuan" value={unit} onChange={(event) => setUnit(event.target.value)} required className="pool-input"><option value="">Pilih satuan</option><option>kg</option><option>pcs</option><option>liter</option><option>meter</option></select></Field>
           <Field label="Batas Waktu Pool *" full><input name="deadline" type="date" required className="pool-input" /></Field>
           <Field label="Deskripsi (opsional)" full>
             <div className="relative"><textarea value={description} onChange={(event) => setDescription(event.target.value.slice(0, 200))} placeholder="Jelaskan detail bahan baku, spesifikasi, atau catatan lainnya..." className="pool-input min-h-28 resize-none py-3" /><span className="absolute bottom-3 right-3 text-[9px] font-semibold text-[#7b8781]">{description.length}/200</span></div>
@@ -350,9 +426,37 @@ function ModalFrame({ title, onClose, width, children }: { title: string; onClos
   );
 }
 
-function DetailModal({ pool, joined, onClose, onJoin, onShare }: { pool: PoolItem; joined: boolean; onClose: () => void; onJoin: () => void; onShare: () => void }) {
-  const savedPerUnit = Math.max(0, pool.unitPrice - pool.poolPrice);
-  const totalSavings = savedPerUnit * pool.target;
+function DetailModal({
+  pool,
+  joined,
+  joinedQuantity,
+  onClose,
+  onJoin,
+  onShare,
+}: {
+  pool: PoolItem;
+  joined: boolean;
+  joinedQuantity: number;
+  onClose: () => void;
+  onJoin: (quantity: number) => void;
+  onShare: () => void;
+}) {
+  const remainingQuantity = Math.max(0, pool.target - pool.current);
+  const maximumQuantity = joined ? joinedQuantity : remainingQuantity;
+  const [quantityInput, setQuantityInput] = useState(joinedQuantity ? String(joinedQuantity) : "");
+  const requestedQuantity = Number(quantityInput) || 0;
+  const purchaseQuantity = Math.min(Math.max(0, requestedQuantity), maximumQuantity);
+  const order = calculatePoolOrder({
+    quantity: purchaseQuantity,
+    normalUnitPrice: pool.unitPrice,
+    poolTarget: pool.target,
+    maximumSupplierDiscount: pool.maximumSupplierDiscount,
+  });
+  const contributionLabel = order.contributionPercentage.toLocaleString("id-ID", { maximumFractionDigits: 1 });
+  const discountLabel = order.estimatedDiscountPercentage.toLocaleString("id-ID", { maximumFractionDigits: 1 });
+  const hasQuantity = order.quantity > 0;
+  const isWaiting = pool.status === "waiting";
+  const isSuccessful = pool.status === "successful";
   const members = [
     { initials: "BS", name: "Bu Sari", business: "Batik Laweyan", tone: "bg-[#367d4e] text-white" },
     { initials: "AR", name: "Arum", business: "Batik", tone: "bg-[#ffe5b6] text-[#b66d11]" },
@@ -364,8 +468,10 @@ function DetailModal({ pool, joined, onClose, onJoin, onShare }: { pool: PoolIte
     <ModalFrame title="Detail Pool" onClose={onClose} width="max-w-[1080px]">
       <div className="grid gap-0 lg:grid-cols-[1.05fr_.95fr]">
         <div className="p-6 lg:border-r lg:border-[#e5e7eb]">
-          <div className="flex items-start gap-4"><PoolIcon pool={pool} /><div><h3 className="text-lg font-extrabold text-[#10231d]">{pool.name}</h3><span className="mt-2 inline-flex rounded bg-[#eef3ec] px-2 py-1 text-[9px] font-bold text-[#315c45]">{pool.category}</span></div></div>
+          <div className="flex items-start gap-4"><PoolIcon pool={pool} /><div><h3 className="text-lg font-extrabold text-[#10231d]">{pool.name}</h3><div className="mt-2 flex flex-wrap items-center gap-2"><span className="inline-flex rounded bg-[#eef3ec] px-2 py-1 text-[9px] font-bold text-[#315c45]">{pool.category}</span><PoolStatusBadge status={pool.status} /></div></div></div>
           <p className="mt-5 text-xs font-medium leading-6 text-[#596760]">{pool.description}</p>
+          {isSuccessful ? <p className="mt-4 rounded-xl border border-[#cce3d2] bg-[#eef8f0] px-4 py-3 text-[10px] font-semibold leading-5 text-[#17683a]">Target pool berhasil terpenuhi. Diskon telah dikonfirmasi dan transaksi dapat dilanjutkan.</p> : null}
+          {pool.status === "cancelled" ? <p className="mt-4 rounded-xl border border-[#f0c9c5] bg-[#fff1ef] px-4 py-3 text-[10px] font-semibold leading-5 text-[#a83b32]">Pool gagal karena target tidak terpenuhi hingga batas waktu. Seluruh pesanan dibatalkan, pengguna tidak dikenakan pembayaran, dan dana deposit akan dikembalikan.</p> : null}
           <div className="mt-6">
             <p className="text-[11px] font-extrabold text-[#27372f]">Progress Pool</p>
             <div className="mt-3 flex items-center justify-between text-xs font-bold"><span><strong>{formatNumber(pool.current)}{pool.unit}</strong> / {formatNumber(pool.target)}{pool.unit} target</span><strong>{pool.percentage}%</strong></div>
@@ -379,22 +485,63 @@ function DetailModal({ pool, joined, onClose, onJoin, onShare }: { pool: PoolIte
               <button type="button" className="w-16 text-center"><span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-[#e8ecea] text-[10px] font-extrabold text-[#596760]">+{Math.max(0, pool.memberCount - 4)}</span><p className="mt-2 text-[9px] font-bold text-[#27372f]">Lihat semua</p></button>
             </div>
           </div>
+          <label className="mt-7 block rounded-xl border border-[#dfe8e2] bg-[#f8fbf9] p-4">
+            <span className="text-[11px] font-extrabold text-[#27372f]">Jumlah Pesanan Anda</span>
+            <span className="relative mt-2 block">
+              <input
+                type="number"
+                min="1"
+                max={maximumQuantity || undefined}
+                step="1"
+                value={quantityInput}
+                onChange={(event) => setQuantityInput(event.target.value)}
+                disabled={joined || !remainingQuantity || !isWaiting}
+                placeholder="Contoh: 70"
+                className="pool-input pool-quantity-input disabled:bg-[#eef2ef] disabled:text-[#64716b]"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] font-extrabold text-[#52635a]">{pool.unit}</span>
+            </span>
+            <span className="mt-2 block text-[9px] font-medium leading-4 text-[#6c7973]">
+              {joined
+                ? `Pesanan Anda tercatat ${formatNumber(joinedQuantity)} ${pool.unit}.`
+                : isWaiting
+                  ? `Tersedia ${formatNumber(remainingQuantity)} ${pool.unit} dari target pool.`
+                  : pool.status === "successful"
+                    ? "Target pool sudah terpenuhi."
+                    : "Input ditutup karena pool telah dibatalkan."}
+            </span>
+          </label>
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            <button type="button" onClick={onJoin} disabled={joined} className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] text-xs font-extrabold text-white transition hover:bg-[#066b36] disabled:bg-[#70a984]"><Check className="h-4 w-4" /> {joined ? "Sudah Bergabung" : "Gabung Pool"}</button>
+            <button type="button" onClick={() => onJoin(purchaseQuantity)} disabled={joined || !hasQuantity || !remainingQuantity || !isWaiting} className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#08783f] text-xs font-extrabold text-white transition hover:bg-[#066b36] disabled:cursor-not-allowed disabled:bg-[#91ae9b]"><Check className="h-4 w-4" /> {joined ? "Sudah Bergabung" : isSuccessful ? "Pool Berhasil" : pool.status === "cancelled" ? "Pool Dibatalkan" : remainingQuantity ? "Gabung Pool" : "Pool Penuh"}</button>
             <button type="button" onClick={onShare} className="flex h-11 items-center justify-center gap-2 rounded-lg border border-[#87b99a] text-xs font-extrabold text-[#08783f] transition hover:bg-[#f0f7f2]"><Share2 className="h-4 w-4" /> Bagikan Pool</button>
           </div>
         </div>
 
         <div className="bg-[#fbfcfb] p-6">
-          <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-extrabold text-[#10231d]">Savings Calculator</h3><span className="rounded-full bg-[#eef6e7] px-3 py-1 text-[9px] font-extrabold text-[#27703f]">Perkiraan hemat 18–28%</span></div>
-          <p className="mt-4 text-[10px] font-bold text-[#596760]">Perbandingan Harga</p>
-          <div className="mt-5 grid h-56 grid-cols-[1fr_auto_1fr] items-end gap-5 border-b border-[#cfd6d2] px-4">
-            <div className="text-center"><p className="mb-2 text-[9px] font-bold text-[#67736d]">{pool.unitPrice ? `${formatCurrency(pool.unitPrice)}/${pool.unit}` : "Belum tersedia"}</p><div className="mx-auto h-28 max-w-28 rounded-t bg-gradient-to-b from-[#dfe3e1] to-[#bcc3c0]" /><p className="mt-3 text-[9px] font-bold text-[#53625b]">Beli Satuan<br /><span className="font-medium">(Estimasi)</span></p></div>
-            <div className="mb-20 rounded-xl border border-[#d9e7c6] bg-[#f1f8df] px-3 py-2 text-center text-[9px] font-extrabold text-[#28703f]">Hemat<br /><strong className="text-sm">{pool.savings}%</strong></div>
-            <div className="text-center"><p className="mb-2 text-[9px] font-bold text-[#27703f]">{pool.poolPrice ? `${formatCurrency(pool.poolPrice)}/${pool.unit}` : "Belum tersedia"}</p><div className="mx-auto h-24 max-w-28 rounded-t bg-gradient-to-b from-[#4e9a59] to-[#24763d]" /><p className="mt-3 text-[9px] font-bold text-[#53625b]">Pool Patungan<br /><span className="font-medium">(Estimasi)</span></p></div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold text-[#10231d]">Ringkasan Pesanan</h3>
+            <span className={`rounded-full px-3 py-1.5 text-[9px] font-extrabold ${isSuccessful ? "bg-[#e4f4e8] text-[#08783f]" : "bg-[#fff3db] text-[#9a5a0a]"}`}>
+              {isSuccessful ? `Diskon final ${discountLabel}%` : `Estimasi diskon ${discountLabel}%`}
+            </span>
           </div>
-          <div className="mt-7 grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-[9px] font-bold text-[#7b8781]">Estimasi Hemat</p><p className="mt-2 text-lg font-extrabold text-[#08783f]">{savedPerUnit ? `${formatCurrency(savedPerUnit)}/${pool.unit}` : "Menunggu harga"}</p></div><div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-[9px] font-bold text-[#7b8781]">Total Hemat (Jika tercapai target)</p><p className="mt-2 text-lg font-extrabold text-[#08783f]">{totalSavings ? formatCurrency(totalSavings) : "Menunggu harga"}</p></div></div>
-          <p className="mt-5 text-[9px] font-medium text-[#7b8781]">*Perhitungan berdasarkan target {formatNumber(pool.target)}{pool.unit}</p>
+          <p className="mt-3 rounded-lg bg-[#f0f6f2] px-3 py-2.5 text-[9px] font-medium leading-4 text-[#52635a]">Harga per satuan tetap memakai harga normal supplier. Estimasi diskon Anda = jumlah pesanan ÷ target pool × diskon maksimum supplier.</p>
+
+          <div className="mt-5 rounded-xl border border-[#dfe8e2] bg-white p-4">
+            <div className="flex items-center justify-between gap-4"><span className="text-[10px] font-bold text-[#68766f]">Harga normal supplier</span><strong className="text-sm text-[#10231d]">{formatCurrency(pool.unitPrice)}/{pool.unit}</strong></div>
+            <div className="mt-3 flex items-center justify-between gap-4"><span className="text-[10px] font-bold text-[#68766f]">Diskon maksimum supplier</span><strong className="text-sm text-[#08783f]">{pool.maximumSupplierDiscount}%</strong></div>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#e8ecea]"><div className="h-full rounded-full bg-[#08783f] transition-all" style={{ width: `${order.contributionPercentage}%` }} /></div>
+            <p className="mt-2 text-[9px] font-medium text-[#78847e]">Kontribusi pesanan Anda terhadap target: {hasQuantity ? `${contributionLabel}%` : "0%"}</p>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-[9px] font-bold text-[#7b8781]">Jumlah pesanan Anda</p><p className="mt-2 text-lg font-extrabold text-[#10231d]">{hasQuantity ? `${formatNumber(order.quantity)} ${pool.unit}` : "Masukkan jumlah"}</p></div>
+            <div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-[9px] font-bold text-[#7b8781]">Subtotal normal</p><p className="mt-2 text-lg font-extrabold text-[#10231d]">{hasQuantity ? formatCurrency(order.subtotalNormal) : "—"}</p></div>
+            <div className="rounded-xl border border-[#eadfbe] bg-[#fffaf0] p-4 shadow-sm"><p className="text-[9px] font-bold text-[#8a7334]">{isSuccessful ? "Diskon Anda" : "Estimasi diskon Anda"}</p><p className="mt-2 text-lg font-extrabold text-[#9a650c]">{hasQuantity ? `${discountLabel}%` : "—"}</p></div>
+            <div className="rounded-xl border border-[#cfe4d4] bg-[#f3faf4] p-4 shadow-sm"><p className="text-[9px] font-bold text-[#61806c]">{isSuccessful ? "Penghematan" : "Estimasi penghematan"}</p><p className="mt-2 text-lg font-extrabold text-[#08783f]">{hasQuantity ? formatCurrency(order.estimatedDiscountAmount) : "—"}</p></div>
+            <div className="rounded-xl border border-[#c7ddd0] bg-white p-4 shadow-sm sm:col-span-2"><p className="text-[9px] font-bold text-[#61806c]">{isSuccessful ? "Total pembayaran" : "Estimasi total pembayaran"}</p><p className="mt-2 text-xl font-extrabold text-[#08783f]">{pool.status === "cancelled" ? "Tidak ada pembayaran" : hasQuantity ? formatCurrency(order.estimatedTotal) : "—"}</p></div>
+          </div>
+
+          <p className="mt-5 text-[9px] font-medium leading-4 text-[#7b8781]">Selama status pool masih menunggu, diskon dan total pembayaran bersifat estimasi. Nilai final hanya dikonfirmasi setelah target pool terpenuhi sebelum {pool.deadline}.</p>
         </div>
       </div>
     </ModalFrame>
@@ -416,10 +563,12 @@ export function PoolPatunganPage({
   const [filters, setFilters] = useState<Filters>({ search: "", category: "Semua kategori", district: "Semua kecamatan" });
   const [pools, setPools] = useState(INITIAL_POOLS);
   const [joinedPoolIds, setJoinedPoolIds] = useState<string[]>([]);
+  const [joinedPoolQuantities, setJoinedPoolQuantities] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [mapRadius, setMapRadius] = useState(5);
   const [focusRequest, setFocusRequest] = useState(0);
   const [selectedMapPoolId, setSelectedMapPoolId] = useState<string | null>(null);
+  const notifiedCancelledPools = useRef(new Set<string>());
 
   const filteredPools = useMemo(() => pools.filter((pool) => {
     const search = filters.search.trim().toLocaleLowerCase("id-ID");
@@ -430,9 +579,11 @@ export function PoolPatunganPage({
   }), [filters, pools]);
 
   const selectedPool = pools.find((pool) => pool.id === selectedPoolId) ?? null;
+  const activePools = useMemo(() => filteredPools.filter((pool) => pool.status === "waiting"), [filteredPools]);
+  const historyPools = useMemo(() => filteredPools.filter((pool) => pool.status !== "waiting"), [filteredPools]);
   const mappablePools = useMemo(
-    () => filteredPools.filter((pool) => distanceKm(USER_POSITION, pool.coordinates) <= mapRadius),
-    [filteredPools, mapRadius],
+    () => activePools.filter((pool) => distanceKm(USER_POSITION, pool.coordinates) <= mapRadius),
+    [activePools, mapRadius],
   );
   const activeMapPool =
     (selectedMapPoolId
@@ -459,6 +610,38 @@ export function PoolPatunganPage({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  useEffect(() => {
+    function refreshPoolStatuses() {
+      setPools((current) => {
+        let hasChanges = false;
+        const updated = current.map((pool) => {
+          const status = resolvePoolStatus({
+            currentQuantity: pool.current,
+            targetQuantity: pool.target,
+            deadlineAt: pool.deadlineAt,
+          });
+          if (status === pool.status) return pool;
+          hasChanges = true;
+          return { ...pool, status };
+        });
+        return hasChanges ? updated : current;
+      });
+    }
+
+    refreshPoolStatuses();
+    const interval = window.setInterval(refreshPoolStatuses, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const newlyCancelled = pools.find(
+      (pool) => pool.status === "cancelled" && !notifiedCancelledPools.current.has(pool.id),
+    );
+    if (!newlyCancelled) return;
+    notifiedCancelledPools.current.add(newlyCancelled.id);
+    setToast(`Pool ${newlyCancelled.name} gagal karena target tidak terpenuhi. Pesanan dibatalkan tanpa pembayaran.`);
+  }, [pools]);
+
   function openDetail(poolId: string) {
     setSelectedPoolId(poolId);
     setActiveModal("detail");
@@ -472,11 +655,42 @@ export function PoolPatunganPage({
     setToast("Pool baru berhasil dibuat dan ditambahkan ke daftar.");
   }
 
-  function joinPool() {
+  function joinPool(quantity: number) {
     if (!selectedPool) return;
+    if (selectedPool.status !== "waiting") {
+      setToast(selectedPool.status === "successful" ? "Pool sudah berhasil dan tidak menerima pesanan baru." : "Pool telah dibatalkan karena target tidak terpenuhi.");
+      return;
+    }
+    if (joinedPoolIds.includes(selectedPool.id)) {
+      setToast(`Anda sudah bergabung ke pool ${selectedPool.name}.`);
+      return;
+    }
+    const availableQuantity = Math.max(0, selectedPool.target - selectedPool.current);
+    const safeQuantity = Math.min(availableQuantity, Math.max(0, Math.round(quantity)));
+    if (!safeQuantity) {
+      setToast("Masukkan jumlah pesanan sebelum bergabung.");
+      return;
+    }
     setJoinedPoolIds((current) => [...current, selectedPool.id]);
-    setPools((current) => current.map((pool) => pool.id === selectedPool.id ? { ...pool, memberCount: pool.memberCount + 1 } : pool));
-    setToast(`Anda berhasil bergabung ke pool ${selectedPool.name}.`);
+    setJoinedPoolQuantities((current) => ({ ...current, [selectedPool.id]: safeQuantity }));
+    setPools((current) => current.map((pool) => {
+      if (pool.id !== selectedPool.id) return pool;
+      const nextCurrent = Math.min(pool.target, pool.current + safeQuantity);
+      const status = resolvePoolStatus({
+        currentQuantity: nextCurrent,
+        targetQuantity: pool.target,
+        deadlineAt: pool.deadlineAt,
+      });
+      return {
+        ...pool,
+        current: nextCurrent,
+        percentage: Math.round((nextCurrent / pool.target) * 100),
+        memberCount: pool.memberCount + 1,
+        status,
+      };
+    }));
+    const targetReached = selectedPool.current + safeQuantity >= selectedPool.target;
+    setToast(targetReached ? `Target pool ${selectedPool.name} berhasil terpenuhi. Transaksi dapat dilanjutkan.` : `Anda berhasil bergabung ke pool ${selectedPool.name}.`);
   }
 
   async function sharePool() {
@@ -493,17 +707,25 @@ export function PoolPatunganPage({
 
   return (
     <>
-      <style jsx global>{`.pool-input{height:46px;width:100%;border:1px solid #dfe5e1;border-radius:10px;background:white;padding:0 12px;font-size:12px;font-weight:600;color:#26372f;outline:none;transition:.2s}.pool-input:focus{border-color:#71a987;box-shadow:0 0 0 4px #e7f3eb}.pool-input::placeholder{color:#98a29d}.pool-map-marker{background:transparent!important;border:0!important}`}</style>
+      <style jsx global>{`.pool-input{height:46px;width:100%;border:1px solid #dfe5e1;border-radius:10px;background:white;padding:0 12px;font-size:12px;font-weight:600;color:#26372f;outline:none;transition:.2s}.pool-currency-input{padding-left:38px;padding-right:76px}.pool-quantity-input{padding-right:64px}.pool-percentage-input{padding-right:36px}.pool-input:focus{border-color:#71a987;box-shadow:0 0 0 4px #e7f3eb}.pool-input::placeholder{color:#98a29d}.pool-map-marker{background:transparent!important;border:0!important}`}</style>
       <UmkmDashboardShell ownerName={ownerName} businessName={businessName} profileCompletion={profileCompletion}>
           <FilterBar filters={filters} setFilters={setFilters} viewMode={viewMode} setViewMode={setViewMode} onCreate={() => setActiveModal("create")} />
 
           <div className="mt-5 flex items-center justify-between gap-4 text-[11px] font-bold text-[#507f63]">
-            <p>Menampilkan <strong className="text-[#17392c]">{filteredPools.length}</strong> pool aktif di Solo Raya</p>
+            <p>Menampilkan <strong className="text-[#17392c]">{activePools.length}</strong> pool aktif di Solo Raya</p>
           </div>
 
           <div className="mt-4">
             {viewMode === "list" ? (
-              filteredPools.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filteredPools.map((pool) => <PoolCard key={pool.id} pool={pool} onOpen={() => openDetail(pool.id)} />)}</div> : <EmptyState />
+              <>
+                {activePools.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{activePools.map((pool) => <PoolCard key={pool.id} pool={pool} joined={joinedPoolIds.includes(pool.id)} onOpen={() => openDetail(pool.id)} />)}</div> : <EmptyState />}
+                {historyPools.length ? (
+                  <section className="mt-8 border-t border-[#dfe5e1] pt-7">
+                    <div className="mb-4"><h2 className="text-lg font-extrabold text-[#10231d]">Riwayat Pool</h2><p className="mt-1 text-[11px] font-medium text-[#6b7872]">Pool yang telah berhasil atau dibatalkan.</p></div>
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{historyPools.map((pool) => <PoolCard key={pool.id} pool={pool} joined={joinedPoolIds.includes(pool.id)} onOpen={() => openDetail(pool.id)} />)}</div>
+                  </section>
+                ) : null}
+              </>
             ) : mappablePools.length ? (
               <section className="relative isolate z-0 min-h-[620px] overflow-hidden rounded-[24px] border border-pull-100 bg-pull-50 shadow-[0_18px_50px_rgba(18,59,48,.08)]">
                 <PoolMap
@@ -532,7 +754,7 @@ export function PoolPatunganPage({
       </UmkmDashboardShell>
 
       {activeModal === "create" ? <CreatePoolModal onClose={() => setActiveModal(null)} onSubmit={createPool} /> : null}
-      {activeModal === "detail" && selectedPool ? <DetailModal pool={selectedPool} joined={joinedPoolIds.includes(selectedPool.id)} onClose={() => setActiveModal(null)} onJoin={joinPool} onShare={sharePool} /> : null}
+      {activeModal === "detail" && selectedPool ? <DetailModal pool={selectedPool} joined={joinedPoolIds.includes(selectedPool.id)} joinedQuantity={joinedPoolQuantities[selectedPool.id] ?? 0} onClose={() => setActiveModal(null)} onJoin={joinPool} onShare={sharePool} /> : null}
       {toast ? <div role="status" className="fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-xl bg-[#0c261c] px-4 py-3 text-xs font-bold text-white shadow-[0_16px_45px_rgba(7,29,21,.28)]"><Check className="h-4 w-4 text-[#9ad2aa]" />{toast}</div> : null}
     </>
   );
