@@ -2,13 +2,20 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity/log-activity";
+import { isRole } from "@/lib/auth/roles";
+import {
+  getMvpSession,
+  isMvpAuthEnabled,
+  setMvpSession,
+} from "@/lib/auth/mvp-session";
 
 export type OnboardingActionState = {
   status: "idle" | "error" | "success";
   message: string;
 };
 
-const validRoles = new Set(["umkm", "pekerja", "supplier"]);
+const validRoles = new Set(["umkm", "pekerja", "supplier", "admin"]);
 
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -70,11 +77,26 @@ export async function saveRoleAction(
 ): Promise<OnboardingActionState> {
   const role = readFormString(formData, "role");
 
-  if (!validRoles.has(role)) {
+  if (!validRoles.has(role) || !isRole(role)) {
     return {
       status: "error",
       message: "Pilih peran yang tersedia.",
     };
+  }
+
+  if (isMvpAuthEnabled()) {
+    const session = await getMvpSession();
+    if (!session) redirect("/register");
+    await setMvpSession({
+      ...session,
+      role,
+      userMetadata: {
+        ...session.userMetadata,
+        role,
+        onboarding_step: "profile",
+      },
+    });
+    redirect(role === "admin" ? "/admin" : "/onboarding/lengkapi-profil");
   }
 
   const { supabase, user } = await getCurrentUser();
@@ -98,7 +120,16 @@ export async function saveRoleAction(
     };
   }
 
-  redirect("/onboarding/lengkapi-profil");
+  await logActivity({
+    userId: user.id,
+    role,
+    action: "role.set",
+    entityType: "user",
+    entityId: user.id,
+    metadata: { selected_role: role, detail: `Peran akun diatur sebagai ${role}.` },
+  });
+
+  redirect(role === "admin" ? "/admin" : "/onboarding/lengkapi-profil");
 }
 
 export async function saveProfileAction(
@@ -113,6 +144,7 @@ export async function saveProfileAction(
   const skills = readFormStrings(formData, "skills");
   const formRole = readFormString(formData, "role");
   const role = validRoles.has(formRole) ? formRole : "umkm";
+  if (role === "admin") redirect("/admin");
   const profileName = role === "pekerja" ? displayName : businessName;
 
   if (role === "pekerja" && (!displayName || !headline || !phone || !skills.length)) {
@@ -135,6 +167,34 @@ export async function saveProfileAction(
       status: "error",
       message: "Nama lengkap, nama usaha, kategori, dan nomor WhatsApp wajib diisi.",
     };
+  }
+
+  if (isMvpAuthEnabled()) {
+    const session = await getMvpSession();
+    if (!session || !isRole(role)) redirect("/register");
+    await setMvpSession({
+      ...session,
+      role,
+      userMetadata: {
+        ...session.userMetadata,
+        display_name: displayName,
+        business_name: profileName,
+        headline,
+        delivery_area: deliveryArea,
+        ...(role === "pekerja" ? { skills } : {}),
+        phone,
+        role,
+        onboarding_step: "complete",
+      },
+    });
+    redirect(createProfileSuccessPath({
+      role,
+      displayName,
+      businessName: profileName,
+      headline,
+      deliveryArea,
+      phone,
+    }));
   }
 
   const { supabase, user } = await getCurrentUser();
@@ -172,6 +232,19 @@ export async function saveProfileAction(
       message: error.message,
     };
   }
+
+  await logActivity({
+    userId: user.id,
+    role,
+    action: "profile.update",
+    entityType: "profile",
+    entityId: user.id,
+    metadata: {
+      display_name: displayName,
+      business_name: profileName,
+      detail: "Profil onboarding berhasil disimpan.",
+    },
+  });
 
   redirect(
     createProfileSuccessPath({

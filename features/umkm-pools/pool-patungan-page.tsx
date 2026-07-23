@@ -21,6 +21,10 @@ import {
   X,
 } from "lucide-react";
 import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
+import {
+  createPoolAction as recordPoolCreation,
+  joinPoolAction as recordPoolJoin,
+} from "@/features/activity/actions";
 import { calculatePoolOrder } from "./pool-calculations";
 import { PoolMap } from "./pool-map";
 import {
@@ -350,7 +354,7 @@ function CreatePoolModal({ onClose, onSubmit }: { onClose: () => void; onSubmit:
     const deadlineValue = String(form.get("deadline"));
     const deadlineAt = `${deadlineValue}T23:59:59+07:00`;
     onSubmit({
-      id: `pool-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: String(form.get("nama_bahan")),
       category,
       current: 0,
@@ -648,6 +652,16 @@ export function PoolPatunganPage({
   }
 
   function createPool(pool: PoolItem) {
+    void recordPoolCreation({
+      poolId: pool.id,
+      productName: pool.name,
+      category: pool.category,
+      targetQuantity: pool.target,
+      unit: pool.unit,
+      deadline: pool.deadlineAt,
+      district: pool.district,
+      poolLeader: businessName,
+    }).catch(() => setToast("Pool tampil lokal, tetapi pencatatan aktivitas gagal."));
     setPools((current) => [pool, ...current]);
     setFilters({ search: "", category: "Semua kategori", district: "Semua kecamatan" });
     setViewMode("list");
@@ -671,6 +685,13 @@ export function PoolPatunganPage({
       setToast("Masukkan jumlah pesanan sebelum bergabung.");
       return;
     }
+    void recordPoolJoin({
+      poolId: selectedPool.id,
+      poolReference: selectedPool.id,
+      productName: selectedPool.name,
+      quantity: safeQuantity,
+      unit: selectedPool.unit,
+    }).catch(() => setToast("Pesanan tersimpan lokal, tetapi pencatatan aktivitas gagal."));
     setJoinedPoolIds((current) => [...current, selectedPool.id]);
     setJoinedPoolQuantities((current) => ({ ...current, [selectedPool.id]: safeQuantity }));
     setPools((current) => current.map((pool) => {

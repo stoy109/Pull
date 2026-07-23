@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
+import { postJobAction as recordJobPost } from "@/features/activity/actions";
 import { CATEGORY_OPTIONS, DISTRICT_OPTIONS, INITIAL_APPLICATIONS, INITIAL_ASSIGNMENTS, INITIAL_JOBS } from "./recruitment-data";
 import {
   acceptJobApplication,
@@ -1039,7 +1040,7 @@ export function LowonganSayaPage({ ownerName, businessName, profileCompletion }:
     }
     const baseStatus: JobStatus = intent === "draft" ? "Draf" : "Terbuka";
     const nextJob: Job = {
-      id: existingJob?.id ?? `job-${Date.now()}`,
+      id: existingJob?.id ?? crypto.randomUUID(),
       title: values.title.trim(),
       category: values.category,
       district: values.district,
@@ -1058,6 +1059,16 @@ export function LowonganSayaPage({ ownerName, businessName, profileCompletion }:
       tone: existingJob?.tone ?? "green",
     };
     const exists = Boolean(existingJob);
+    if (!exists || (existingJob?.status === "Draf" && intent === "publish")) {
+      void recordJobPost({
+        jobId: nextJob.id,
+        title: nextJob.title,
+        category: nextJob.category,
+        district: nextJob.district,
+        workerQuota: nextJob.workerQuota,
+        status: intent === "publish" ? "published" : "draft",
+      }).catch(() => setToast("Lowongan tampil lokal, tetapi pencatatan aktivitas gagal."));
+    }
     setJobs((current) => exists ? current.map((job) => job.id === nextJob.id ? nextJob : job) : [nextJob, ...current]);
     if (!exists) {
       setApplicationsByJob((current) => ({ ...current, [nextJob.id]: [] }));

@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
+import { requireRole } from "@/lib/auth/require-role";
 import { WorkerDashboardClient } from "./client";
 
 function readMetadataString(
@@ -19,13 +18,8 @@ function readMetadataStrings(metadata: Record<string, unknown>, key: string) {
 }
 
 export default async function WorkerDashboardPage() {
-  const { user } = await getDashboardData();
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role");
-
-  if (user && role !== "pekerja") {
-    redirect("/dashboard");
-  }
+  const { user } = await requireRole(["pekerja"]);
+  const metadata = user.user_metadata ?? {};
 
   const initialProfile = {
     name:

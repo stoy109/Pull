@@ -1,6 +1,9 @@
+import "server-only";
+
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { getSupabaseEnv } from "@/lib/env";
+import { getSupabaseEnv, getSupabaseServiceRoleEnv } from "@/lib/env";
 
 export const createClient = async () => {
   const cookieStore = await cookies();
@@ -22,6 +25,17 @@ export const createClient = async () => {
           // user sessions.
         }
       },
+    },
+  });
+};
+
+export const createServiceRoleClient = () => {
+  const { supabaseUrl, serviceRoleKey } = getSupabaseServiceRoleEnv();
+
+  return createSupabaseClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 };

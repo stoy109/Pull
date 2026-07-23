@@ -1,83 +1,48 @@
 import Image from "next/image";
-import { redirect } from "next/navigation";
+
 import {
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
   CircleAlert,
-  Eye,
+
   FileText,
   ShieldCheck,
   TrendingUp,
-  UserRoundCheck,
+
   UsersRound,
 } from "lucide-react";
 import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
-import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
+import { requireRole } from "@/lib/auth/require-role";
+import {
+  getRecentActivities,
+  getUmkmOverviewStats,
+  type ActivityLog,
+} from "@/lib/activity/queries";
 
-const OVERVIEW_STATS = [
-  {
-    label: "Total Pool Aktif",
-    value: "12",
-    trend: "+12%",
-    comparison: "dari minggu lalu",
-    icon: UsersRound,
-    tone: "bg-[#e7f4df] text-[#07833f]",
-  },
-  {
-    label: "Lowongan Aktif",
-    value: "8",
-    trend: "+8%",
-    comparison: "dari minggu lalu",
-    icon: BriefcaseBusiness,
-    tone: "bg-[#e7f4df] text-[#07833f]",
-  },
-  {
-    label: "Lamaran Masuk",
-    value: "32",
-    trend: "+18%",
-    comparison: "dari minggu lalu",
-    icon: FileText,
-    tone: "bg-[#e9f2ff] text-[#0868d7]",
-  },
-];
+function activityPresentation(activity: ActivityLog) {
+  if (activity.action === "pool.create") {
+    return { title: "Pool baru dibuat", icon: UsersRound };
+  }
+  if (activity.action === "pool.join") {
+    return { title: "Bergabung ke pool", icon: CheckCircle2 };
+  }
+  if (activity.action === "job.post") {
+    return { title: "Lowongan berhasil diposting", icon: BriefcaseBusiness };
+  }
+  if (activity.action === "profile.update") {
+    return { title: "Profil bisnis diperbarui", icon: CheckCircle2 };
+  }
+  return { title: activity.action.replaceAll(".", " · "), icon: CheckCircle2 };
+}
 
-const ACTIVITY_LIMIT = 4;
-
-const ACTIVITY_QUEUE = [
-  {
-    title: "Profil bisnis diperbarui",
-    detail: "Informasi usaha dan jam operasional berhasil diperbarui.",
-    time: "Kemarin",
-    icon: CheckCircle2,
-  },
-  {
-    title: "Pesanan patungan selesai",
-    detail: "Pembelian bahan baku bersama berhasil diproses.",
-    time: "3 jam",
-    icon: CheckCircle2,
-  },
-  {
-    title: "Lowongan hampir penuh",
-    detail: "Lowongan Staf Packing Harian menyisakan satu posisi.",
-    time: "2 jam",
-    icon: BriefcaseBusiness,
-  },
-  {
-    title: "Pelamar baru masuk",
-    detail: "Rina melamar lowongan Staf Packing Harian.",
-    time: "42 menit",
-    icon: UserRoundCheck,
-  },
-  {
-    title: "Profil bisnis Anda dilihat",
-    detail: "36 calon mitra melihat profil usaha hari ini.",
-    time: "8 menit",
-    icon: Eye,
-  },
-];
-
-const RECENT_ACTIVITIES = ACTIVITY_QUEUE.slice(-ACTIVITY_LIMIT).reverse();
+function relativeTime(value: string) {
+  const elapsed = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(elapsed) || elapsed < 60_000) return "Baru saja";
+  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 60_000)} menit`;
+  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)} jam`;
+  return `${Math.floor(elapsed / 86_400_000)} hari`;
+}
 
 function readMetadataString(
   metadata: Record<string, unknown>,
@@ -104,18 +69,17 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
 }
 
 export default async function DashboardPage() {
-  const { user } = await getDashboardData();
-
-  if (!user && process.env.NODE_ENV !== "development") {
-    redirect("/");
-  }
-
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role", "umkm");
-
-  if (role === "pekerja") {
-    redirect("/worker/dashboard");
-  }
+  const { user } = await requireRole(["umkm"]);
+  const [overview, recentActivities] = await Promise.all([
+    getUmkmOverviewStats(user.id),
+    getRecentActivities({ userIdFilter: user.id, roleFilter: "umkm", limit: 5 }),
+  ]);
+  const metadata = user.user_metadata ?? {};
+  const overviewStats = [
+    { label: "Total Pool Aktif", value: overview.activePools, icon: UsersRound, tone: "bg-[#e7f4df] text-[#07833f]" },
+    { label: "Lowongan Aktif", value: overview.activeJobs, icon: BriefcaseBusiness, tone: "bg-[#e7f4df] text-[#07833f]" },
+    { label: "Lamaran Masuk", value: overview.applications, icon: FileText, tone: "bg-[#e9f2ff] text-[#0868d7]" },
+  ];
 
   const savedOwnerName =
     readMetadataString(metadata, "display_name") ||
@@ -159,7 +123,7 @@ export default async function DashboardPage() {
               <CircleAlert className="h-7 w-7" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-base font-extrabold text-[#0c261c]">5 pelamar menunggu ditinjau</h2>
+              <h2 className="text-base font-extrabold text-[#0c261c]">{overview.applications} pelamar tercatat</h2>
               <p className="mt-1.5 text-xs font-medium leading-5 text-[#507f63] sm:text-[13px]">
                 Tinjau kandidat lebih awal agar kebutuhan tim {businessName} cepat terpenuhi.
               </p>
@@ -170,7 +134,7 @@ export default async function DashboardPage() {
           </section>
 
           <section id="peluang" className="grid flex-1 auto-rows-fr items-stretch gap-4 md:grid-cols-3">
-            {OVERVIEW_STATS.map((stat) => {
+            {overviewStats.map((stat) => {
               const Icon = stat.icon;
               return (
                 <article key={stat.label} className="grid h-full min-h-[126px] grid-cols-[48px_minmax(0,1fr)] items-center gap-4 rounded-[18px] border border-[#dfeae2] bg-white px-5 py-4 shadow-[0_8px_24px_rgba(18,59,48,.025)] md:h-[126px] xl:px-4 2xl:px-5">
@@ -182,10 +146,9 @@ export default async function DashboardPage() {
                     <strong className="block font-[family-name:var(--font-worker-display)] text-[30px] font-semibold leading-8 tracking-[-0.04em] text-[#0c261c]">{stat.value}</strong>
                     <p className="flex items-center gap-x-1 whitespace-nowrap text-[10px] font-semibold leading-4 text-[#6e8176]">
                       <span className="inline-flex items-center gap-1 font-extrabold text-[#07964d]">
-                        <TrendingUp className="h-3.5 w-3.5" />
-                        {stat.trend}
+                        <TrendingUp className="h-3.5 w-3.5" /> Data live
                       </span>
-                      <span>{stat.comparison}</span>
+                      <span>dari aktivitas</span>
                     </p>
                   </div>
                 </article>
@@ -227,21 +190,23 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="divide-y divide-[#edf3ef]">
-            {RECENT_ACTIVITIES.map((activity) => {
-              const Icon = activity.icon;
+            {recentActivities.map((activity) => {
+              const presentation = activityPresentation(activity);
+              const Icon = presentation.icon;
               return (
-                <div key={activity.title} className="flex items-start gap-3 py-4">
+                <div key={activity.id} className="flex items-start gap-3 py-4">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#e8f5ec] text-[#08783f]">
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold leading-5 text-[#1d4634]">{activity.title}</p>
-                    <p className="mt-1 text-[10px] font-medium leading-4 text-[#6e9b7d]">{activity.detail}</p>
+                    <p className="text-xs font-bold leading-5 text-[#1d4634]">{presentation.title}</p>
+                    <p className="mt-1 text-[10px] font-medium leading-4 text-[#6e9b7d]">{activity.detail || "Aktivitas berhasil tercatat di Pull."}</p>
                   </div>
-                  <span className="shrink-0 pt-1 text-[10px] font-semibold text-[#6e9b7d]">{activity.time}</span>
+                  <span className="shrink-0 pt-1 text-[10px] font-semibold text-[#6e9b7d]">{relativeTime(activity.created_at)}</span>
                 </div>
               );
             })}
+            {!recentActivities.length ? <p className="py-10 text-center text-xs font-semibold text-[#6e9b7d]">Belum ada aktivitas tercatat.</p> : null}
           </div>
         </section>
 

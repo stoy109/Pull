@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
+import { requireRole } from "@/lib/auth/require-role";
 import { PoolPatunganPage } from "@/features/umkm-pools/pool-patungan-page";
 
 function readMetadataString(
@@ -24,13 +23,8 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
 }
 
 export default async function PoolsPage() {
-  const { user } = await getDashboardData();
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role", "umkm");
-
-  if (user && role === "pekerja") {
-    redirect("/worker/dashboard");
-  }
+  const { user } = await requireRole(["umkm"]);
+  const metadata = user.user_metadata ?? {};
 
   return (
     <PoolPatunganPage

@@ -3,6 +3,14 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity/log-activity";
+import { isRole, type Role } from "@/lib/auth/roles";
+import {
+  clearMvpSession,
+  createMvpSession,
+  getMvpSession,
+  isMvpAuthEnabled,
+} from "@/lib/auth/mvp-session";
 
 export type AuthActionState = {
   status: "idle" | "error" | "success";
@@ -12,6 +20,13 @@ export type AuthActionState = {
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function dashboardForRole(role: Role) {
+  if (role === "pekerja") return "/worker/dashboard";
+  if (role === "supplier") return "/supplier";
+  if (role === "admin") return "/admin";
+  return "/dashboard";
 }
 
 function authMessage(message?: string) {
@@ -31,6 +46,22 @@ function authMessage(message?: string) {
 
   if (normalized.includes("already registered") || normalized.includes("already exists")) {
     return "Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.";
+  }
+
+  if (
+    normalized === "{}" ||
+    normalized.includes("error sending confirmation email") ||
+    normalized.includes("email address not authorized")
+  ) {
+    return "Email verifikasi gagal dikirim oleh Supabase. Periksa konfigurasi SMTP, sender, dan template Confirm signup.";
+  }
+
+  if (normalized.includes("database error saving new user")) {
+    return "Supabase gagal menyimpan pengguna. Periksa trigger auth.users dan Postgres Logs.";
+  }
+
+  if (normalized.includes("rate limit") || normalized.includes("too many requests")) {
+    return "Batas pengiriman email tercapai. Tunggu beberapa saat atau gunakan custom SMTP.";
   }
 
   return message;
@@ -63,8 +94,16 @@ export async function signInAction(
     };
   }
 
+  if (isMvpAuthEnabled()) {
+    const existingSession = await getMvpSession();
+    const session = existingSession?.email === email
+      ? existingSession
+      : await createMvpSession(email, email.split("@")[0] || "Pengguna Pull");
+    redirect(session.role ? dashboardForRole(session.role) : "/onboarding/pilih-peran");
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return {
@@ -73,10 +112,28 @@ export async function signInAction(
     };
   }
 
-  redirect("/dashboard");
+  const role = data.user.user_metadata?.role;
+  if (isRole(role)) {
+    await logActivity({
+      userId: data.user.id,
+      role,
+      action: "auth.login",
+      entityType: "user",
+      entityId: data.user.id,
+      metadata: { method: "password", detail: "Pengguna berhasil masuk." },
+    });
+    redirect(dashboardForRole(role));
+  }
+
+  redirect("/onboarding/pilih-peran");
 }
 
 export async function signInWithGoogleAction() {
+  if (isMvpAuthEnabled()) {
+    await createMvpSession("demo.google@pull.local", "Pengguna Google Demo");
+    redirect("/onboarding/pilih-peran");
+  }
+
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
 
@@ -95,7 +152,26 @@ export async function signInWithGoogleAction() {
 }
 
 export async function signOutAction() {
+  if (isMvpAuthEnabled()) {
+    await clearMvpSession();
+    redirect("/");
+  }
+
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.user_metadata?.role;
+
+  if (user && isRole(role)) {
+    await logActivity({
+      userId: user.id,
+      role,
+      action: "auth.logout",
+      entityType: "user",
+      entityId: user.id,
+      metadata: { detail: "Pengguna keluar dari sesi." },
+    });
+  }
+
   await supabase.auth.signOut();
   redirect("/");
 }
@@ -130,6 +206,11 @@ export async function signUpAction(
     };
   }
 
+  if (isMvpAuthEnabled()) {
+    await createMvpSession(email, fullName);
+    redirect("/onboarding");
+  }
+
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
 
@@ -145,6 +226,11 @@ export async function signUpAction(
   });
 
   if (error) {
+    console.error("Supabase sign-up failed", {
+      code: error.code,
+      status: error.status,
+      message: error.message,
+    });
     return {
       status: "error",
       message: authMessage(error.message),
@@ -166,6 +252,8 @@ export async function requestPasswordResetAction(
       message: "Email wajib diisi.",
     };
   }
+
+  if (isMvpAuthEnabled()) redirect("/reset-password");
 
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
@@ -190,12 +278,14 @@ export async function verifyEmailOtpAction(
   const email = readFormString(formData, "email");
   const token = readFormString(formData, "token");
 
-  if (!email || token.length !== 6) {
+  if (!email || token.length < 6 || token.length > 8) {
     return {
       status: "error",
-      message: "Email dan kode verifikasi 6 digit wajib diisi.",
+      message: "Email dan kode verifikasi 6–8 digit wajib diisi.",
     };
   }
+
+  if (isMvpAuthEnabled()) redirect("/onboarding");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({
@@ -227,6 +317,10 @@ export async function resendEmailOtpAction(
     };
   }
 
+  if (isMvpAuthEnabled()) {
+    return { status: "success", message: "Mode MVP aktif; verifikasi email dilewati." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.resend({
     email,
@@ -253,12 +347,14 @@ export async function verifyResetOtpAction(
   const email = readFormString(formData, "email");
   const token = readFormString(formData, "token");
 
-  if (!email || token.length !== 6) {
+  if (!email || token.length < 6 || token.length > 8) {
     return {
       status: "error",
-      message: "Email dan kode reset 6 digit wajib diisi.",
+      message: "Email dan kode reset 6–8 digit wajib diisi.",
     };
   }
+
+  if (isMvpAuthEnabled()) redirect("/reset-password");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({
@@ -288,6 +384,10 @@ export async function resendPasswordResetAction(
       status: "error",
       message: "Email tidak ditemukan. Silakan masukkan email ulang.",
     };
+  }
+
+  if (isMvpAuthEnabled()) {
+    return { status: "success", message: "Mode MVP aktif; email reset tidak diperlukan." };
   }
 
   const supabase = await createClient();
@@ -329,6 +429,8 @@ export async function updatePasswordAction(
       message: "Konfirmasi kata sandi belum sama.",
     };
   }
+
+  if (isMvpAuthEnabled()) redirect("/reset-success");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });

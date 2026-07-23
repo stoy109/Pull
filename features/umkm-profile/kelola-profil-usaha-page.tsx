@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
+import { updateProfileAction as recordProfileUpdate } from "@/features/activity/actions";
 import { PrivateProfileQrCard } from "@/features/umkm-profile/private-profile-qr-card";
 
 type ActiveModal = null | "edit_info" | "product_form" | "confirm_delete";
@@ -286,6 +287,11 @@ export function KelolaProfilUsahaPage({
 
   function saveInfo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    void recordProfileUpdate({
+      profileType: "business",
+      displayName: ownerName,
+      businessName: infoDraft.name,
+    }).catch(() => setToastMessage("Profil tampil lokal, tetapi pencatatan aktivitas gagal."));
     setInfo({ ...infoDraft, paymentMethods: [...infoDraft.paymentMethods] });
     setActiveModal(null);
     setToastMessage("Info usaha berhasil diperbarui");

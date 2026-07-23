@@ -37,6 +37,7 @@ const ROLES = [
     desc: "Saya menyediakan bahan baku atau produk dan ingin terhubung dengan pelaku usaha.",
     image: supplierImage,
   },
+
 ];
 
 function StepDots({ currentStep }: { currentStep: number }) {

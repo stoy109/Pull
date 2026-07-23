@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { FormFeedback, FormHelper } from "@/components/form-ui";
@@ -38,11 +38,9 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
     resendPasswordResetAction,
     initialAuthState,
   );
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpCode, setOtpCode] = useState("");
   const [timeLeft, setTimeLeft] = useState(299);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const otpCode = otp.join("");
-  const isComplete = otpCode.length === 6;
+  const isComplete = otpCode.length >= 6;
   const statusState =
     verifyState.status !== "idle" ? verifyState : resendState;
 
@@ -58,27 +56,9 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleChange = (value: string, index: number) => {
-    if (isNaN(Number(value))) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.substring(value.length - 1);
-    setOtp(newOtp);
-    if (value && index < 5) inputRefs.current[index + 1]?.focus();
-  };
-
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-    index: number,
-  ) => {
-    if (event.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
   const resetOtpEntry = () => {
     setTimeLeft(299);
-    setOtp(["", "", "", "", "", ""]);
-    inputRefs.current[0]?.focus();
+    setOtpCode("");
   };
 
   return (
@@ -106,7 +86,7 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
                 <span className="font-semibold text-[#10231d]">
                   {maskEmail(email)}
                 </span>
-                . Masukkan kode 6 digit jika email Anda berisi kode, atau buka
+                . Masukkan kode 6–8 digit jika email Anda berisi kode, atau buka
                 tautan reset dari email.
               </p>
             </div>
@@ -119,32 +99,24 @@ export function VerifyResetForm({ email }: VerifyResetFormProps) {
 
             <form action={verifyAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
-              <input type="hidden" name="token" value={otpCode} />
-
               <div className="space-y-2">
-                <div className="form-otp-grid" role="group" aria-label="Kode reset 6 digit">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete={index === 0 ? "one-time-code" : "off"}
-                      maxLength={1}
-                      required
-                      aria-label={`Digit kode ${index + 1}`}
-                      value={digit}
-                      ref={(element) => {
-                        inputRefs.current[index] = element;
-                      }}
-                      onChange={(event) => handleChange(event.target.value, index)}
-                      onKeyDown={(event) => handleKeyDown(event, index)}
-                      aria-describedby="reset-code-helper"
-                      className="form-otp-input"
-                    />
-                  ))}
-                </div>
+                <input
+                  name="token"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  minLength={6}
+                  maxLength={8}
+                  required
+                  aria-label="Kode reset"
+                  aria-describedby="reset-code-helper"
+                  value={otpCode}
+                  onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="Masukkan kode reset"
+                  className="form-control text-center text-lg font-extrabold tracking-[0.3em]"
+                />
                 <FormHelper id="reset-code-helper">
-                  Masukkan kode 6 digit yang dikirim ke email Anda.
+                  Masukkan kode 6–8 digit yang dikirim ke email Anda.
                 </FormHelper>
               </div>
 

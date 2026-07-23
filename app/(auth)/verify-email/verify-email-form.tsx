@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { FormFeedback } from "@/components/form-ui";
@@ -29,10 +29,8 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
     resendEmailOtpAction,
     initialAuthState,
   );
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpCode, setOtpCode] = useState("");
   const [timeLeft, setTimeLeft] = useState(300);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const otpCode = otp.join("");
   const statusState =
     verifyState.status !== "idle" ? verifyState : resendState;
 
@@ -50,31 +48,9 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleChange = (value: string, index: number) => {
-    if (isNaN(Number(value))) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value.substring(value.length - 1);
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-    index: number,
-  ) => {
-    if (event.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
   const resetOtpEntry = () => {
     setTimeLeft(300);
-    setOtp(["", "", "", "", "", ""]);
-    inputRefs.current[0]?.focus();
+    setOtpCode("");
   };
 
   return (
@@ -104,7 +80,7 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
                 Verifikasi Email
               </h1>
               <p className="form-description text-sm text-[#6b7b75] leading-relaxed">
-                Masukkan 6 digit kode verifikasi yang telah kami kirimkan ke{" "}
+                Masukkan kode verifikasi 6–8 digit yang telah kami kirimkan ke{" "}
                 <span className="font-semibold text-[#10231d]">
                   {email || "email Anda"}
                 </span>
@@ -121,28 +97,20 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
 
             <form action={verifyAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
-              <input type="hidden" name="token" value={otpCode} />
-
-              <div className="form-otp-grid" role="group" aria-label="Kode verifikasi 6 digit">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete={index === 0 ? "one-time-code" : "off"}
-                    maxLength={1}
-                    required
-                    aria-label={`Digit kode ${index + 1}`}
-                    value={digit}
-                    ref={(element) => {
-                      inputRefs.current[index] = element;
-                    }}
-                    onChange={(event) => handleChange(event.target.value, index)}
-                    onKeyDown={(event) => handleKeyDown(event, index)}
-                    className="form-otp-input"
-                  />
-                ))}
-              </div>
+              <input
+                name="token"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                minLength={6}
+                maxLength={8}
+                required
+                aria-label="Kode verifikasi"
+                value={otpCode}
+                onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="Masukkan kode verifikasi"
+                className="form-control text-center text-lg font-extrabold tracking-[0.3em]"
+              />
 
               <div className="form-note">
                 <span>

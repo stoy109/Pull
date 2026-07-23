@@ -1,4 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  getMvpSession,
+  isMvpAuthEnabled,
+  mvpSessionToUser,
+} from "@/lib/auth/mvp-session";
 import { CompleteProfileForm } from "./profile-form";
 
 type LengkapiProfilPageProps = {
@@ -32,11 +37,10 @@ export default async function LengkapiProfilPage({
   searchParams,
 }: LengkapiProfilPageProps) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const mvpSession = isMvpAuthEnabled() ? await getMvpSession() : null;
+  const user = mvpSession
+    ? mvpSessionToUser(mvpSession)
+    : (await (await createClient()).auth.getUser()).data.user;
   const metadata = user?.user_metadata ?? {};
   const searchRole =
     params.role === "pekerja"

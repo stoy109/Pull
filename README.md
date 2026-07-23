@@ -30,9 +30,61 @@ Create a local `.env.local` file with these values:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+MVP_AUTH_MODE=true
 ```
 
-The app validates required Supabase variables through `lib/env.ts`. Only publishable Supabase keys should be exposed through `NEXT_PUBLIC_*` variables.
+The app validates required Supabase variables through `lib/env.ts`. Only publishable Supabase keys should be exposed through `NEXT_PUBLIC_*` variables. `SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipasang pada environment server Vercel/lokal dan tidak boleh memakai prefix `NEXT_PUBLIC_`.
+
+### Mode Auth MVP
+
+Mode MVP aktif secara default (`MVP_AUTH_MODE` selain `false`). Register/login memakai cookie demo `httpOnly`; email, OTP, Google OAuth, dan penyimpanan password dilewati. Pilihan role dan profil onboarding tetap tersimpan selama 7 hari agar seluruh dashboard dapat didemokan.
+
+Set `MVP_AUTH_MODE=false` saat siap mengaktifkan Supabase Auth kembali. Activity write juga dilewati selama mode MVP karena user demo tidak mempunyai foreign key di `auth.users`. Mode ini hanya untuk demo/hackathon, bukan production.
+
+## Constraint 1: Multi-Role & Activity Monitoring
+
+Jalankan `supabase/migrations/20260723_activity_logs.sql` melalui Supabase SQL Editor, lalu buat akun demo untuk role `umkm`, `pekerja`, `supplier`, dan `admin`. Akun admin tetap memerlukan grant database; metadata role saja tidak memberi akses:
+
+```sql
+insert into public.profiles (id, is_admin)
+values ('UUID_USER_ADMIN', true)
+on conflict (id) do update set is_admin = excluded.is_admin;
+```
+
+Setelah minimal satu user tersedia, jalankan `supabase/seed-activity-demo.sql`. Script menghapus seed demo lama lalu membuat 32 aktivitas lintas empat role.
+
+### Cara Demo Constraint 1
+
+1. Login sebagai admin, buka `/admin`, lalu tunjukkan pengguna aktif 24 jam, aktivitas hari ini, lima aktivitas terbaru, dan distribusi aktivitas per role.
+2. Ubah filter role dan rentang waktu pada tabel aktivitas; data tabel harus ikut berubah.
+3. Login sebagai UMKM, buka `/dashboard/pools`, buat pool baru, lalu kembali ke `/admin`; jumlah aktivitas dan audit terbaru bertambah.
+4. Login sebagai supplier, buka `/supplier`, lalu tunjukkan layout, menu, demand insight, metrik, dan daftar pool yang berbeda dari dashboard UMKM/admin.
+5. Login sebagai pekerja, buka `/worker/activity`, lalu tunjukkan riwayat real dari API `/api/worker/activities` beserta filter Lamaran/Profil/Bukti.
+
+### Retensi Data Request
+
+IP dan user-agent wajib dianonimkan setelah 30 hari. Placeholder berikut perlu dijadwalkan harian lewat Supabase Cron atau Scheduled Edge Function saat deployment:
+
+```sql
+create or replace function public.redact_old_activity_request_data()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.activity_logs
+  set ip = null, user_agent = null
+  where created_at < now() - interval '30 days'
+    and (ip is not null or user_agent is not null);
+$$;
+
+-- Placeholder jadwal pg_cron:
+-- select cron.schedule('redact-activity-request-data', '15 0 * * *',
+--   'select public.redact_old_activity_request_data()');
+```
+
+Dashboard supplier dan ringkasan UMKM membaca event audit `pool.create`, `job.post`, dan `job.apply` dari Supabase. Ini mempertahankan SPA mock existing sambil membuat monitoring demo memakai data database nyata.
 
 ## Project Structure
 
