@@ -40,10 +40,17 @@ export function Brand({ inverse = false }) {
 
   return (
     <Link to="/dashboard" className="flex items-center gap-2.5" aria-label="Pull dashboard">
-      <Image src="/pull-icon.svg" alt="" width={52} height={40} className="h-10 w-[52px] shrink-0 object-contain" aria-hidden="true" />
+      <span
+        className="h-10 w-[52px] shrink-0 bg-[#08783f]"
+        style={{
+          WebkitMask: 'url("/pull-icon.svg") center / contain no-repeat',
+          mask: 'url("/pull-icon.svg") center / contain no-repeat',
+        }}
+        aria-hidden="true"
+      />
       <div>
-        <p className="font-display text-[22px] font-bold leading-none tracking-[-0.04em] text-pull-950">Pull</p>
-        <p className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.2em] text-pull-500">Worker space</p>
+        <p className="font-display text-[22px] font-bold leading-none tracking-[-0.04em] text-[#08783f]">Pull</p>
+        <p className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#08783f]">Worker space</p>
       </div>
     </Link>
   )

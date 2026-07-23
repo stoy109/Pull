@@ -19,7 +19,6 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  UserRound,
   X,
 } from 'lucide-react'
 import FeatureModal from '../FeatureModal'
@@ -39,7 +38,7 @@ const profileNavigation = [
 ]
 
 const mobileMoreNavigation = [
-  { label: 'Profil & Portofolio', path: '/profile', icon: UserRound },
+  { label: 'Aktivitas', path: '/activity', icon: History },
   { label: 'Trust Score', path: '/trust', icon: ShieldCheck },
   { label: 'Pengaturan', path: '/settings', icon: Settings },
 ]
@@ -157,7 +156,7 @@ function MobileBottomNav({ onOpenMore }) {
     { label: 'Loker', path: '/jobs', icon: Search },
     { label: 'Menu', icon: Grid2X2, center: true },
     { label: 'Lamaran', path: '/applications', icon: BriefcaseBusiness },
-    { label: 'Aktivitas', path: '/activity', icon: History },
+    { label: 'Portofolio', path: '/profile', icon: Award },
   ]
   const moreActive = mobileMoreNavigation.some((item) => location.pathname.startsWith(item.path))
 

@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   CircleHelp,
   Clock3,
+  Grid2X2,
   Home,
   Settings,
   ShieldCheck,
@@ -25,6 +26,14 @@ const SIDEBAR_ITEMS = [
   { label: "Papan Loker", icon: BriefcaseBusiness, href: "/dashboard/jobs" },
   { label: "Profil Bisnis", icon: Store, href: "/dashboard/profile" },
   { label: "Trust Score", icon: ShieldCheck, href: "/dashboard/trust" },
+];
+
+const MOBILE_NAV_ITEMS = [
+  { label: "Dashboard", icon: Home, href: "/dashboard" },
+  { label: "Lowongan", icon: BriefcaseBusiness, href: "/dashboard/publish" },
+  { label: "Menu", icon: Grid2X2, href: "" },
+  { label: "Papan Loker", icon: BriefcaseBusiness, href: "/dashboard/jobs" },
+  { label: "Profil", icon: Store, href: "/dashboard/profile" },
 ];
 
 const UMKM_FAQS = [
@@ -60,6 +69,25 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function MobileBrand() {
+  return (
+    <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Pull dashboard">
+      <span
+        className="h-10 w-[52px] shrink-0 bg-[#08783f]"
+        style={{
+          WebkitMask: 'url("/pull-icon.svg") center / contain no-repeat',
+          mask: 'url("/pull-icon.svg") center / contain no-repeat',
+        }}
+        aria-hidden="true"
+      />
+      <div>
+        <p className="font-[family-name:var(--font-worker-display)] text-[22px] font-bold leading-none tracking-normal text-[#08783f]">Pull</p>
+        <p className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#08783f]">UMKM space</p>
+      </div>
+    </Link>
+  );
+}
+
 export function UmkmDashboardShell({
   ownerName,
   profileCompletion,
@@ -73,6 +101,7 @@ export function UmkmDashboardShell({
   const pathname = usePathname();
   const initials = getInitials(ownerName) || "PU";
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const headerContent = pathname.startsWith("/dashboard/profile")
     ? {
         title: "Profil Bisnis",
@@ -177,17 +206,69 @@ export function UmkmDashboardShell({
 
       <div className="lg:pl-56">
         <header className="sticky top-0 z-30 flex flex-col gap-4 border-b border-[#e2ece6] bg-white px-4 py-5 shadow-sm shadow-emerald-950/5 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <div>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="md:hidden"><MobileBrand /></div>
+            <div className="hidden min-w-0 md:block">
             <h1 className="text-3xl font-extrabold leading-tight tracking-normal text-[#10231d]">{headerContent.title}</h1>
             <p className="mt-2 max-w-[620px] text-sm font-medium leading-relaxed text-[#6b7b75]">{headerContent.description}</p>
+            </div>
           </div>
-          <ProfileMenu initials={initials} ownerName={ownerName} profileCompletion={profileCompletion} />
+          <div className="hidden md:block">
+            <ProfileMenu initials={initials} ownerName={ownerName} profileCompletion={profileCompletion} />
+          </div>
         </header>
 
-        <main className="mx-auto max-w-[1540px] px-4 pb-16 pt-5 sm:px-6 sm:pt-7 xl:px-8">
+        <main className="mx-auto max-w-[1540px] px-4 pb-28 pt-5 sm:px-6 sm:pt-7 lg:pb-16 xl:px-8">
           {children}
         </main>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid min-h-[72px] grid-cols-5 border-t border-[#dfeae2] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(12,38,28,.07)] backdrop-blur-xl lg:hidden" aria-label="Navigasi mobile UMKM">
+        {MOBILE_NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const isMenu = item.label === "Menu";
+          const isActive = isMenu
+            ? isMobileMenuOpen || pathname.startsWith("/dashboard/pools") || pathname.startsWith("/dashboard/trust") || pathname.startsWith("/dashboard/activity") || pathname.startsWith("/dashboard/settings")
+            : item.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(item.href);
+
+          return isMenu ? (
+            <button key={item.label} type="button" onClick={() => setIsMobileMenuOpen(true)} className={`relative flex flex-col items-center justify-end pb-1.5 text-[8px] font-extrabold ${isActive ? "text-[#08783f]" : "text-[#6e9b7d]"}`} aria-label="Buka menu UMKM">
+              <span className="absolute bottom-7 grid size-14 place-items-center rounded-full bg-[#08783f] text-white shadow-[0_8px_20px_rgba(8,120,63,.3)] ring-[6px] ring-[#f6f8f5]"><Icon className="size-6" /></span>
+              <span className="relative z-10">Menu</span>
+            </button>
+          ) : (
+            <Link key={item.label} href={item.href} className={`flex flex-col items-center justify-center gap-1 px-0.5 text-center text-[8px] font-extrabold ${isActive ? "text-[#08783f]" : "text-[#6e9b7d]"}`}>
+              <Icon className="size-[18px]" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {isMobileMenuOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button type="button" className="absolute inset-0 bg-[#0c261c]/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} aria-label="Tutup menu UMKM" />
+          <section role="dialog" aria-modal="true" aria-labelledby="umkm-mobile-menu-title" className="absolute inset-x-0 bottom-0 rounded-t-[28px] bg-white px-4 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_70px_rgba(12,38,28,.2)]">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#bfd5c5]" />
+            <div className="mb-4 flex items-center justify-between">
+              <div><p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#507f63]">Navigasi UMKM</p><h2 id="umkm-mobile-menu-title" className="mt-1 text-xl font-extrabold text-[#0c261c]">Menu lainnya</h2></div>
+              <button type="button" onClick={() => setIsMobileMenuOpen(false)} className="grid size-10 place-items-center rounded-xl border border-[#dfeae2] text-[#38694e]" aria-label="Tutup menu"><X className="size-[18px]" /></button>
+            </div>
+            <nav className="grid grid-cols-2 gap-2" aria-label="Semua fitur UMKM">
+              {SIDEBAR_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
+                return <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)} className={`flex min-h-14 items-center gap-3 rounded-2xl border p-3 text-[10px] font-extrabold ${isActive ? "border-[#94b9a1] bg-[#f0f5f1] text-[#17392c]" : "border-[#dfeae2] text-[#38694e]"}`}><span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#f0f5f1]"><Icon className="size-4" /></span><span>{item.label}</span></Link>;
+              })}
+              <Link href="/dashboard/activity" onClick={() => setIsMobileMenuOpen(false)} className="flex min-h-14 items-center gap-3 rounded-2xl border border-[#dfeae2] p-3 text-[10px] font-extrabold text-[#38694e]"><span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#f0f5f1]"><Clock3 className="size-4" /></span><span>Aktivitas</span></Link>
+              <Link href="/dashboard/settings/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex min-h-14 items-center gap-3 rounded-2xl border border-[#dfeae2] p-3 text-[10px] font-extrabold text-[#38694e]"><span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#f0f5f1]"><Settings className="size-4" /></span><span>Pengaturan</span></Link>
+              <button type="button" onClick={() => { setIsMobileMenuOpen(false); setIsHelpOpen(true); }} className="col-span-2 flex min-h-14 items-center gap-3 rounded-2xl border border-[#dfeae2] p-3 text-left text-[10px] font-extrabold text-[#38694e]"><span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#f0f5f1]"><CircleHelp className="size-4" /></span><span>Bantuan</span></button>
+            </nav>
+          </section>
+        </div>
+      ) : null}
 
       {isHelpOpen ? (
         <div
