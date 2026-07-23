@@ -89,17 +89,17 @@ export default async function SupplierPage() {
                 <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-[13px] bg-[#e8f5ec] text-[#08783f]"><Package className="h-5 w-5" /></span><div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-[#507f63]">1 dari 1 terisi</p><h3 className="mt-1 truncate text-sm font-extrabold text-[#163c2b]">{catalogItem.itemName}</h3></div></div>
                 <ArrowRight className="h-4 w-4 shrink-0 text-[#08783f]" />
               </div>
-              <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
+              <dl className="mt-5 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 <div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Harga</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatCurrency(catalogItem.unitPrice)}</dd></div>
                 <div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Tersedia</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatNumber(catalogItem.stockQuantity)} {catalogItem.unit}</dd></div>
-                <div className="rounded-xl bg-[#edf8f0] p-3"><dt className="text-[9px] font-bold text-[#507f63]">Diskon target</dt><dd className="mt-1 text-xs font-extrabold text-[#08783f]">{formatNumber(catalogItem.targetDiscount)}%</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Ambang diskon</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatNumber(catalogItem.minOrderQuantity)} {catalogItem.unit}</dd></div><div className="rounded-xl bg-[#edf8f0] p-3"><dt className="text-[9px] font-bold text-[#507f63]">Diskon pool</dt><dd className="mt-1 text-xs font-extrabold text-[#08783f]">{formatNumber(catalogItem.targetDiscount)}%</dd></div>
               </dl>
             </Link>
           ) : (
             <Link href="/supplier/products" className="mt-5 block rounded-2xl border border-dashed border-[#b9d7c5] bg-[#f7fbf8] p-6 text-center transition hover:border-[#78b994]">
               <BadgePercent className="mx-auto h-6 w-6 text-[#08783f]" />
               <p className="mt-3 text-xs font-extrabold text-[#163c2b]">Tambahkan satu bahan baku</p>
-              <p className="mt-1 text-[10px] font-medium leading-5 text-[#6b7b75]">Isi harga, jumlah tersedia, dan diskon target.</p>
+              <p className="mt-1 text-[10px] font-medium leading-5 text-[#6b7b75]">Isi harga, jumlah tersedia, ambang jumlah, dan diskon pool.</p>
             </Link>
           )}
         </section>

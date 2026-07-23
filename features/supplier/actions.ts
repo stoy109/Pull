@@ -52,9 +52,11 @@ export async function upsertSupplierProductAction(formData: FormData) {
   const unitPrice = positiveNumber(formData, "unitPrice");
   const stockQuantity = positiveNumber(formData, "stockQuantity", true);
   const targetDiscount = positiveNumber(formData, "targetDiscount", true);
+  const minimumDiscountQuantity = positiveNumber(formData, "minimumDiscountQuantity");
 
   if (itemName.length < 3 || !unit || unitPrice === null || stockQuantity === null ||
-    targetDiscount === null || targetDiscount > 99) {
+    targetDiscount === null || targetDiscount > 99 || minimumDiscountQuantity === null ||
+    (stockQuantity > 0 && minimumDiscountQuantity > stockQuantity)) {
     finish("/supplier/products", "validation");
   }
 
@@ -64,7 +66,7 @@ export async function upsertSupplierProductAction(formData: FormData) {
     offer_unit: unit,
     offer_unit_price: unitPrice,
     offer_stock_quantity: stockQuantity,
-    offer_min_order_quantity: 1,
+    offer_min_order_quantity: minimumDiscountQuantity,
     offer_category: "Bahan baku",
     offer_description: supplierTargetDiscountDescription(targetDiscount),
     offer_status: "active",

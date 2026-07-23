@@ -23,10 +23,11 @@ const jobs = [
 
 test("worker filters sanitize input and clamp wages", () => {
   assert.deepEqual(
-    parseWorkerFilters({ q: ["  dapur%_  ", "ignored"], category: " Retail ", minWage: "2000000000" }),
-    { query: "dapur", category: "Retail", district: "", minWage: 1_000_000_000 },
+    parseWorkerFilters({ q: ["  dapur%_  ", "ignored"], category: " Retail ", minWage: "2000000000", view: "map" }),
+    { query: "dapur", category: "Retail", district: "", minWage: 1_000_000_000, view: "map" },
   );
-  assert.equal(parseWorkerFilters({ minWage: "invalid" }).minWage, undefined);
+  assert.equal(parseWorkerFilters({ minWage: "invalid", view: "invalid" }).minWage, undefined);
+  assert.equal(parseWorkerFilters({ view: "invalid" }).view, "list");
 });
 
 test("job search matches real job fields case-insensitively", () => {

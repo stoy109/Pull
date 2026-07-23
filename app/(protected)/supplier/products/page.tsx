@@ -30,13 +30,18 @@ function ProductFields({ product }: { product?: SupplierProduct }) {
           Jumlah tersedia
           <input className={inputClass} name="stockQuantity" type="number" inputMode="decimal" required min="0" step="0.001" defaultValue={product?.stockQuantity ?? 0} />
         </label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e] sm:col-span-2">
-          Diskon saat target tercapai
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">
+          Diskon supplier
           <span className="relative">
             <input className={`${inputClass} pr-10`} name="targetDiscount" type="number" inputMode="decimal" required min="0" max="99" step="0.1" defaultValue={product?.targetDiscount ?? 0} />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-extrabold text-[#507f63]">%</span>
           </span>
-          <span className="text-[9px] font-medium leading-4 text-[#718078]">Diskon maksimum yang berlaku setelah target pool terpenuhi.</span>
+          <span className="text-[9px] font-medium leading-4 text-[#718078]">Persentase diskon setelah ambang jumlah tercapai.</span>
+        </label>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">
+          Minimum jumlah untuk diskon
+          <input className={inputClass} name="minimumDiscountQuantity" type="number" inputMode="decimal" required min="0.001" step="0.001" defaultValue={product?.minOrderQuantity ?? 1} />
+          <span className="text-[9px] font-medium leading-4 text-[#718078]">Total item yang harus terkumpul dalam satu pool agar harga diskon berlaku.</span>
         </label>
       </div>
       <button type="submit" className={`${primaryButtonClass} mt-6 w-full sm:w-auto`}>

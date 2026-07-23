@@ -6,17 +6,17 @@ import {
   Bell,
   BriefcaseBusiness,
   ChevronRight,
+  CircleHelp,
   ClipboardList,
   Grid2X2,
   Home,
-  LogOut,
   Menu,
   Search,
+  Settings,
   ShieldCheck,
   UserRound,
   X,
 } from 'lucide-react'
-import { signOutAction } from '@/features/auth/actions'
 import { Brand } from './UI'
 
 const primaryNavigation = [
@@ -26,6 +26,11 @@ const primaryNavigation = [
   { label: 'Portofolio', description: 'Profil dan verifikasi', path: '/profile', icon: UserRound },
   { label: 'Trust Score', description: 'Reputasi dan bukti kerja', path: '/trust', icon: ShieldCheck },
   { label: 'Notifikasi', description: 'Pembaruan transaksi', path: '/notifications', icon: Bell, count: 'notifications' },
+]
+
+const secondaryNavigation = [
+  { label: 'Bantuan', description: 'Panduan dan pusat bantuan', path: '/help', icon: CircleHelp },
+  { label: 'Pengaturan', description: 'Preferensi dan keamanan akun', path: '/settings', icon: Settings },
 ]
 
 function countFor(item, workspace) {
@@ -46,16 +51,6 @@ function NavigationLink({ item, workspace, onNavigate }) {
   )
 }
 
-function SignOutButton({ compact = false }) {
-  return (
-    <form action={signOutAction}>
-      <button type="submit" className={compact ? 'flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#efd6ce] bg-[#fff7f4] text-xs font-extrabold text-[#a7462d]' : 'nav-item text-[#ffd7cf] hover:bg-[#a7462d]/25 hover:text-white'}>
-        <LogOut size={17} /> Keluar dari akun
-      </button>
-    </form>
-  )
-}
-
 function Sidebar({ workspace, onNavigate }) {
   return (
     <div className="worker-sidebar-nav flex h-full flex-col px-5 py-8">
@@ -63,14 +58,16 @@ function Sidebar({ workspace, onNavigate }) {
       <nav className="mt-7 flex-1 space-y-2 overflow-y-auto" aria-label="Navigasi utama">
         {primaryNavigation.map((item) => <NavigationLink key={item.path} item={item} workspace={workspace} onNavigate={onNavigate} />)}
       </nav>
-      <div className="mt-6 border-t border-white/10 pt-3"><SignOutButton /></div>
+      <nav className="mt-6 space-y-2 border-t border-white/10 pt-3" aria-label="Bantuan dan pengaturan">
+        {secondaryNavigation.map((item) => <NavigationLink key={item.path} item={item} workspace={workspace} onNavigate={onNavigate} />)}
+      </nav>
     </div>
   )
 }
 
 function Topbar({ workspace, onOpenMenu }) {
   const location = useLocation()
-  const current = primaryNavigation.find((item) => location.pathname.startsWith(item.path)) || primaryNavigation[0]
+  const current = [...primaryNavigation, ...secondaryNavigation].find((item) => location.pathname.startsWith(item.path)) || primaryNavigation[0]
   const profile = workspace.profile
   const unread = countFor(primaryNavigation.at(-1), workspace)
   const initials = (profile?.displayName || 'Pekerja Pull').split(/\s+/).map((word) => word[0]).slice(0, 2).join('').toUpperCase()
@@ -94,7 +91,6 @@ function Topbar({ workspace, onOpenMenu }) {
           <span className="grid size-9 place-items-center rounded-full bg-[#08783d] text-xs font-extrabold text-white">{initials}</span>
           <span className="max-w-40 truncate text-xs font-extrabold text-[#111b17]">{profile?.displayName || 'Pekerja Pull'}</span>
         </NavLink>
-        <SignOutButton compact />
       </div>
     </header>
   )
@@ -110,7 +106,7 @@ function MobileBottomNav({ workspace, onOpenMore }) {
     { label: 'Lamaran', path: '/applications', icon: ClipboardList, count: workspace.applications.length },
     { label: 'Notifikasi', path: '/notifications', icon: Bell, count: unread },
   ]
-  const moreActive = location.pathname.startsWith('/profile') || location.pathname.startsWith('/trust')
+  const moreActive = ['/profile', '/trust', '/help', '/settings'].some((path) => location.pathname.startsWith(path))
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-5 border-t border-pull-100 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(12,38,28,.07)] backdrop-blur-xl md:hidden" aria-label="Navigasi mobile">
@@ -136,9 +132,12 @@ function MobileMoreSheet({ workspace, onClose }) {
           <button type="button" onClick={onClose} className="icon-button size-9" aria-label="Tutup menu"><X size={16} /></button>
         </div>
         <nav className="grid grid-cols-2 gap-2" aria-label="Menu lainnya">
-          {[{ label: 'Profil saya', path: '/profile', icon: UserRound }, { label: 'Trust Score', path: '/trust', icon: ShieldCheck }].map((item) => { const Icon = item.icon; return <NavLink key={item.path} to={item.path} onClick={onClose} className={({ isActive }) => `flex min-h-20 flex-col justify-between rounded-[16px] border p-3 text-[10px] font-extrabold ${isActive ? 'border-pull-300 bg-pull-50 text-pull-900' : 'border-pull-100 text-pull-600'}`}><Icon size={18} /><span className="flex items-center justify-between">{item.label}<ChevronRight size={13} /></span></NavLink> })}
+          {[
+            { label: 'Profil saya', path: '/profile', icon: UserRound },
+            { label: 'Trust Score', path: '/trust', icon: ShieldCheck },
+            ...secondaryNavigation,
+          ].map((item) => { const Icon = item.icon; return <NavLink key={item.path} to={item.path} onClick={onClose} className={({ isActive }) => `flex min-h-20 flex-col justify-between rounded-[16px] border p-3 text-[10px] font-extrabold ${isActive ? 'border-pull-300 bg-pull-50 text-pull-900' : 'border-pull-100 text-pull-600'}`}><Icon size={18} /><span className="flex items-center justify-between">{item.label}<ChevronRight size={13} /></span></NavLink> })}
         </nav>
-        <div className="mt-3"><SignOutButton compact /></div>
       </section>
     </div>
   )

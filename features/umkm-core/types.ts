@@ -25,6 +25,7 @@ export type SupplierCatalogProduct = {
   itemName: string;
   minOrderQuantity: number;
   stockQuantity: number;
+  targetDiscount: number;
   unit: string;
   unitPrice: number;
 };
@@ -34,6 +35,7 @@ export type Pool = {
   createdAt: string;
   currentQuantity: number;
   deadline: string;
+  deletable: boolean;
   description: string;
   district: string;
   hub: string | null;
@@ -42,6 +44,7 @@ export type Pool = {
   itemName: string;
   joinable: boolean;
   latitude: number | null;
+  leavable: boolean;
   longitude: number | null;
   joinedQuantity: number | null;
   marketPrice: number | null;

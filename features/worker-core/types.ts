@@ -4,13 +4,16 @@ export type WorkerPage =
   | "applications"
   | "profile"
   | "trust"
-  | "notifications";
+  | "notifications"
+  | "help"
+  | "settings";
 
 export type WorkerFilters = {
   query: string;
   category: string;
   district: string;
   minWage?: number;
+  view: "list" | "map";
 };
 
 export type WorkerProfile = {

@@ -79,6 +79,9 @@ function fail(path: string, code: string): never {
 function errorCode(error: SupabaseErrorLike) {
   if (isCoreSetupError(error)) return "setup";
   if (error.code === "23505") return "duplicate";
+  const message = error.message?.toLowerCase() ?? "";
+  if (message.includes("pool membership is locked") || message.includes("pool membership can no longer be changed")) return "pool-locked";
+  if (message.includes("pool membership is not available")) return "pool-membership";
   return "save";
 }
 
@@ -113,15 +116,11 @@ export async function createPoolAction(formData: FormData) {
   const catalogProductId = uuidField(formData, "catalogProductId");
   const district = text(formData, "district");
   const hub = text(formData, "hub");
-  const target = numberField(formData, "targetQuantity");
 
   if (
     !catalogProductId ||
     !hasLength(district, 2, 120) ||
-    !optionalLength(hub, 200) ||
-    !target.valid ||
-    target.value === null ||
-    target.value <= 0
+    !optionalLength(hub, 200)
   ) {
     fail("/dashboard/pools", "validation");
   }
@@ -132,7 +131,6 @@ export async function createPoolAction(formData: FormData) {
     {
       pool_district: district,
       pool_hub: hub || null,
-      pool_target_quantity: target.value,
       target_catalog_product_id: catalogProductId,
     },
     POOL_REVALIDATIONS,
@@ -153,6 +151,34 @@ export async function joinPoolAction(formData: FormData) {
     { member_quantity: quantity.value, target_pool_id: poolId },
     POOL_REVALIDATIONS,
     "pool-joined",
+  );
+}
+
+export async function leavePoolAction(formData: FormData) {
+  await requireRole(["umkm"]);
+  const poolId = uuidField(formData, "poolId");
+  if (!poolId) fail("/dashboard/pools", "validation");
+
+  return runRpc(
+    "/dashboard/pools",
+    "leave_pool",
+    { target_pool_id: poolId },
+    POOL_REVALIDATIONS,
+    "pool-left",
+  );
+}
+
+export async function deletePoolAction(formData: FormData) {
+  await requireRole(["umkm"]);
+  const poolId = uuidField(formData, "poolId");
+  if (!poolId) fail("/dashboard/pools", "validation");
+
+  return runRpc(
+    "/dashboard/pools",
+    "delete_pool",
+    { target_pool_id: poolId },
+    POOL_REVALIDATIONS,
+    "pool-deleted",
   );
 }
 

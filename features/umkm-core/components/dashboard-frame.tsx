@@ -55,7 +55,9 @@ const successMessages: Record<string, string> = {
   "order-created": "Pesanan supplier berhasil dibuat.",
   "order-updated": "Status pesanan berhasil diperbarui.",
   "pool-created": "Pool baru berhasil dibuat.",
+  "pool-deleted": "Pool berhasil dihapus.",
   "pool-joined": "Keikutsertaan pool berhasil dicatat.",
+  "pool-left": "Anda berhasil keluar dari pool.",
   "product-saved": "Produk berhasil disimpan.",
   "profile-saved": "Profil publik berhasil disimpan.",
   "rating-saved": "Rating pekerja berhasil dikirim.",
@@ -63,8 +65,10 @@ const successMessages: Record<string, string> = {
 
 const errorMessages: Record<string, string> = {
   duplicate: "Data ini sudah pernah dicatat.",
+  "pool-locked": "Keanggotaan tidak dapat diubah karena pesanan supplier sudah dibuat.",
+  "pool-membership": "Keanggotaan pool tidak ditemukan. Muat ulang halaman lalu periksa kembali.",
   save: "Perubahan ditolak atau data sudah berubah. Periksa kondisi terbaru lalu coba lagi.",
-  setup: "Fitur inti UMKM belum siap. Terapkan migrations 202607230009_proposal_core_flows.sql dan 202607230015_pool_catalog_hour_window.sql di Supabase terlebih dahulu.",
+  setup: "Fitur inti UMKM belum siap. Terapkan migrations 202607230009, 202607230015, 202607230017, 202607230018, 202607230019, dan 202607230020 di Supabase terlebih dahulu.",
   validation: "Periksa kembali isian wajib, format, dan batas nilainya.",
 };
 

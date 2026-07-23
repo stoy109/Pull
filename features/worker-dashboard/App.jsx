@@ -23,8 +23,9 @@ function AppRoutes({ workspace, filters, notice }) {
         <Route path="profile" element={page('profile')} />
         <Route path="trust" element={page('trust')} />
         <Route path="notifications" element={page('notifications')} />
+        <Route path="help" element={page('help')} />
+        <Route path="settings/*" element={page('settings')} />
         <Route path="activity" element={<Navigate to="/notifications" replace />} />
-        <Route path="settings/*" element={<Navigate to="/profile" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

@@ -22,6 +22,7 @@ export function parseWorkerFilters(searchParams: Record<string, SearchValue>): W
       parsedWage !== undefined && Number.isFinite(parsedWage) && parsedWage >= 0
         ? Math.min(parsedWage, 1_000_000_000)
         : undefined,
+    view: first(searchParams.view) === "map" ? "map" : "list",
   };
 }
 

@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronRight,
+  CircleHelp,
   Clock3,
   Coins,
   Database,
@@ -18,6 +19,7 @@ import {
   Filter,
   FolderOpen,
   IdCard,
+  LogOut,
   Mail,
   MapPin,
   Medal,
@@ -29,6 +31,7 @@ import {
   Star,
   WalletCards,
 } from "lucide-react";
+import { signOutAction } from "@/features/auth/actions";
 import {
   confirmCompletionAction,
   markNotificationReadAction,
@@ -284,6 +287,15 @@ function OwnerName({ value }: { value: string | null }) {
   return value ? <span>{value}</span> : <span className="text-[#9a6b3d]">Nama usaha dibatasi oleh kebijakan profil</span>;
 }
 
+function workerJobsHref(filters: WorkerFilters, view: WorkerFilters["view"]) {
+  const params = new URLSearchParams({ view });
+  if (filters.query) params.set("q", filters.query);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.district) params.set("district", filters.district);
+  if (filters.minWage !== undefined) params.set("minWage", String(filters.minWage));
+  return `/worker/jobs?${params.toString()}`;
+}
+
 function JobBoardPage({ data, filters, notice }: { data: WorkerWorkspace; filters: WorkerFilters; notice?: string }) {
   const applicationsByJob = new Map(data.applications.map((application) => [application.jobId, application]));
   const filtered = Boolean(filters.query || filters.category || filters.district || filters.minWage !== undefined);
@@ -294,16 +306,24 @@ function JobBoardPage({ data, filters, notice }: { data: WorkerWorkspace; filter
       <Notice notice={notice} />
 
       <form action="/worker/jobs" method="get" className={`${cardClass} grid gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[1.2fr_1fr_1fr_.75fr_auto] xl:items-end`}>
+        <input type="hidden" name="view" value={filters.view} />
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Cari lowongan<input name="q" type="search" defaultValue={filters.query} maxLength={80} placeholder="Posisi, UMKM, atau lokasi" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Kabupaten / kota<input name="district" defaultValue={filters.district} maxLength={80} placeholder="Contoh: Surakarta" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Kategori<input name="category" defaultValue={filters.category} maxLength={80} placeholder="Contoh: Produksi" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Upah minimum<input name="minWage" defaultValue={filters.minWage} type="number" min="0" max="1000000000" step="1000" inputMode="numeric" placeholder="100000" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
-        <div className="flex gap-2"><button className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white transition hover:bg-[#006a37] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]"><Filter className="h-4 w-4" /> Terapkan</button>{filtered ? <Link href="/worker/jobs" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#d6e3db] px-4 text-[10px] font-extrabold text-[#526c5e]">Hapus</Link> : null}</div>
+        <div className="flex gap-2"><button className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white transition hover:bg-[#006a37] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]"><Filter className="h-4 w-4" /> Terapkan</button>{filtered ? <Link href={`/worker/jobs?view=${filters.view}`} className="inline-flex h-11 items-center justify-center rounded-xl border border-[#d6e3db] px-4 text-[10px] font-extrabold text-[#526c5e]">Hapus</Link> : null}</div>
       </form>
 
-      <div className="mt-5 flex items-center justify-between"><p className="text-[10px] font-bold text-[#688074]">{data.jobs.length} lowongan ditemukan</p><p className="hidden text-[9px] font-semibold text-[#82948b] sm:block">Data langsung dari Supabase</p></div>
-      <WorkerJobMap jobs={data.jobs} radiusKm={data.preferences.radiusKm} />
-      {data.jobs.length ? (
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[10px] font-bold text-[#688074]">{data.jobs.length} lowongan ditemukan · data langsung dari Supabase</p>
+        <div className="inline-flex self-start rounded-xl border border-[#d6e3db] bg-white p-1" aria-label="Tampilan papan loker">
+          <Link href={workerJobsHref(filters, "list")} aria-current={filters.view === "list" ? "page" : undefined} className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[9px] font-extrabold ${filters.view === "list" ? "bg-[#08783f] text-white" : "text-[#526c5e]"}`}><BriefcaseBusiness className="h-3.5 w-3.5" /> Daftar</Link>
+          <Link href={workerJobsHref(filters, "map")} aria-current={filters.view === "map" ? "page" : undefined} className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[9px] font-extrabold ${filters.view === "map" ? "bg-[#08783f] text-white" : "text-[#526c5e]"}`}><MapPin className="h-3.5 w-3.5" /> Peta</Link>
+        </div>
+      </div>
+      {data.jobs.length && filters.view === "map" ? (
+        <WorkerJobMap jobs={data.jobs} radiusKm={data.preferences.radiusKm} />
+      ) : data.jobs.length ? (
         <section aria-label="Daftar lowongan" className="mt-3 grid gap-4 lg:grid-cols-2">
           {data.jobs.map((job) => {
             const application = applicationsByJob.get(job.id);
@@ -393,7 +413,54 @@ function ProfilePage({ data, notice }: { data: WorkerWorkspace; notice?: string 
         </aside>
       </section>
 
-      <section className={`${cardClass} mt-5 p-5 sm:p-6`}>
+      <section className="mt-5 grid gap-5 xl:grid-cols-[.85fr_1.15fr]">
+        <div className={`${cardClass} p-5 sm:p-6`}>
+          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e7f4eb] text-[#08783f]"><IdCard className="h-5 w-5" /></span><div><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">KYC privat</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Ajukan dokumen</h2></div></div>
+          {canSubmitKyc ? <form action={submitKycRecordAction} className="mt-5 space-y-4"><label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Jenis dokumen<select name="documentType" required defaultValue="" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]"><option value="" disabled>Pilih dokumen</option><option value="KTP">KTP</option><option value="SIM">SIM</option><option value="PASPOR">Paspor</option></select></label><label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">File dokumen<input name="document" type="file" required accept="application/pdf,image/jpeg,image/png" className="block w-full rounded-xl border border-[#d6e3db] bg-[#fbfdfc] p-2 text-[10px] font-semibold file:mr-3 file:rounded-lg file:border-0 file:bg-[#e7f4eb] file:px-3 file:py-2 file:text-[10px] file:font-extrabold file:text-[#08783f] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e8f5ec]" /></label><p className="text-[9px] font-medium leading-5 text-[#71857a]">PDF, JPG, atau PNG; maksimal 850 KB. Upload memerlukan bucket privat <code className="font-mono">kyc-documents</code> dengan kebijakan path per pengguna.</p><button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#08783f] text-xs font-extrabold text-white"><FileCheck2 className="h-4 w-4" /> Kirim untuk ditinjau</button></form> : <div className="mt-5 rounded-xl bg-[#f2f8f4] p-4"><p className="flex items-center gap-2 text-xs font-extrabold text-[#315b45]">{profile.kycStatus === "verified" ? <BadgeCheck className="h-4 w-4 text-[#08783f]" /> : <Clock3 className="h-4 w-4 text-[#b9681d]" />}{profile.kycStatus === "verified" ? "Identitas sudah terverifikasi" : "Dokumen sedang ditinjau"}</p><p className="mt-2 text-[10px] font-medium leading-5 text-[#70837a]">{profile.kycStatus === "verified" ? "Tidak perlu mengirim dokumen baru." : "Tunggu hasil peninjauan sebelum mengirim jenis dokumen yang sama."}</p></div>}
+        </div>
+
+        <div className={`${cardClass} overflow-hidden`}><header className="border-b border-[#e2ebe5] px-5 py-5 sm:px-6"><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">Riwayat nyata</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Pengajuan KYC</h2></header>{data.kycSubmissions.length ? <div className="divide-y divide-[#e5ede8] px-5 sm:px-6">{data.kycSubmissions.map((submission) => <article key={submission.id} className="flex items-start gap-4 py-4"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f1f7f3] text-[#08783f]"><FileBadge className="h-4.5 w-4.5" /></span><div className="min-w-0 flex-1"><h3 className="text-xs font-extrabold text-[#315b45]">{submission.documentType}</h3><p className="mt-1 text-[9px] font-semibold text-[#7b8d84]">Diajukan {formatDate(submission.createdAt)}</p>{submission.rejectionReason ? <p className="mt-2 text-[10px] font-medium leading-5 text-[#a3434c]">{submission.rejectionReason}</p> : null}</div><StatusBadge status={submission.status} /></article>)}</div> : <EmptyState icon={<FolderOpen className="h-6 w-6" />} title="Belum ada pengajuan" description="Riwayat dokumen akan tampil setelah file berhasil tersimpan dan RPC KYC selesai." />}</div>
+      </section>
+    </>
+  );
+}
+
+function HelpPage() {
+  const faqs = [
+    { question: "Bagaimana cara melamar pekerjaan?", answer: "Buka Papan Loker, pilih lowongan yang sesuai, lalu kirim pesan lamaran. Status lamaran tersimpan di menu Lamaran Saya." },
+    { question: "Bagaimana lowongan direkomendasikan?", answer: "Pull mengurutkan lowongan nyata berdasarkan kategori, keahlian, upah minimum, wilayah, dan status verifikasi UMKM." },
+    { question: "Kapan Trust Score diperbarui?", answer: "Trust Score diperbarui dari transaksi pekerjaan, rating, poin, dan verifikasi yang benar-benar tersimpan." },
+    { question: "Bagaimana memperbarui profil atau KYC?", answer: "Buka Portofolio untuk memperbarui onboarding, melihat profil, dan mengirim dokumen KYC privat." },
+  ];
+
+  return (
+    <>
+      <PageHeader eyebrow="Pusat dukungan" title="Bantuan" description="Panduan singkat untuk penggunaan akun pekerja Pull." />
+      <section className={`${cardClass} overflow-hidden`}>
+        <header className="flex items-center gap-3 border-b border-[#e2ebe5] px-5 py-5 sm:px-6">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e7f4eb] text-[#08783f]"><CircleHelp className="h-5 w-5" /></span>
+          <div><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">Pertanyaan umum</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Yang sering ditanyakan</h2></div>
+        </header>
+        <div className="space-y-3 p-5 sm:p-6">
+          {faqs.map((faq) => (
+            <details key={faq.question} className="rounded-xl border border-[#e0e9e3] bg-[#fbfdfc] p-4">
+              <summary className="cursor-pointer text-xs font-extrabold text-[#315b45]">{faq.question}</summary>
+              <p className="mt-3 text-[10px] font-medium leading-5 text-[#667b70]">{faq.answer}</p>
+            </details>
+          ))}
+          <a href="https://web.whatsapp.com/send?text=Halo%20CS%20Pull%2C%20saya%20membutuhkan%20bantuan%20untuk%20akun%20pekerja." target="_blank" rel="noreferrer" className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white sm:w-auto">Hubungi CS via WhatsApp</a>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function SettingsPage({ data, notice }: { data: WorkerWorkspace; notice?: string }) {
+  return (
+    <>
+      <PageHeader eyebrow="Preferensi akun" title="Pengaturan" description="Atur smart matching dan keamanan akun pekerja Anda." />
+      <Notice notice={notice} />
+      <section className={`${cardClass} p-5 sm:p-6`}>
         <div className="flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e7f4eb] text-[#08783f]"><Settings2 className="h-5 w-5" /></span>
           <div><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">Smart matching</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Preferensi pekerjaan</h2></div>
@@ -407,13 +474,13 @@ function ProfilePage({ data, notice }: { data: WorkerWorkspace; notice?: string 
         </form>
       </section>
 
-      <section className="mt-5 grid gap-5 xl:grid-cols-[.85fr_1.15fr]">
-        <div className={`${cardClass} p-5 sm:p-6`}>
-          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e7f4eb] text-[#08783f]"><IdCard className="h-5 w-5" /></span><div><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">KYC privat</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Ajukan dokumen</h2></div></div>
-          {canSubmitKyc ? <form action={submitKycRecordAction} className="mt-5 space-y-4"><label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Jenis dokumen<select name="documentType" required defaultValue="" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]"><option value="" disabled>Pilih dokumen</option><option value="KTP">KTP</option><option value="SIM">SIM</option><option value="PASPOR">Paspor</option></select></label><label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">File dokumen<input name="document" type="file" required accept="application/pdf,image/jpeg,image/png" className="block w-full rounded-xl border border-[#d6e3db] bg-[#fbfdfc] p-2 text-[10px] font-semibold file:mr-3 file:rounded-lg file:border-0 file:bg-[#e7f4eb] file:px-3 file:py-2 file:text-[10px] file:font-extrabold file:text-[#08783f] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e8f5ec]" /></label><p className="text-[9px] font-medium leading-5 text-[#71857a]">PDF, JPG, atau PNG; maksimal 850 KB. Upload memerlukan bucket privat <code className="font-mono">kyc-documents</code> dengan kebijakan path per pengguna.</p><button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#08783f] text-xs font-extrabold text-white"><FileCheck2 className="h-4 w-4" /> Kirim untuk ditinjau</button></form> : <div className="mt-5 rounded-xl bg-[#f2f8f4] p-4"><p className="flex items-center gap-2 text-xs font-extrabold text-[#315b45]">{profile.kycStatus === "verified" ? <BadgeCheck className="h-4 w-4 text-[#08783f]" /> : <Clock3 className="h-4 w-4 text-[#b9681d]" />}{profile.kycStatus === "verified" ? "Identitas sudah terverifikasi" : "Dokumen sedang ditinjau"}</p><p className="mt-2 text-[10px] font-medium leading-5 text-[#70837a]">{profile.kycStatus === "verified" ? "Tidak perlu mengirim dokumen baru." : "Tunggu hasil peninjauan sebelum mengirim jenis dokumen yang sama."}</p></div>}
+      <section className={`${cardClass} mt-5 border-[#efcfd4] p-5 sm:p-6`}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#a45a64]">Keamanan akun</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Keluar dari akun</h2><p className="mt-2 text-[10px] font-medium leading-5 text-[#71857a]">Akhiri sesi Pull pada perangkat ini. Data akun tetap tersimpan.</p></div>
+          <form action={signOutAction}>
+            <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#e3a8b2] bg-[#fff7f7] px-5 text-xs font-extrabold text-[#a72e43] hover:bg-[#fff0f2] sm:w-auto"><LogOut className="h-4 w-4" />Keluar dari akun</button>
+          </form>
         </div>
-
-        <div className={`${cardClass} overflow-hidden`}><header className="border-b border-[#e2ebe5] px-5 py-5 sm:px-6"><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">Riwayat nyata</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Pengajuan KYC</h2></header>{data.kycSubmissions.length ? <div className="divide-y divide-[#e5ede8] px-5 sm:px-6">{data.kycSubmissions.map((submission) => <article key={submission.id} className="flex items-start gap-4 py-4"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f1f7f3] text-[#08783f]"><FileBadge className="h-4.5 w-4.5" /></span><div className="min-w-0 flex-1"><h3 className="text-xs font-extrabold text-[#315b45]">{submission.documentType}</h3><p className="mt-1 text-[9px] font-semibold text-[#7b8d84]">Diajukan {formatDate(submission.createdAt)}</p>{submission.rejectionReason ? <p className="mt-2 text-[10px] font-medium leading-5 text-[#a3434c]">{submission.rejectionReason}</p> : null}</div><StatusBadge status={submission.status} /></article>)}</div> : <EmptyState icon={<FolderOpen className="h-6 w-6" />} title="Belum ada pengajuan" description="Riwayat dokumen akan tampil setelah file berhasil tersimpan dan RPC KYC selesai." />}</div>
       </section>
     </>
   );
@@ -473,6 +540,8 @@ function NotificationsPage({ data, notice }: { data: WorkerWorkspace; notice?: s
 }
 
 export function WorkerPageContent({ page, data, filters, notice }: { page: WorkerPage; data: WorkerWorkspace; filters: WorkerFilters; notice?: string }) {
+  if (page === "help") return <HelpPage />;
+  if (page === "settings") return <SettingsPage data={data} notice={notice} />;
   if (data.loadIssue || !data.profile) return <SetupState data={data} />;
   if (page === "jobs") return <JobBoardPage data={data} filters={filters} notice={notice} />;
   if (page === "applications") return <ApplicationsPage data={data} notice={notice} />;

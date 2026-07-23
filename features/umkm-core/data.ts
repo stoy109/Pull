@@ -164,6 +164,17 @@ type CatalogProductRow = {
   unit_price: number | string;
 };
 
+function poolDescription(pool: PoolRow) {
+  const marketPrice = pool.market_price === null ? 0 : asNumber(pool.market_price);
+  const discountPrice = pool.tier2_price === null ? 0 : asNumber(pool.tier2_price);
+  if (!pool.catalog_product_id || marketPrice <= discountPrice || discountPrice <= 0) {
+    return pool.description;
+  }
+
+  const discount = Number(((1 - discountPrice / marketPrice) * 100).toFixed(2));
+  return `Diskon ${discount}% berlaku setelah minimal ${asNumber(pool.min_threshold)} ${pool.unit} terkumpul.`;
+}
+
 type OfferRow = {
   description: string | null;
   id: string;
@@ -226,6 +237,7 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
       itemName: product.item_name,
       minOrderQuantity: asNumber(product.min_order_quantity),
       stockQuantity: asNumber(product.stock_quantity),
+      targetDiscount: Math.min(99, Math.max(0, asNumber(/^supplier_target_discount=(\d+(?:\.\d+)?)$/.exec(product.description ?? "")?.[1]))),
       unit: product.unit,
       unitPrice: asNumber(product.unit_price),
     }))
@@ -280,6 +292,13 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
       asNumber(member.quantity),
     ]),
   );
+  const orderRows = (ordersResult.data ?? []) as OrderRow[];
+  const orderedPoolIds = new Set(orderRows.map((order) => order.pool_id));
+  const lockedOwnedPoolIds = new Set(
+    orderRows
+      .filter((order) => !["rejected", "cancelled"].includes(order.status))
+      .map((order) => order.pool_id),
+  );
   const offersByPool = new Map<string, SupplierOffer[]>();
   for (const offer of (offersResult.data ?? []) as OfferRow[]) {
     if (!offer.pool_id) continue;
@@ -298,12 +317,12 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
     if (!product) continue;
     offersByPool.set(pool.id, [
       {
-        description: pool.description,
+        description: poolDescription(pool),
         id: product.id,
         minOrderQuantity: product.minOrderQuantity,
         stockQuantity: product.stockQuantity,
         unitPrice:
-          asNumber(pool.current_quantity) >= asNumber(pool.target_quantity) && pool.tier2_price !== null
+          asNumber(pool.current_quantity) >= asNumber(pool.min_threshold) && pool.tier2_price !== null
             ? asNumber(pool.tier2_price)
             : pool.tier1_price === null
               ? product.unitPrice
@@ -322,7 +341,8 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
       createdAt: pool.created_at,
       currentQuantity,
       deadline: pool.deadline,
-      description: pool.description,
+      deletable: pool.owner_id === context.userId && !orderedPoolIds.has(pool.id),
+      description: poolDescription(pool),
       district: pool.district,
       hub: optionalString(pool.hub),
       id: pool.id,
@@ -334,6 +354,10 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
         new Date(pool.deadline).getTime() > now,
       joinedQuantity: joinedByPool.get(pool.id) ?? null,
       latitude: pool.latitude === null ? null : asNumber(pool.latitude),
+      leavable:
+        joinedByPool.has(pool.id) &&
+        !["ordered", "fulfilled"].includes(pool.status) &&
+        !(pool.owner_id === context.userId && lockedOwnedPoolIds.has(pool.id)),
       longitude: pool.longitude === null ? null : asNumber(pool.longitude),
       marketPrice: pool.market_price === null ? null : asNumber(pool.market_price),
       minThreshold: asNumber(pool.min_threshold),
@@ -347,7 +371,7 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
     };
   });
   const poolById = new Map(pools.map((pool) => [pool.id, pool]));
-  const orders: BuyerOrder[] = ((ordersResult.data ?? []) as OrderRow[]).map((order) => ({
+  const orders: BuyerOrder[] = orderRows.map((order) => ({
     createdAt: order.created_at,
     id: order.id,
     itemName: poolById.get(order.pool_id)?.itemName ?? "Pesanan bahan baku",

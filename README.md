@@ -55,6 +55,10 @@ Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan
 - `202607230014_worker_matching_map_contact.sql` untuk preferensi smart matching, koordinat lowongan, dan handoff WhatsApp pekerja.
 - `202607230015_pool_catalog_hour_window.sql` untuk katalog tunggal supplier, pilihan bahan saat membuat pool, diskon target, dan deadline pool satu jam yang hanya reset pada join pertama tiap akun.
 - `202607230016_draft_jobs_whatsapp_admin.sql` untuk hapus draft lowongan dan akses admin `r.pinontoan19@gmail.com`.
+- `202607230017_supplier_discount_threshold.sql` untuk menerapkan diskon supplier saat minimum jumlah pool tercapai.
+- `202607230018_pool_target_from_supplier.sql` agar target pool otomatis mengikuti minimum jumlah diskon supplier.
+- `202607230019_pool_delete_leave.sql` untuk menghapus pool tanpa pesanan dan keluar dari pool.
+- `202607230020_allow_pool_leave_after_deadline.sql` agar anggota tetap dapat keluar setelah deadline selama belum ada pesanan supplier aktif.
 
 Verifikasi telepon membutuhkan SMS provider yang aktif di Supabase Auth. Bucket privat `kyc-documents` dibuat oleh migration `011`; file hanya dapat dibaca pemilik atau admin, dan admin UI menggunakan signed URL singkat.
 

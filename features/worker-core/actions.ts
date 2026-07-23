@@ -43,6 +43,7 @@ function refreshWorker() {
   revalidatePath("/worker/jobs");
   revalidatePath("/worker/applications");
   revalidatePath("/worker/profile");
+  revalidatePath("/worker/settings");
   revalidatePath("/worker/trust");
   revalidatePath("/worker/notifications");
 }
@@ -195,7 +196,7 @@ export async function saveWorkerPreferencesAction(formData: FormData) {
     !PREFERENCE_RADII.has(radiusKm) ||
     (minimumWage !== null && (!Number.isFinite(minimumWage) || minimumWage < 0 || minimumWage > 1_000_000_000))
   ) {
-    redirect("/worker/profile?notice=preferences-validation");
+    redirect("/worker/settings?notice=preferences-validation");
   }
 
   const supabase = await createClient();
@@ -211,11 +212,11 @@ export async function saveWorkerPreferencesAction(formData: FormData) {
   );
 
   if (error) {
-    redirect(`/worker/profile?notice=${isSetupError(error) ? "setup" : "preferences-save"}`);
+    redirect(`/worker/settings?notice=${isSetupError(error) ? "setup" : "preferences-save"}`);
   }
 
   refreshWorker();
-  redirect("/worker/profile?notice=preferences-saved");
+  redirect("/worker/settings?notice=preferences-saved");
 }
 
 export async function submitKycRecordAction(formData: FormData) {

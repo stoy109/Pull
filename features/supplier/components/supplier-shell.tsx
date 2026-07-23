@@ -35,7 +35,7 @@ const MENU = [
 ] as const;
 
 const HEADERS: Record<string, { title: string; description: string }> = {
-  "/supplier/products": { title: "Bahan baku", description: "Kelola satu bahan baku, harga satuan, jumlah tersedia, dan diskon target." },
+  "/supplier/products": { title: "Bahan baku", description: "Kelola satu bahan baku, harga, stok, ambang jumlah, dan diskon pool." },
   "/supplier/offers": { title: "Penawaran", description: "Pantau penawaran yang sudah dikirim terhadap pool permintaan." },
   "/supplier/transactions": { title: "Transaksi", description: "Terima pesanan dan perbarui proses pemenuhan sampai barang dikirim." },
   "/supplier/insights": { title: "Insight demand", description: "Baca tren demand 7 dan 30 hari dari riwayat pool yang tersedia." },

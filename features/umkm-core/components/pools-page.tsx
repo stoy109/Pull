@@ -1,16 +1,20 @@
 import {
   Clock3,
+  LogOut,
   MapPin,
   PackageOpen,
   Plus,
   ShoppingCart,
+  Trash2,
   TrendingDown,
   UsersRound,
 } from "lucide-react";
 import {
   createPoolAction,
   createSupplierOrderAction,
+  deletePoolAction,
   joinPoolAction,
+  leavePoolAction,
   setBuyerOrderStatusAction,
 } from "../actions";
 import {
@@ -97,7 +101,7 @@ function PoolCard({ pool }: { pool: Pool }) {
         <div className="h-full rounded-full bg-[#087447]" style={{ width: `${pool.progress}%` }} />
       </div>
       <p className="mt-2 text-[10px] font-semibold text-[#718078]">
-        Ambang minimum {formatNumber(pool.minThreshold)} {pool.unit}
+        Ambang diskon {formatNumber(pool.minThreshold)} {pool.unit}
       </p>
 
       <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -108,13 +112,13 @@ function PoolCard({ pool }: { pool: Pool }) {
           </dd>
         </div>
         <div className="rounded-xl bg-[#f0f7f2] p-3">
-          <dt className="text-[9px] font-bold text-[#65806f]">Harga ambang</dt>
+          <dt className="text-[9px] font-bold text-[#65806f]">Harga normal</dt>
           <dd className="mt-1 text-[11px] font-extrabold text-[#087447]">
             {pool.tier1Price === null ? "—" : formatCurrency(pool.tier1Price)}
           </dd>
         </div>
         <div className="rounded-xl bg-[#fff8e8] p-3">
-          <dt className="text-[9px] font-bold text-[#8a753f]">Harga target</dt>
+          <dt className="text-[9px] font-bold text-[#8a753f]">Harga diskon</dt>
           <dd className="mt-1 text-[11px] font-extrabold text-[#9a670f]">
             {pool.tier2Price === null ? "—" : formatCurrency(pool.tier2Price)}
           </dd>
@@ -124,7 +128,7 @@ function PoolCard({ pool }: { pool: Pool }) {
       {bestSavings > 0 ? (
         <p className="mt-3 flex items-start gap-2 rounded-xl bg-[#fff8e8] px-3 py-2.5 text-[10px] font-bold leading-5 text-[#76581c]">
           <TrendingDown className="mt-0.5 h-4 w-4 shrink-0" />
-          Potensi hemat {formatPercent(bestSavings)} atau {formatCurrency(savingsValue)} saat target tercapai.
+          Potensi hemat {formatPercent(bestSavings)} atau {formatCurrency(savingsValue)} setelah ambang diskon tercapai.
         </p>
       ) : null}
 
@@ -135,9 +139,21 @@ function PoolCard({ pool }: { pool: Pool }) {
       </div>
 
       {pool.joinedQuantity !== null ? (
-        <p className="mt-4 rounded-xl border border-[#d7e8dd] bg-[#f3faf5] px-3 py-2.5 text-[10px] font-bold text-[#276443]">
-          Kontribusi Anda: {formatNumber(pool.joinedQuantity)} {pool.unit}
-        </p>
+        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[#d7e8dd] bg-[#f3faf5] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[10px] font-bold text-[#276443]">
+            Kontribusi Anda: {formatNumber(pool.joinedQuantity)} {pool.unit}
+          </p>
+          {pool.leavable ? (
+            <form action={leavePoolAction}>
+              <input type="hidden" name="poolId" value={pool.id} />
+              <button className={`${secondaryButtonClass} w-full gap-2 border-[#e3a8b2] text-[#a72e43] hover:bg-[#fff3f5] sm:w-auto`}>
+                <LogOut className="h-4 w-4" />Keluar pool
+              </button>
+            </form>
+          ) : (
+            <span className="text-[9px] font-semibold text-[#9a6b3d]">Terkunci karena pesanan supplier sudah dibuat.</span>
+          )}
+        </div>
       ) : pool.joinable ? (
         <form action={joinPoolAction} className="mt-4 flex flex-col gap-2 sm:flex-row">
           <input type="hidden" name="poolId" value={pool.id} />
@@ -156,6 +172,21 @@ function PoolCard({ pool }: { pool: Pool }) {
           </label>
           <button className={primaryButtonClass}>Gabung pool</button>
         </form>
+      ) : null}
+
+      {pool.deletable ? (
+        <details className="mt-4 rounded-xl border border-[#efcfd4] bg-[#fff7f7] p-3">
+          <summary className="cursor-pointer list-none text-[10px] font-extrabold text-[#a72e43]">Hapus pool</summary>
+          <p className="mt-2 text-[10px] font-medium leading-5 text-[#76545a]">Pool dan seluruh keanggotaannya akan dihapus permanen.</p>
+          <form action={deletePoolAction} className="mt-3">
+            <input type="hidden" name="poolId" value={pool.id} />
+            <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#a72e43] px-4 text-[10px] font-extrabold text-white focus:outline-none focus:ring-4 focus:ring-[#a72e43]/20">
+              <Trash2 className="h-4 w-4" />Ya, hapus pool
+            </button>
+          </form>
+        </details>
+      ) : pool.isOwner ? (
+        <p className="mt-4 text-[10px] font-semibold text-[#718078]">Pool dengan riwayat pesanan tidak dapat dihapus.</p>
       ) : null}
 
       {canOrder ? (
@@ -270,21 +301,22 @@ function CreatePoolForm({ catalogProducts }: { catalogProducts: SupplierCatalogP
       {catalogProducts.length ? (
         <form action={createPoolAction} className="border-t border-[#e3ebe6] p-5 sm:p-6">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field className="md:col-span-2" label="Produk bahan baku supplier *" hint="Nama, kategori, satuan, harga, deskripsi, dan minimum order mengikuti katalog supplier.">
+            <Field className="md:col-span-2" label="Produk bahan baku supplier *" hint="Setiap grup memisahkan satu produk. Harga, stok, ambang jumlah, dan diskon berasal dari supplier.">
               <select className={inputClass} name="catalogProductId" required defaultValue="">
                 <option disabled value="">Pilih produk katalog</option>
-                {catalogProducts.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.itemName} · {formatCurrency(product.unitPrice)}/{product.unit} · minimum {formatNumber(product.minOrderQuantity)} · stok {formatNumber(product.stockQuantity)}
-                  </option>
+                {catalogProducts.map((product, index) => (
+                  <optgroup key={product.id} label={`Produk ${index + 1} — ${product.itemName} · diskon ${formatNumber(product.targetDiscount)}%`}>
+                    <option value={product.id}>
+                      {product.itemName} · diskon {formatNumber(product.targetDiscount)}% · {formatCurrency(product.unitPrice)}/{product.unit} · minimum {formatNumber(product.minOrderQuantity)} {product.unit} · stok {formatNumber(product.stockQuantity)} {product.unit}
+                    </option>
+                  </optgroup>
                 ))}
               </select>
             </Field>
-            <Field label="Target jumlah *"><input className={inputClass} min="0.001" name="targetQuantity" required step="0.001" type="number" /></Field>
             <Field label="Kecamatan *"><input className={inputClass} maxLength={120} minLength={2} name="district" required /></Field>
             <Field className="md:col-span-2" label="Hub pengambilan"><input className={inputClass} maxLength={200} name="hub" placeholder="Alamat atau nama titik kumpul" /></Field>
           </div>
-          <p className="mt-4 text-[10px] font-semibold leading-5 text-[#64746c]">Pool dimulai dengan batas waktu 1 jam. Bergabungnya pengguna baru memperbarui batas waktu menjadi 1 jam berikutnya.</p>
+          <p className="mt-4 text-[10px] font-semibold leading-5 text-[#64746c]">Target pool otomatis sama dengan minimum jumlah untuk diskon dari supplier. Pool dimulai dengan batas waktu 1 jam; join pertama tiap akun memperbarui batas waktu menjadi 1 jam berikutnya.</p>
           <button className={`${primaryButtonClass} mt-5 w-full sm:w-auto`}>Buat pool</button>
         </form>
       ) : (

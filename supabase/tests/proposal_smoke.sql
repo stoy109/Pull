@@ -77,48 +77,43 @@ select public.upsert_supplier_product(
 ) as reused_catalog_id \gset
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
-do $$
-declare
-  active_catalog_id uuid;
-begin
-  select id into active_catalog_id
-  from public.supplier_offers
-  where supplier_id = '00000000-0000-0000-0000-000000000004'
-    and pool_id is null
-    and status = 'active';
-
-  begin
-    perform public.create_pool(active_catalog_id, 101, 'Bantul', 'Hub Uji');
-    raise exception 'Expected overstock pool target to be rejected';
-  exception when others then
-    if sqlerrm <> 'Pool target must fit the catalog order and stock limits' then
-      raise;
-    end if;
-  end;
-end
-$$;
 select public.create_pool(
   :'catalog_id',
-  10,
   'Bantul',
   'Hub Uji'
 ) as pool_id \gset
+select public.create_pool(
+  :'catalog_id',
+  'Bantul',
+  'Hub untuk dihapus'
+) as deleted_pool_id \gset
+select public.delete_pool(:'deleted_pool_id');
+select public.create_pool(
+  :'catalog_id',
+  'Bantul',
+  'Hub keluar terlambat'
+) as late_leave_pool_id \gset
 select deadline::text as initial_pool_deadline
 from public.pools where id = :'pool_id' \gset
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
-select public.join_pool(:'pool_id', 10);
+select public.join_pool(:'pool_id', 5);
 select deadline::text as first_join_deadline
 from public.pools where id = :'pool_id' \gset
+select public.leave_pool(:'pool_id');
+select 1 / ((select current_quantity = 0 and status = 'open' from public.pools where id = :'pool_id')::integer) as pool_quantity_restored_after_leave;
+select public.join_pool(:'pool_id', 5);
+select public.join_pool(:'late_leave_pool_id', 5);
 
 reset role;
-delete from public.pool_members
-where pool_id = :'pool_id' and member_id = '00000000-0000-0000-0000-000000000002';
-update public.pools set current_quantity = 0, status = 'open' where id = :'pool_id';
+update public.pools
+set deadline = now() - interval '1 minute', status = 'ready'
+where id = :'late_leave_pool_id';
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
-select public.join_pool(:'pool_id', 10);
+select public.leave_pool(:'late_leave_pool_id');
+select 1 / ((select current_quantity = 0 and status = 'expired' from public.pools where id = :'late_leave_pool_id')::integer) as pool_leave_allowed_after_deadline;
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);
 insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
@@ -159,7 +154,7 @@ begin
     and item_name = 'Tepung Uji';
 
   begin
-    perform public.create_supplier_order(active_pool_id, active_catalog_id, 5);
+    perform public.create_supplier_order(active_pool_id, active_catalog_id, 2);
     raise exception 'Expected partial pool order to be rejected';
   exception when others then
     if sqlerrm <> 'Supplier offer cannot fulfill this order' then
@@ -168,7 +163,7 @@ begin
   end;
 end
 $$;
-select public.create_supplier_order(:'pool_id', :'catalog_id', 10) as order_id \gset
+select public.create_supplier_order(:'pool_id', :'catalog_id', 5) as order_id \gset
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);
 select public.set_supplier_order_status(:'order_id', 'accepted');
@@ -228,6 +223,8 @@ select 1 / ((select kyc_status = 'verified' and verification_level >= 2 from pub
 select 1 / ((select supplier_id = '00000000-0000-0000-0000-000000000004' from public.supplier_offers where id = :'catalog_id')::integer) as unverified_supplier_catalog_created;
 select 1 / ((:'catalog_id' = :'reused_catalog_id')::integer) as supplier_catalog_row_reused;
 select 1 / ((select count(*) = 1 from public.supplier_offers where supplier_id = '00000000-0000-0000-0000-000000000004' and pool_id is null and status = 'active')::integer) as one_active_supplier_catalog;
+select 1 / ((select target_quantity = 5 and min_threshold = 5 from public.pools where id = :'pool_id')::integer) as pool_target_matches_supplier_minimum;
+select 1 / ((select count(*) = 0 from public.pools where id = :'deleted_pool_id')::integer) as owned_pool_deleted;
 select 1 / ((select deadline between now() + interval '59 minutes' and now() + interval '61 minutes' from public.pools where id = :'pool_id')::integer) as pool_has_one_hour_window;
 select 1 / ((:'first_join_deadline'::timestamptz > :'initial_pool_deadline'::timestamptz)::integer) as first_join_reset_deadline;
 select 1 / ((select deadline = :'first_join_deadline'::timestamptz from public.pools where id = :'pool_id')::integer) as repeat_join_kept_deadline;

@@ -12,6 +12,8 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
 
 export function WorkerJobMap({ jobs, radiusKm }: { jobs: WorkerJob[]; radiusKm: number }) {
   const [focusRequest, setFocusRequest] = useState(0);
+  const [selectedId, setSelectedId] = useState("");
+  const selectedJob = jobs.find((job) => job.id === selectedId);
   const items = useMemo(
     () => jobs
       .filter((job) => job.latitude !== null && job.longitude !== null)
@@ -48,11 +50,15 @@ export function WorkerJobMap({ jobs, radiusKm }: { jobs: WorkerJob[]; radiusKm: 
           items={items}
           radius={radiusKm}
           focusRequest={focusRequest}
-          onSelectItem={(id) => {
-            document.getElementById(`worker-job-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-          }}
+          onSelectItem={setSelectedId}
         />
       </div>
+      {selectedJob ? (
+        <div className="flex flex-col gap-3 border-t border-[#e2ebe5] bg-[#fbfdfc] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="text-xs font-extrabold text-[#244d38]">{selectedJob.title}</p><p className="mt-1 text-[9px] font-semibold text-[#71857a]">{selectedJob.ownerName || "UMKM Pull"} · {selectedJob.district || "Wilayah belum diisi"}</p></div>
+          <a href={`/worker/jobs?view=list&q=${encodeURIComponent(selectedJob.title)}`} className="inline-flex h-9 items-center justify-center rounded-xl border border-[#bddac7] px-3 text-[9px] font-extrabold text-[#08783f]">Buka di daftar</a>
+        </div>
+      ) : null}
     </section>
   );
 }
