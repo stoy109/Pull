@@ -214,17 +214,20 @@ export default async function DashboardPage() {
               <span className="mt-0.5 text-[10px] font-extrabold text-[#28543e]">Sangat baik</span>
             </div>
           </div>
-          <a href="#aktivitas" className="mt-auto inline-flex h-10 w-full items-center justify-center rounded-xl border border-[#b9dcc8] bg-white text-[11px] font-extrabold text-[#087a41] transition hover:border-[#78b994] hover:bg-[#f5fbf7]">
+          <a href="/dashboard/trust" className="mt-auto inline-flex h-10 w-full items-center justify-center rounded-xl border border-[#b9dcc8] bg-white text-[11px] font-extrabold text-[#087a41] transition hover:border-[#78b994] hover:bg-[#f5fbf7]">
             Lihat detail
           </a>
         </section>
 
         <section id="aktivitas" className="col-span-12 min-h-[358px] rounded-[18px] border border-[#dfeae2] bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.03)] sm:p-6">
-          <div className="flex items-center gap-4 border-b border-[#dfeae2] pb-5">
+          <div className="flex flex-col gap-3 border-b border-[#dfeae2] pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2.5">
               <h2 className="font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.025em] text-[#0c261c]">Aktivitas terbaru</h2>
               <span className="rounded-md bg-[#e7f5eb] px-2.5 py-1 text-[10px] font-extrabold text-[#18804a]">Hari ini</span>
             </div>
+            <a href="/dashboard/activity" className="inline-flex h-9 items-center justify-center rounded-xl border border-[#b9dcc8] px-4 text-[10px] font-extrabold text-[#087a41] transition hover:border-[#78b994] hover:bg-[#f5fbf7]">
+              Lihat semua
+            </a>
           </div>
           <div className="divide-y divide-[#edf3ef]">
             {RECENT_ACTIVITIES.map((activity) => {

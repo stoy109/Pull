@@ -5,15 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   ArrowRight,
+  BadgeCheck,
   ChevronDown,
+  ChevronRight,
+  History,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { signOutAction } from "@/features/auth/actions";
 
 type ProfileMenuProps = {
   initials: string;
   ownerName: string;
-  businessName: string;
   profileCompletion: number;
 };
 
@@ -101,6 +104,16 @@ export function ProfileMenu({
             <span className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-full bg-[#08783d] text-lg font-medium text-white">{initials}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-extrabold text-[#111b17]">{ownerName}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[#f0f7f2] px-2 py-1 text-[9px] font-semibold text-[#315c45]">
+                  <ShieldCheck className="h-3 w-3 shrink-0" />
+                  <span className="truncate">WhatsApp terverifikasi</span>
+                </span>
+                <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[#f3f5f4] px-2 py-1 text-[9px] font-semibold text-[#687770]">
+                  <BadgeCheck className="h-3 w-3 shrink-0" />
+                  <span className="truncate">NIB perlu dicek</span>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -119,7 +132,34 @@ export function ProfileMenu({
             </div>
           </div>
 
-          <form action={signOutAction} className="mt-5 border-t border-[#e1e7e3] pt-4">
+          <div className="mt-5 border-t border-[#e1e7e3] pt-4">
+            <p className="mb-2 text-[9px] font-extrabold uppercase text-[#65736e]">Menu lainnya</p>
+            <nav className="space-y-1" aria-label="Menu profil">
+              {[
+                { label: "Aktivitas", href: "/dashboard/activity", icon: History },
+              ].map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    role="menuitem"
+                    className="flex min-h-11 items-center gap-3 rounded-lg px-0.5 py-1.5 text-[11px] font-extrabold text-[#1d2924] transition hover:text-[#08783d]"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#edf7f0] text-[#247b4d]">
+                      <Icon className="h-[17px] w-[17px]" />
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    <ChevronRight className="h-[17px] w-[17px] text-[#6f7c77]" />
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          <form action={signOutAction} className="mt-4 border-t border-[#e1e7e3] pt-4">
             <SignOutButton />
           </form>
         </div>

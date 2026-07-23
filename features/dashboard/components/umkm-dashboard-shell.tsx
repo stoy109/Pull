@@ -23,7 +23,7 @@ const SIDEBAR_ITEMS = [
   { label: "Pool Patungan", icon: UsersRound, href: "/dashboard/pools" },
   { label: "Papan Loker", icon: BriefcaseBusiness, href: "/dashboard/jobs" },
   { label: "Profil Bisnis", icon: Store, href: "/dashboard/profile" },
-  { label: "Trust Score", icon: ShieldCheck, href: "/dashboard#trust-score" },
+  { label: "Trust Score", icon: ShieldCheck, href: "/dashboard/trust" },
 ];
 
 const UMKM_FAQS = [
@@ -61,7 +61,6 @@ function getInitials(name: string) {
 
 export function UmkmDashboardShell({
   ownerName,
-  businessName,
   profileCompletion,
   children,
 }: {
@@ -73,17 +72,26 @@ export function UmkmDashboardShell({
   const pathname = usePathname();
   const initials = getInitials(ownerName) || "PU";
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [activeHash, setActiveHash] = useState("");
   const headerContent = pathname.startsWith("/dashboard/profile")
     ? {
         title: "Profil Bisnis",
         description: "Kelola informasi usaha dan produk yang tampil pada profil publik Anda.",
       }
-    : activeHash === "#trust-score" && pathname === "/dashboard"
+    : pathname.startsWith("/dashboard/trust")
       ? {
           title: "Trust Score",
           description: "Pantau reputasi bisnis dari aktivitas, verifikasi, dan riwayat kerja yang sudah selesai.",
         }
+      : pathname.startsWith("/dashboard/activity")
+        ? {
+            title: "Aktivitas",
+            description: "Lihat jejak perubahan profil, transaksi, lowongan, dan verifikasi usaha Anda.",
+          }
+        : pathname.startsWith("/dashboard/settings")
+          ? {
+              title: "Pengaturan",
+              description: "Kelola data akun, verifikasi, notifikasi, dan preferensi operasional UMKM.",
+            }
       : pathname.startsWith("/dashboard/jobs")
     ? {
         title: "Papan Loker",
@@ -98,17 +106,6 @@ export function UmkmDashboardShell({
           title: "Dashboard Overview",
           description: "Ringkasan utama profil bisnis Anda, aktivitas terbaru, dan notifikasi penting.",
         };
-
-  useEffect(() => {
-    const updateHash = () => setActiveHash(window.location.hash);
-
-    updateHash();
-    window.addEventListener("hashchange", updateHash);
-
-    return () => {
-      window.removeEventListener("hashchange", updateHash);
-    };
-  }, []);
 
   useEffect(() => {
     if (!isHelpOpen) return;
@@ -139,9 +136,7 @@ export function UmkmDashboardShell({
           <nav className="mt-7 flex-1 space-y-2" aria-label="Navigasi utama UMKM">
             {SIDEBAR_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = item.href.includes("#")
-                ? pathname === "/dashboard" && activeHash === item.href.slice(item.href.indexOf("#"))
-                : item.href === "/dashboard"
+              const isActive = item.href === "/dashboard"
                   ? pathname === "/dashboard"
                   : pathname.startsWith(item.href);
 
@@ -171,10 +166,10 @@ export function UmkmDashboardShell({
               <CircleHelp className="h-4 w-4 shrink-0" />
               <span>Bantuan</span>
             </button>
-            <a href="#" className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-white/90 transition-colors hover:bg-white/10">
+            <Link href="/dashboard/settings/profile" className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-white/90 transition-colors hover:bg-white/10">
               <Settings className="h-4 w-4 shrink-0" />
               <span>Pengaturan</span>
-            </a>
+            </Link>
           </nav>
         </div>
       </aside>
@@ -185,7 +180,7 @@ export function UmkmDashboardShell({
             <h1 className="text-3xl font-extrabold leading-tight tracking-normal text-[#10231d]">{headerContent.title}</h1>
             <p className="mt-2 max-w-[620px] text-sm font-medium leading-relaxed text-[#6b7b75]">{headerContent.description}</p>
           </div>
-          <ProfileMenu initials={initials} ownerName={ownerName} businessName={businessName} profileCompletion={profileCompletion} />
+          <ProfileMenu initials={initials} ownerName={ownerName} profileCompletion={profileCompletion} />
         </header>
 
         <main className="mx-auto max-w-[1540px] px-4 pb-16 pt-5 sm:px-6 sm:pt-7 xl:px-8">
