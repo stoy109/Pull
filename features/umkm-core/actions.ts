@@ -110,58 +110,18 @@ const POOL_REVALIDATIONS = [
 
 export async function createPoolAction(formData: FormData) {
   await requireRole(["umkm"]);
-  const itemName = text(formData, "itemName");
-  const category = text(formData, "category");
-  const description = text(formData, "description");
-  const unit = text(formData, "unit");
+  const catalogProductId = uuidField(formData, "catalogProductId");
   const district = text(formData, "district");
   const hub = text(formData, "hub");
   const target = numberField(formData, "targetQuantity");
-  const threshold = numberField(formData, "minThreshold");
-  const tier1 = numberField(formData, "tier1Price");
-  const tier2 = numberField(formData, "tier2Price");
-  const market = numberField(formData, "marketPrice");
-  const latitude = numberField(formData, "latitude", true);
-  const longitude = numberField(formData, "longitude", true);
-  const deadlineDate = dateField(formData, "deadline");
-  const deadline = deadlineDate ? `${deadlineDate}T23:59:59+07:00` : null;
-  const coordinatesValid =
-    latitude.valid &&
-    longitude.valid &&
-    ((latitude.value === null && longitude.value === null) ||
-      (latitude.value !== null &&
-        longitude.value !== null &&
-        latitude.value >= -90 &&
-        latitude.value <= 90 &&
-        longitude.value >= -180 &&
-        longitude.value <= 180));
 
   if (
-    !hasLength(itemName, 2, 120) ||
-    !hasLength(category, 2, 80) ||
-    !hasLength(description, 5, 1000) ||
-    !hasLength(unit, 1, 30) ||
+    !catalogProductId ||
     !hasLength(district, 2, 120) ||
     !optionalLength(hub, 200) ||
     !target.valid ||
     target.value === null ||
-    target.value <= 0 ||
-    !threshold.valid ||
-    threshold.value === null ||
-    threshold.value <= 0 ||
-    threshold.value > target.value ||
-    !tier1.valid ||
-    tier1.value === null ||
-    tier1.value <= 0 ||
-    !tier2.valid ||
-    tier2.value === null ||
-    tier2.value <= 0 ||
-    !market.valid ||
-    market.value === null ||
-    market.value <= 0 ||
-    !deadline ||
-    Date.parse(deadline) <= Date.now() ||
-    !coordinatesValid
+    target.value <= 0
   ) {
     fail("/dashboard/pools", "validation");
   }
@@ -170,20 +130,10 @@ export async function createPoolAction(formData: FormData) {
     "/dashboard/pools",
     "create_pool",
     {
-      pool_category: category,
-      pool_deadline: deadline,
-      pool_description: description,
       pool_district: district,
       pool_hub: hub || null,
-      pool_item_name: itemName,
-      pool_latitude: latitude.value,
-      pool_longitude: longitude.value,
-      pool_market_price: market.value,
-      pool_min_threshold: threshold.value,
       pool_target_quantity: target.value,
-      pool_tier1_price: tier1.value,
-      pool_tier2_price: tier2.value,
-      pool_unit: unit,
+      target_catalog_product_id: catalogProductId,
     },
     POOL_REVALIDATIONS,
     "pool-created",

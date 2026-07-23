@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
+import { supplierTargetDiscountDescription } from "@/features/supplier/workspace";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const KYC_BUCKET = "kyc-documents";
@@ -21,8 +22,9 @@ function field(formData: FormData, key: string, max: number) {
 }
 
 function positiveNumber(formData: FormData, key: string, allowZero = false) {
-  const value = Number(field(formData, key, 30));
-  return Number.isFinite(value) && (allowZero ? value >= 0 : value > 0) ? value : null;
+  const rawValue = field(formData, key, 30);
+  const value = Number(rawValue);
+  return rawValue && Number.isFinite(value) && (allowZero ? value >= 0 : value > 0) ? value : null;
 }
 
 function checked(formData: FormData, key: string) {
@@ -45,19 +47,14 @@ function rpcFailure(error: { code?: string; message?: string } | null) {
 
 export async function upsertSupplierProductAction(formData: FormData) {
   await requireRole(["supplier"]);
-  const id = field(formData, "id", 36);
   const itemName = field(formData, "itemName", 100);
   const unit = field(formData, "unit", 30);
-  const category = field(formData, "category", 80);
-  const description = field(formData, "description", 1000);
   const unitPrice = positiveNumber(formData, "unitPrice");
   const stockQuantity = positiveNumber(formData, "stockQuantity", true);
-  const minOrderQuantity = positiveNumber(formData, "minOrderQuantity");
-  const status = field(formData, "status", 10);
+  const targetDiscount = positiveNumber(formData, "targetDiscount", true);
 
-  if ((id && !UUID_PATTERN.test(id)) || itemName.length < 3 || !unit || category.length < 2 ||
-    unitPrice === null || stockQuantity === null || minOrderQuantity === null ||
-    (status !== "active" && status !== "inactive")) {
+  if (itemName.length < 3 || !unit || unitPrice === null || stockQuantity === null ||
+    targetDiscount === null || targetDiscount > 99) {
     finish("/supplier/products", "validation");
   }
 
@@ -67,36 +64,13 @@ export async function upsertSupplierProductAction(formData: FormData) {
     offer_unit: unit,
     offer_unit_price: unitPrice,
     offer_stock_quantity: stockQuantity,
-    offer_min_order_quantity: minOrderQuantity,
-    offer_category: category,
-    offer_description: description || null,
-    offer_status: status,
-    target_offer_id: id || null,
+    offer_min_order_quantity: 1,
+    offer_category: "Bahan baku",
+    offer_description: supplierTargetDiscountDescription(targetDiscount),
+    offer_status: "active",
+    target_offer_id: null,
   });
   finish("/supplier/products", error ? rpcFailure(error) : "saved");
-}
-
-export async function submitSupplierOfferAgainstPoolAction(formData: FormData) {
-  await requireRole(["supplier"]);
-  const poolId = field(formData, "poolId", 36);
-  const unitPrice = positiveNumber(formData, "unitPrice");
-  const stockQuantity = positiveNumber(formData, "stockQuantity");
-  const minOrderQuantity = positiveNumber(formData, "minOrderQuantity");
-  const description = field(formData, "description", 1000);
-  if (!UUID_PATTERN.test(poolId) || unitPrice === null || stockQuantity === null ||
-    minOrderQuantity === null || minOrderQuantity > stockQuantity) {
-    finish("/supplier/demands", "validation");
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("submit_supplier_offer_against_pool", {
-    target_pool_id: poolId,
-    offer_unit_price: unitPrice,
-    offer_stock_quantity: stockQuantity,
-    offer_min_order_quantity: minOrderQuantity,
-    offer_description: description || null,
-  });
-  finish("/supplier/demands", error ? rpcFailure(error) : "saved");
 }
 
 export async function setSupplierOrderStatusAction(formData: FormData) {

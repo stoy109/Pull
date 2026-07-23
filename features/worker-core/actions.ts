@@ -7,6 +7,9 @@ import { requireRole } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const AVAILABILITY = new Set(["available", "limited", "unavailable"]);
+const PREFERENCE_RADII = new Set([3, 5, 10, 20, 50]);
 const KYC_BUCKET = "kyc-documents";
 const MAX_KYC_FILE_BYTES = 850_000;
 const KYC_FILE_TYPES: Record<string, string> = {
@@ -64,9 +67,21 @@ export async function submitJobApplicationAction(formData: FormData) {
     redirect(`/worker/jobs?notice=${error.code === "23505" ? "application-duplicate" : "application-save"}`);
   }
 
+  const { data: contactSlug } = await supabase.rpc("get_worker_job_contact_slug", {
+    target_job_id: jobId,
+  });
+
   refreshWorker();
   revalidatePath("/dashboard/jobs");
   revalidatePath("/admin");
+  if (
+    typeof contactSlug === "string" &&
+    contactSlug.length >= 3 &&
+    contactSlug.length <= 80 &&
+    SLUG_PATTERN.test(contactSlug)
+  ) {
+    redirect(`/contact/umkm/${contactSlug}?channel=whatsapp`);
+  }
   redirect("/worker/applications?notice=application-sent");
 }
 
@@ -158,6 +173,49 @@ export async function markNotificationReadAction(formData: FormData) {
 
   refreshWorker();
   redirect("/worker/notifications?notice=notification-read");
+}
+
+export async function saveWorkerPreferencesAction(formData: FormData) {
+  const { user } = await requireRole(["pekerja"]);
+  const availability = textField(formData, "availability");
+  const minimumWageValue = textField(formData, "minimumWage");
+  const minimumWage = minimumWageValue ? Number(minimumWageValue) : null;
+  const radiusKm = Number(textField(formData, "radiusKm"));
+  const preferredCategories = [...new Map(
+    textField(formData, "preferredCategories")
+      .slice(0, 620)
+      .split(/[,;\n]/)
+      .map((value) => value.trim().slice(0, 60))
+      .filter(Boolean)
+      .map((value) => [value.toLocaleLowerCase("id-ID"), value] as const),
+  ).values()].slice(0, 10);
+
+  if (
+    !AVAILABILITY.has(availability) ||
+    !PREFERENCE_RADII.has(radiusKm) ||
+    (minimumWage !== null && (!Number.isFinite(minimumWage) || minimumWage < 0 || minimumWage > 1_000_000_000))
+  ) {
+    redirect("/worker/profile?notice=preferences-validation");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("worker_preferences").upsert(
+    {
+      user_id: user.id,
+      availability,
+      preferred_categories: preferredCategories,
+      minimum_wage: minimumWage,
+      radius_km: radiusKm,
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (error) {
+    redirect(`/worker/profile?notice=${isSetupError(error) ? "setup" : "preferences-save"}`);
+  }
+
+  refreshWorker();
+  redirect("/worker/profile?notice=preferences-saved");
 }
 
 export async function submitKycRecordAction(formData: FormData) {

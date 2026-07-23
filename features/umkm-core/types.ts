@@ -18,6 +18,17 @@ export type SupplierOffer = {
   unitPrice: number;
 };
 
+export type SupplierCatalogProduct = {
+  category: string;
+  description: string | null;
+  id: string;
+  itemName: string;
+  minOrderQuantity: number;
+  stockQuantity: number;
+  unit: string;
+  unitPrice: number;
+};
+
 export type Pool = {
   category: string;
   createdAt: string;
@@ -56,6 +67,7 @@ export type BuyerOrder = {
 };
 
 export type PoolsWorkspace = {
+  catalogProducts: SupplierCatalogProduct[];
   joinedPools: Pool[];
   openPools: Pool[];
   orders: BuyerOrder[];

@@ -16,13 +16,14 @@ import {
 import {
   formatCurrency,
   formatDate,
+  formatDateTime,
   formatNumber,
   formatPercent,
   orderStatusLabel,
   poolStatusLabel,
   savingsPercent,
 } from "../format";
-import type { BuyerOrder, Pool, PoolsWorkspace } from "../types";
+import type { BuyerOrder, Pool, PoolsWorkspace, SupplierCatalogProduct } from "../types";
 import { PersistedPoolMap } from "./pool-map";
 import {
   ActionNotice,
@@ -32,7 +33,6 @@ import {
   inputClass,
   primaryButtonClass,
   secondaryButtonClass,
-  textareaClass,
 } from "./dashboard-frame";
 
 function StatusBadge({ status }: { status: string }) {
@@ -130,7 +130,7 @@ function PoolCard({ pool }: { pool: Pool }) {
 
       <div className="mt-4 grid gap-2 text-[10px] font-semibold text-[#64746c] sm:grid-cols-3">
         <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{pool.district}</span>
-        <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{formatDate(pool.deadline)}</span>
+        <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{formatDateTime(pool.deadline)}</span>
         <span className="inline-flex items-center gap-1.5"><UsersRound className="h-3.5 w-3.5" />Hub: {pool.hub ?? "Belum ditentukan"}</span>
       </div>
 
@@ -167,8 +167,9 @@ function PoolCard({ pool }: { pool: Pool }) {
           <div className="mt-3 space-y-2">
             {pool.offers.length ? (
               pool.offers.map((offer, index) => {
-                const maximum = Math.min(offer.stockQuantity, pool.currentQuantity);
-                const orderable = maximum >= offer.minOrderQuantity;
+                const orderable =
+                  offer.stockQuantity >= pool.currentQuantity &&
+                  pool.currentQuantity >= offer.minOrderQuantity;
                 return (
                   <form
                     action={createSupplierOrderAction}
@@ -189,23 +190,14 @@ function PoolCard({ pool }: { pool: Pool }) {
                     </div>
                     {offer.description ? <p className="mt-2 text-[10px] leading-4 text-[#68776f]">{offer.description}</p> : null}
                     {orderable ? (
-                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                        <input
-                          className={inputClass}
-                          defaultValue={maximum}
-                          max={maximum}
-                          min={offer.minOrderQuantity}
-                          name="quantity"
-                          required
-                          step="0.001"
-                          type="number"
-                        />
+                      <div className="mt-3">
+                        <input name="quantity" type="hidden" value={pool.currentQuantity} />
                         <button className={primaryButtonClass}>
-                          <ShoppingCart className="mr-2 h-4 w-4" />Buat pesanan
+                          <ShoppingCart className="mr-2 h-4 w-4" />Pesan {formatNumber(pool.currentQuantity)} {pool.unit}
                         </button>
                       </div>
                     ) : (
-                      <p className="mt-2 text-[10px] font-bold text-[#aa3348]">Stok tidak memenuhi minimum pesanan.</p>
+                      <p className="mt-2 text-[10px] font-bold text-[#aa3348]">Stok supplier belum cukup untuk memenuhi seluruh jumlah pool.</p>
                     )}
                   </form>
                 );
@@ -268,34 +260,36 @@ function OrderCard({ order }: { order: BuyerOrder }) {
   );
 }
 
-function CreatePoolForm() {
+function CreatePoolForm({ catalogProducts }: { catalogProducts: SupplierCatalogProduct[] }) {
   return (
     <details className="group rounded-[22px] border border-[#dce7e1] bg-white shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-sm font-extrabold text-[#17362a] sm:p-6">
-        <span className="inline-flex items-center gap-2"><Plus className="h-5 w-5 text-[#087447]" />Buat pool bahan baku lengkap</span>
+        <span className="inline-flex items-center gap-2"><Plus className="h-5 w-5 text-[#087447]" />Buat pool dari katalog supplier</span>
         <span className="text-[10px] font-bold text-[#718078] group-open:hidden">Buka formulir</span>
       </summary>
-      <form action={createPoolAction} className="border-t border-[#e3ebe6] p-5 sm:p-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Nama bahan *"><input className={inputClass} maxLength={120} minLength={2} name="itemName" required /></Field>
-          <Field label="Kategori *"><input className={inputClass} maxLength={80} minLength={2} name="category" required /></Field>
-          <Field label="Satuan *"><input className={inputClass} maxLength={30} name="unit" placeholder="kg, liter, pcs" required /></Field>
-          <Field label="Kecamatan *"><input className={inputClass} maxLength={120} minLength={2} name="district" required /></Field>
-          <Field label="Target jumlah *"><input className={inputClass} min="0.001" name="targetQuantity" required step="0.001" type="number" /></Field>
-          <Field label="Ambang minimum *"><input className={inputClass} min="0.001" name="minThreshold" required step="0.001" type="number" /></Field>
-          <Field label="Harga tier ambang *"><input className={inputClass} min="0.01" name="tier1Price" required step="0.01" type="number" /></Field>
-          <Field label="Harga tier target *"><input className={inputClass} min="0.01" name="tier2Price" required step="0.01" type="number" /></Field>
-          <Field label="Harga pasar per satuan *"><input className={inputClass} min="0.01" name="marketPrice" required step="0.01" type="number" /></Field>
-          <Field label="Batas waktu *" hint="Pool ditutup pukul 23.59 WIB pada tanggal ini."><input className={inputClass} name="deadline" required type="date" /></Field>
-          <Field label="Hub pengambilan"><input className={inputClass} maxLength={200} name="hub" placeholder="Alamat atau nama titik kumpul" /></Field>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Latitude"><input className={inputClass} max="90" min="-90" name="latitude" step="0.000001" type="number" /></Field>
-            <Field label="Longitude"><input className={inputClass} max="180" min="-180" name="longitude" step="0.000001" type="number" /></Field>
+      {catalogProducts.length ? (
+        <form action={createPoolAction} className="border-t border-[#e3ebe6] p-5 sm:p-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field className="md:col-span-2" label="Produk bahan baku supplier *" hint="Nama, kategori, satuan, harga, deskripsi, dan minimum order mengikuti katalog supplier.">
+              <select className={inputClass} name="catalogProductId" required defaultValue="">
+                <option disabled value="">Pilih produk katalog</option>
+                {catalogProducts.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.itemName} · {formatCurrency(product.unitPrice)}/{product.unit} · minimum {formatNumber(product.minOrderQuantity)} · stok {formatNumber(product.stockQuantity)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Target jumlah *"><input className={inputClass} min="0.001" name="targetQuantity" required step="0.001" type="number" /></Field>
+            <Field label="Kecamatan *"><input className={inputClass} maxLength={120} minLength={2} name="district" required /></Field>
+            <Field className="md:col-span-2" label="Hub pengambilan"><input className={inputClass} maxLength={200} name="hub" placeholder="Alamat atau nama titik kumpul" /></Field>
           </div>
-          <Field className="md:col-span-2" label="Deskripsi kebutuhan *"><textarea className={textareaClass} maxLength={1000} minLength={5} name="description" required /></Field>
-        </div>
-        <button className={`${primaryButtonClass} mt-5 w-full sm:w-auto`}>Buat pool</button>
-      </form>
+          <p className="mt-4 text-[10px] font-semibold leading-5 text-[#64746c]">Pool dimulai dengan batas waktu 1 jam. Bergabungnya pengguna baru memperbarui batas waktu menjadi 1 jam berikutnya.</p>
+          <button className={`${primaryButtonClass} mt-5 w-full sm:w-auto`}>Buat pool</button>
+        </form>
+      ) : (
+        <p className="border-t border-[#e3ebe6] p-5 text-xs font-semibold leading-6 text-[#718078] sm:p-6">Belum ada produk katalog supplier aktif dengan stok yang dapat dipilih.</p>
+      )}
     </details>
   );
 }
@@ -322,7 +316,7 @@ export function PoolsPageView({
         <DataErrorPanel message={error ?? "Data pool belum tersedia."} />
       ) : (
         <>
-          <CreatePoolForm />
+          <CreatePoolForm catalogProducts={workspace.catalogProducts} />
           <PersistedPoolMap pools={mappedPools} />
           <PoolSection empty="Belum ada pool yang menerima anggota." pools={workspace.openPools} title="Pool terbuka" />
           <PoolSection empty="Anda belum membuat pool." pools={workspace.ownedPools} title="Pool milik Anda" />

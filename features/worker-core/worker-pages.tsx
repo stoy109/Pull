@@ -23,6 +23,7 @@ import {
   Medal,
   Phone,
   Search,
+  Settings2,
   ShieldCheck,
   Sparkles,
   Star,
@@ -31,6 +32,7 @@ import {
 import {
   confirmCompletionAction,
   markNotificationReadAction,
+  saveWorkerPreferencesAction,
   submitJobApplicationAction,
   submitKycRecordAction,
   submitRatingAction,
@@ -43,6 +45,7 @@ import type {
   WorkerPage,
   WorkerWorkspace,
 } from "./types";
+import { WorkerJobMap } from "./worker-job-map";
 
 const cardClass = "rounded-[18px] border border-[#dce7e0] bg-white shadow-[0_8px_28px_rgba(18,59,48,.035)]";
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -58,7 +61,7 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
 });
 
 const noticeCopy: Record<string, { message: string; tone: "success" | "error" | "warning" }> = {
-  "application-sent": { message: "Lamaran tersimpan dan sudah dikirim ke pemilik lowongan.", tone: "success" },
+  "application-sent": { message: "Lamaran tersimpan. Kontak WhatsApp pemilik lowongan belum tersedia.", tone: "success" },
   "application-duplicate": { message: "Lowongan ini sudah pernah Anda lamar.", tone: "warning" },
   "application-validation": { message: "Pesan lamaran harus berisi 5–300 karakter.", tone: "error" },
   "application-save": { message: "Lamaran belum dapat disimpan. Pastikan lowongan masih diterbitkan.", tone: "error" },
@@ -78,7 +81,10 @@ const noticeCopy: Record<string, { message: string; tone: "success" | "error" | 
   "kyc-file-type": { message: "Format dokumen harus PDF, JPG, atau PNG.", tone: "error" },
   "kyc-storage": { message: "Penyimpanan KYC belum siap. Terapkan migration 202607230011_identity_storage_worker_reads.sql.", tone: "error" },
   "kyc-save": { message: "Dokumen terunggah tetapi catatan KYC belum dapat disimpan. Silakan coba lagi.", tone: "error" },
-  setup: { message: "Fungsi worker core belum tersedia. Terapkan migration 009–011 pada Supabase.", tone: "error" },
+  "preferences-saved": { message: "Preferensi matching tersimpan.", tone: "success" },
+  "preferences-validation": { message: "Periksa status kerja, upah minimum, kategori, dan radius.", tone: "error" },
+  "preferences-save": { message: "Preferensi belum dapat disimpan.", tone: "error" },
+  setup: { message: "Fungsi worker belum lengkap. Terapkan migration 009–014 pada Supabase.", tone: "error" },
   invalid: { message: "Permintaan tidak valid dan tidak dijalankan.", tone: "error" },
 };
 
@@ -185,7 +191,7 @@ function SetupState({ data }: { data: WorkerWorkspace }) {
         <p className="mt-3 max-w-2xl text-sm font-medium leading-7 text-[#63786e]">{data.loadIssue}</p>
         {data.setupIssue ? (
           <div className="mt-6 rounded-xl border border-[#ead9c3] bg-[#fffaf3] p-4 text-xs leading-6 text-[#71583c]">
-            Jalankan <code className="rounded bg-white px-1.5 py-1 font-mono text-[10px] font-bold">supabase/migrations/202607230009_proposal_core_flows.sql</code>. Halaman ini tidak menggunakan data mock sebagai pengganti.
+            Jalankan migration <code className="rounded bg-white px-1.5 py-1 font-mono text-[10px] font-bold">202607230009</code> sampai <code className="rounded bg-white px-1.5 py-1 font-mono text-[10px] font-bold">202607230014</code> secara berurutan. Halaman ini tidak menggunakan data mock sebagai pengganti.
           </div>
         ) : null}
       </div>
@@ -280,39 +286,42 @@ function OwnerName({ value }: { value: string | null }) {
 
 function JobBoardPage({ data, filters, notice }: { data: WorkerWorkspace; filters: WorkerFilters; notice?: string }) {
   const applicationsByJob = new Map(data.applications.map((application) => [application.jobId, application]));
-  const filtered = Boolean(filters.category || filters.district || filters.minWage !== undefined);
+  const filtered = Boolean(filters.query || filters.category || filters.district || filters.minWage !== undefined);
 
   return (
     <>
-      <PageHeader eyebrow="Peluang tersimpan" title="Cari pekerjaan" description="Semua hasil berasal dari lowongan berstatus published. Gunakan URL filter untuk mempersempit wilayah, kategori, dan upah." />
+      <PageHeader eyebrow="Peluang tersimpan" title="Cari pekerjaan" description="Lowongan nyata diurutkan berdasarkan preferensi, keahlian, wilayah, upah, dan verifikasi UMKM." />
       <Notice notice={notice} />
 
-      <form action="/worker/jobs" method="get" className={`${cardClass} grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[1fr_1fr_.75fr_auto] lg:items-end`}>
+      <form action="/worker/jobs" method="get" className={`${cardClass} grid gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[1.2fr_1fr_1fr_.75fr_auto] xl:items-end`}>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Cari lowongan<input name="q" type="search" defaultValue={filters.query} maxLength={80} placeholder="Posisi, UMKM, atau lokasi" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Kabupaten / kota<input name="district" defaultValue={filters.district} maxLength={80} placeholder="Contoh: Surakarta" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Kategori<input name="category" defaultValue={filters.category} maxLength={80} placeholder="Contoh: Produksi" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
         <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Upah minimum<input name="minWage" defaultValue={filters.minWage} type="number" min="0" max="1000000000" step="1000" inputMode="numeric" placeholder="100000" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none transition focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
-        <div className="flex gap-2"><button className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white transition hover:bg-[#006a37] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]"><Filter className="h-4 w-4" /> Terapkan</button>{filtered ? <Link href="/worker/jobs" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#d6e3db] px-4 text-[10px] font-extrabold text-[#526c5e]">Reset</Link> : null}</div>
+        <div className="flex gap-2"><button className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white transition hover:bg-[#006a37] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]"><Filter className="h-4 w-4" /> Terapkan</button>{filtered ? <Link href="/worker/jobs" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#d6e3db] px-4 text-[10px] font-extrabold text-[#526c5e]">Hapus</Link> : null}</div>
       </form>
 
       <div className="mt-5 flex items-center justify-between"><p className="text-[10px] font-bold text-[#688074]">{data.jobs.length} lowongan ditemukan</p><p className="hidden text-[9px] font-semibold text-[#82948b] sm:block">Data langsung dari Supabase</p></div>
+      <WorkerJobMap jobs={data.jobs} radiusKm={data.preferences.radiusKm} />
       {data.jobs.length ? (
         <section aria-label="Daftar lowongan" className="mt-3 grid gap-4 lg:grid-cols-2">
           {data.jobs.map((job) => {
             const application = applicationsByJob.get(job.id);
             return (
-              <article key={job.id} className={`${cardClass} relative overflow-hidden border-l-[5px] border-l-[#08783f] p-5 sm:p-6`}>
+              <article id={`worker-job-${job.id}`} key={job.id} className={`${cardClass} relative scroll-mt-24 overflow-hidden border-l-[5px] border-l-[#08783f] p-5 sm:p-6`}>
                 <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#5e826d]">{job.category || "Kategori belum diisi"}</p><h2 className="mt-2 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.035em] text-[#0c261c]">{job.title}</h2><p className="mt-1.5 text-[10px] font-bold text-[#54705f]"><OwnerName value={job.ownerName} /></p></div>
+                  <div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#5e826d]">{job.category || "Kategori belum diisi"}</p><h2 className="mt-2 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.035em] text-[#0c261c]">{job.title}</h2><p className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] font-bold text-[#54705f]"><OwnerName value={job.ownerName} />{job.ownerVerified ? <span className="inline-flex items-center gap-1 text-[#08783f]"><BadgeCheck className="h-3 w-3" /> Terverifikasi</span> : null}</p></div>
                   {application ? <StatusBadge status={application.status} /> : <span className="rounded-full bg-[#e7f4eb] px-2.5 py-1 text-[9px] font-extrabold text-[#08783f]">Terbuka</span>}
                 </div>
                 <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-semibold text-[#6d8277]"><span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#08783f]" />{job.district || "Wilayah belum diisi"}</span><span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5 text-[#08783f]" />{formatDate(job.startDate)}</span>{job.durationDays ? <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-[#08783f]" />{job.durationDays} hari</span> : null}</div>
                 <p className="mt-4 text-xs font-medium leading-6 text-[#5f7469]">{job.description}</p>
+                {job.matchScore > 0 ? <div className="mt-4 rounded-xl border border-[#cfe1d5] bg-[#f1f8f3] p-3.5"><p className="text-[9px] font-extrabold uppercase tracking-[0.11em] text-[#08783f]">Kecocokan {job.matchScore}%</p><p className="mt-1.5 text-[10px] font-medium leading-5 text-[#5f7469]">{job.matchReasons.join(" · ")}</p></div> : null}
                 {job.requirements ? <div className="mt-4 rounded-xl bg-[#f6f9f7] p-3.5"><p className="text-[9px] font-extrabold uppercase tracking-[0.11em] text-[#668074]">Persyaratan</p><p className="mt-1.5 whitespace-pre-line text-[10px] font-medium leading-5 text-[#5f7469]">{job.requirements}</p></div> : null}
                 <div className="mt-5 flex items-center justify-between gap-4 border-t border-dashed border-[#cadbd0] pt-4"><div><p className="text-[9px] font-bold text-[#789087]">Upah</p><p className="mt-1 text-xs font-extrabold text-[#17643d]">{formatWage(job)}</p></div><p className="text-right text-[9px] font-semibold text-[#789087]">{job.hoursPerDay ? `${job.hoursPerDay} jam/hari` : "Jam belum diisi"}<br />Kuota {job.quota}</p></div>
                 {application ? <Link href="/worker/applications" className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#bddac7] text-[10px] font-extrabold text-[#08783f]">Lihat lamaran <ArrowRight className="h-3.5 w-3.5" /></Link> : (
                   <details className="mt-5 rounded-xl border border-[#cfe0d6] bg-[#fbfdfc] open:bg-white">
                     <summary className="flex h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-xl text-xs font-extrabold text-[#08783f] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e0f2e6]"><Sparkles className="h-4 w-4" /> Lamar lowongan</summary>
-                    <form action={submitJobApplicationAction} className="border-t border-[#e1ebe5] p-4"><input type="hidden" name="jobId" value={job.id} /><label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Pesan untuk pemilik lowongan<textarea name="message" required minLength={5} maxLength={300} rows={4} placeholder="Jelaskan kesiapan dan pengalaman yang relevan." className="resize-y rounded-xl border border-[#d6e3db] bg-white p-3 text-xs font-medium leading-5 outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label><button className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-[#08783f] text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]">Kirim lamaran</button></form>
+                    <form action={submitJobApplicationAction} className="border-t border-[#e1ebe5] p-4"><input type="hidden" name="jobId" value={job.id} /><label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Pesan untuk pemilik lowongan<textarea name="message" required minLength={5} maxLength={300} rows={4} placeholder="Jelaskan kesiapan dan pengalaman yang relevan." className="resize-y rounded-xl border border-[#d6e3db] bg-white p-3 text-xs font-medium leading-5 outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label><button className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-[#08783f] px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]">Simpan lamaran & buka WhatsApp</button></form>
                   </details>
                 )}
               </article>
@@ -380,8 +389,22 @@ function ProfilePage({ data, notice }: { data: WorkerWorkspace; notice?: string 
         <aside className="rounded-[18px] bg-[#0b2a1e] p-5 text-white shadow-[0_16px_38px_rgba(12,38,28,.14)] sm:p-6">
           <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#95b6a2]">Status kepercayaan</p><h2 className="mt-2 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Verifikasi profil</h2>
           <div className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-xl border border-white/10 bg-white/[0.055] p-4"><p className="text-[9px] font-bold text-white/50">Level</p><p className="mt-2 text-2xl font-extrabold">{profile.verificationLevel}/2</p></div><div className="rounded-xl border border-white/10 bg-white/[0.055] p-4"><p className="text-[9px] font-bold text-white/50">KYC</p><p className="mt-2 text-xs font-extrabold text-[#b7d74a]">{statusLabel(profile.kycStatus)}</p></div></div>
-          <p className="mt-5 text-[10px] font-medium leading-5 text-white/55">Status hanya berubah melalui peninjauan dokumen. Mengunggah file tidak membuat akun otomatis terverifikasi.</p>
+          <p className="mt-5 text-[10px] font-medium leading-5 text-white/55">KYC Level 2 opsional dan tidak membatasi pencarian, lamaran, konfirmasi, atau rating. Status hanya berubah melalui peninjauan dokumen.</p>
         </aside>
+      </section>
+
+      <section className={`${cardClass} mt-5 p-5 sm:p-6`}>
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#e7f4eb] text-[#08783f]"><Settings2 className="h-5 w-5" /></span>
+          <div><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#64806f]">Smart matching</p><h2 className="mt-1 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em]">Preferensi pekerjaan</h2></div>
+        </div>
+        <form action={saveWorkerPreferencesAction} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Status kerja<select name="availability" defaultValue={data.preferences.availability} className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]"><option value="available">Siap bekerja</option><option value="limited">Terbatas</option><option value="unavailable">Belum tersedia</option></select></label>
+          <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Kategori pilihan<input name="preferredCategories" defaultValue={data.preferences.preferredCategories.join(", ")} maxLength={620} placeholder="Produksi, kasir, pengemasan" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
+          <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Upah minimum<input name="minimumWage" defaultValue={data.preferences.minimumWage ?? ""} type="number" min="0" max="1000000000" step="1000" inputMode="numeric" placeholder="100000" className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]" /></label>
+          <label className="grid gap-2 text-[10px] font-extrabold text-[#315b45]">Radius peta<select name="radiusKm" defaultValue={String(data.preferences.radiusKm)} className="h-11 rounded-xl border border-[#d6e3db] bg-[#fbfdfc] px-3 text-xs font-semibold outline-none focus:border-[#78b994] focus:ring-4 focus:ring-[#e8f5ec]">{[3, 5, 10, 20, 50].map((radius) => <option key={radius} value={radius}>{radius} km</option>)}</select></label>
+          <div className="md:col-span-2 xl:col-span-4"><p className="text-[9px] font-medium leading-5 text-[#71857a]">Pisahkan kategori dengan koma. Preferensi hanya mengurutkan lowongan nyata; tidak membuat lowongan atau lokasi palsu.</p><button className="mt-3 inline-flex h-11 items-center justify-center rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9cd0ad]">Simpan preferensi</button></div>
+        </form>
       </section>
 
       <section className="mt-5 grid gap-5 xl:grid-cols-[.85fr_1.15fr]">
@@ -433,7 +456,7 @@ function NotificationsPage({ data, notice }: { data: WorkerWorkspace; notice?: s
   const unread = data.notifications.filter((item) => !item.readAt).length;
   return (
     <>
-      <PageHeader eyebrow="Kotak masuk" title="Notifikasi" description="Pembaruan status pekerjaan, rating, dan sistem untuk akun Anda." action={<span className="inline-flex h-9 items-center rounded-full bg-[#e7f4eb] px-4 text-[10px] font-extrabold text-[#08783f]">{unread} belum dibaca</span>} />
+      <PageHeader eyebrow="Kotak masuk" title="Notifikasi" description="Pembaruan status pekerjaan, rating, dan sistem untuk akun Anda." action={unread > 0 ? <span className="inline-flex h-9 items-center rounded-full bg-[#e7f4eb] px-4 text-[10px] font-extrabold text-[#08783f]">{unread} belum dibaca</span> : undefined} />
       <Notice notice={notice} />
       <section className={`${cardClass} overflow-hidden`}>
         {data.notifications.length ? <div className="divide-y divide-[#e3ece6]">{data.notifications.map((notification) => (

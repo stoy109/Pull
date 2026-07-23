@@ -25,6 +25,7 @@ export type SupplierProduct = {
   unit: string;
   unitPrice: number;
   stockQuantity: number;
+  targetDiscount: number;
   minOrderQuantity: number;
   category: string;
   description: string;
@@ -134,6 +135,17 @@ function parseProductStatus(value: unknown): SupplierProductStatus {
   return value === "active" ? "active" : "inactive";
 }
 
+const TARGET_DISCOUNT_PATTERN = /^supplier_target_discount=(\d+(?:\.\d+)?)$/;
+
+export function supplierTargetDiscountDescription(value: number) {
+  return `supplier_target_discount=${value}`;
+}
+
+function parseTargetDiscount(value: unknown) {
+  const match = TARGET_DISCOUNT_PATTERN.exec(text(value));
+  return match ? Math.min(100, Math.max(0, number(match[1]))) : 0;
+}
+
 function parseOrderStatus(value: unknown): SupplierOrderStatus {
   return value === "pending" || value === "accepted" || value === "rejected" ||
     value === "processing" || value === "shipped" || value === "completed" ||
@@ -151,6 +163,7 @@ function parseProduct(value: unknown): SupplierProduct {
     unit: text(row.unit),
     unitPrice: Math.max(0, number(row.unit_price)),
     stockQuantity: Math.max(0, number(row.stock_quantity)),
+    targetDiscount: parseTargetDiscount(row.description),
     minOrderQuantity: Math.max(0, number(row.min_order_quantity)),
     category: text(row.category),
     description: text(row.description),
@@ -209,6 +222,13 @@ function parseDemand(value: unknown): SupplierDemand {
 export function parseSupplierWorkspaceValue(value: unknown): SupplierWorkspace {
   const root = record(value);
   const profile = record(root.profile);
+  const products = list(root.products)
+    .map(parseProduct)
+    .filter((item) => item.id)
+    .sort((left, right) =>
+      Number(right.status === "active") - Number(left.status === "active") ||
+      right.updatedAt.localeCompare(left.updatedAt),
+    );
   return {
     profile: {
       id: text(profile.id),
@@ -218,7 +238,7 @@ export function parseSupplierWorkspaceValue(value: unknown): SupplierWorkspace {
       trustScore: Math.min(100, Math.max(0, number(profile.trust_score))),
       ratingCount: Math.max(0, Math.round(number(profile.rating_count))),
     },
-    products: list(root.products).map(parseProduct).filter((item) => item.id),
+    products: products.slice(0, 1),
     poolOffers: list(root.pool_offers).map(parseProduct).filter((item) => item.id),
     orders: list(root.orders).map(parseOrder).filter((item) => item.id),
     demands: list(root.demands).map(parseDemand).filter((item) => item.id),

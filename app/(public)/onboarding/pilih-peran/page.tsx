@@ -151,7 +151,7 @@ export default function PilihPeranPage() {
             disabled={!selectedRole || isPending}
             className="form-button form-button--primary"
           >
-            {isPending ? "Menyimpan..." : "Lanjutkan"}
+            {isPending ? "Melanjutkan..." : "Lanjutkan"}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

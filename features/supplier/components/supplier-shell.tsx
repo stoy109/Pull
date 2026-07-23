@@ -15,7 +15,6 @@ import {
   Menu,
   Package,
   ReceiptText,
-  Search,
   Settings,
   Store,
   X,
@@ -25,8 +24,7 @@ import { supplierInitials } from "@/features/supplier/profile";
 
 const MENU = [
   { label: "Hari ini", mobileLabel: "Hari ini", href: "/supplier", icon: LayoutDashboard, primary: true },
-  { label: "Produk", mobileLabel: "Produk", href: "/supplier/products", icon: Package, primary: true },
-  { label: "Peluang demand", mobileLabel: "Demand", href: "/supplier/demands", icon: Search, primary: true },
+  { label: "Bahan baku", mobileLabel: "Bahan", href: "/supplier/products", icon: Package, primary: true },
   { label: "Penawaran", mobileLabel: "Penawaran", href: "/supplier/offers", icon: HandCoins, primary: false },
   { label: "Transaksi", mobileLabel: "Transaksi", href: "/supplier/transactions", icon: ReceiptText, primary: true },
   { label: "Insight", mobileLabel: "Insight", href: "/supplier/insights", icon: BarChart3, primary: false },
@@ -37,8 +35,7 @@ const MENU = [
 ] as const;
 
 const HEADERS: Record<string, { title: string; description: string }> = {
-  "/supplier/products": { title: "Produk", description: "Kelola katalog, harga, stok, minimum pemesanan, dan status jual." },
-  "/supplier/demands": { title: "Peluang demand", description: "Tinjau pool nyata berdasarkan tier harga, kuantitas, lokasi, dan tenggat." },
+  "/supplier/products": { title: "Bahan baku", description: "Kelola satu bahan baku, harga satuan, jumlah tersedia, dan diskon target." },
   "/supplier/offers": { title: "Penawaran", description: "Pantau penawaran yang sudah dikirim terhadap pool permintaan." },
   "/supplier/transactions": { title: "Transaksi", description: "Terima pesanan dan perbarui proses pemenuhan sampai barang dikirim." },
   "/supplier/insights": { title: "Insight demand", description: "Baca tren demand 7 dan 30 hari dari riwayat pool yang tersedia." },
@@ -47,7 +44,7 @@ const HEADERS: Record<string, { title: string; description: string }> = {
   "/supplier/finance": { title: "Keuangan", description: "Pantau total pesanan selesai, nilai tertunda, dan riwayat order." },
   "/supplier/notifications": { title: "Notifikasi", description: "Tindak lanjuti perubahan pool, pesanan, rating, dan informasi sistem." },
   "/supplier/settings": { title: "Pengaturan", description: "Atur jenis notifikasi yang ingin diterima akun supplier." },
-  "/supplier": { title: "Bisnis hari ini", description: "Prioritaskan stok, peluang demand, dan pesanan yang perlu tindakan." },
+  "/supplier": { title: "Bisnis hari ini", description: "Prioritaskan katalog bahan baku dan pesanan yang perlu tindakan." },
 };
 
 export function SupplierShell({
@@ -135,7 +132,7 @@ export function SupplierShell({
         <main className="mx-auto max-w-[1540px] px-4 pb-28 pt-5 sm:px-6 sm:pt-7 lg:pb-16 xl:px-8">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-5 border-t border-[#dfeae2] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(12,38,28,.07)] backdrop-blur-xl lg:hidden" aria-label="Navigasi supplier seluler">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-4 border-t border-[#dfeae2] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(12,38,28,.07)] backdrop-blur-xl lg:hidden" aria-label="Navigasi supplier seluler">
         {primaryItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);

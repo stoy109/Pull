@@ -1,48 +1,19 @@
-import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
-import { getWorkerDashboardData } from "@/features/dashboard/data/get-role-dashboard-data";
+import { getWorkerWorkspace } from "@/features/worker-core/data";
+import { parseWorkerFilters } from "@/features/worker-core/filters";
 import { WorkerDashboardClient } from "./client";
 
-function readMetadataString(
-  metadata: Record<string, unknown>,
-  key: string,
-  fallback = "",
-) {
-  const value = metadata[key];
-  return typeof value === "string" && value.trim() ? value : fallback;
-}
+type SearchValue = string | string[] | undefined;
 
-function readMetadataStrings(metadata: Record<string, unknown>, key: string) {
-  const value = metadata[key];
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
-    : [];
-}
+export default async function WorkerDashboardPage({
+  searchParams,
+}: {
+  params: Promise<{ slug?: string[] }>;
+  searchParams: Promise<Record<string, SearchValue>>;
+}) {
+  const params = await searchParams;
+  const filters = parseWorkerFilters(params);
+  const workspace = await getWorkerWorkspace(filters);
+  const notice = Array.isArray(params.notice) ? params.notice[0] : params.notice;
 
-export default async function WorkerDashboardPage() {
-  const { user } = await getDashboardData(["pekerja"]);
-  const dashboard = await getWorkerDashboardData(user.id);
-  const metadata = user.user_metadata ?? {};
-
-  const initialProfile = {
-    name:
-      readMetadataString(metadata, "display_name") ||
-      readMetadataString(metadata, "full_name", "Pekerja Pull"),
-    email: user.email ?? "",
-    phone: readMetadataString(metadata, "phone"),
-    title: readMetadataString(
-      metadata,
-      "headline",
-      "Profil pekerjaan belum dilengkapi",
-    ),
-    postalCode: readMetadataString(metadata, "postal_code"),
-    province: readMetadataString(metadata, "province"),
-    city: readMetadataString(metadata, "city"),
-    district:
-      readMetadataString(metadata, "district") ||
-      readMetadataString(metadata, "delivery_area"),
-    village: readMetadataString(metadata, "village"),
-    skills: readMetadataStrings(metadata, "skills"),
-  };
-
-  return <WorkerDashboardClient initialProfile={initialProfile} initialDashboard={dashboard} />;
+  return <WorkerDashboardClient workspace={workspace} filters={filters} notice={notice} />;
 }

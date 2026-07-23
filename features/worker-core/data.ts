@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireRole } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
+import { filterWorkerJobs, scoreWorkerJobMatches } from "./filters";
 import type {
   WorkerApplication,
   WorkerCertificate,
@@ -11,11 +12,11 @@ import type {
   WorkerNotification,
   WorkerPoint,
   WorkerPortfolioItem,
+  WorkerPreferences,
   WorkerRating,
   WorkerWorkspace,
 } from "./types";
 
-type SearchValue = string | string[] | undefined;
 type QueryError = { code?: string; message?: string } | null;
 type OwnerRow = { business_name: string | null; display_name: string | null };
 type RawNotification = {
@@ -45,6 +46,8 @@ type RawJob = {
   owner?: OwnerRow | OwnerRow[] | null;
   owner_name?: string | null;
   owner_verified?: boolean;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
 };
 
 type RawApplication = {
@@ -68,28 +71,19 @@ const SETUP_ERROR_CODES = new Set([
   "PGRST202",
   "PGRST204",
 ]);
+const DEFAULT_PREFERENCES: WorkerPreferences = {
+  availability: "available",
+  preferredCategories: [],
+  minimumWage: null,
+  radiusKm: 10,
+};
+const AVAILABILITY = new Set<WorkerPreferences["availability"]>([
+  "available",
+  "limited",
+  "unavailable",
+]);
+const RADII = new Set<WorkerPreferences["radiusKm"]>([3, 5, 10, 20, 50]);
 
-function first(value: SearchValue) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function cleanFilter(value: SearchValue) {
-  return (first(value) ?? "").trim().replace(/[%_]/g, "").slice(0, 80);
-}
-
-export function parseWorkerFilters(searchParams: Record<string, SearchValue>): WorkerFilters {
-  const rawWage = first(searchParams.minWage)?.trim() ?? "";
-  const parsedWage = rawWage ? Number(rawWage) : undefined;
-
-  return {
-    category: cleanFilter(searchParams.category),
-    district: cleanFilter(searchParams.district),
-    minWage:
-      parsedWage !== undefined && Number.isFinite(parsedWage) && parsedWage >= 0
-        ? Math.min(parsedWage, 1_000_000_000)
-        : undefined,
-  };
-}
 
 function one<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -124,6 +118,11 @@ function toJob(row: RawJob): WorkerJob {
     requirements: row.requirements,
     createdAt: row.created_at,
     ownerName: ownerName(row),
+    ownerVerified: Boolean(row.owner_verified),
+    latitude: numberOrNull(row.latitude),
+    longitude: numberOrNull(row.longitude),
+    matchScore: 0,
+    matchReasons: [],
   };
 }
 
@@ -156,6 +155,7 @@ function emptyWorkspace(issue: { setup: boolean; message: string }): WorkerWorks
     notifications: [],
     points: [],
     portfolio: [],
+    preferences: DEFAULT_PREFERENCES,
     profile: null,
     ratingsGiven: [],
     ratingsReceived: [],
@@ -184,6 +184,7 @@ export async function getWorkerWorkspace(filters: WorkerFilters): Promise<Worker
     kycResult,
     certificatesResult,
     portfolioResult,
+    preferencesResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -232,6 +233,11 @@ export async function getWorkerWorkspace(filters: WorkerFilters): Promise<Worker
       .select("id,application_id,title,description,media_urls,created_at")
       .eq("worker_id", access.user.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("worker_preferences")
+      .select("availability,preferred_categories,minimum_wage,radius_km")
+      .eq("user_id", access.user.id)
+      .maybeSingle(),
   ]);
 
   const errors: QueryError[] = [
@@ -245,6 +251,7 @@ export async function getWorkerWorkspace(filters: WorkerFilters): Promise<Worker
     kycResult.error,
     certificatesResult.error,
     portfolioResult.error,
+    preferencesResult.error,
   ];
   const firstError = errors.find(Boolean) ?? null;
 
@@ -253,7 +260,7 @@ export async function getWorkerWorkspace(filters: WorkerFilters): Promise<Worker
     return emptyWorkspace({
       setup,
       message: setup
-        ? "Skema worker core belum tersedia. Terapkan migration 202607230009_proposal_core_flows.sql lalu muat ulang halaman."
+        ? "Skema worker belum lengkap. Terapkan migration 202607230009–202607230014 secara berurutan lalu muat ulang halaman."
         : `Data pekerja belum dapat dimuat${firstError.code ? ` (${firstError.code})` : ""}.`,
     });
   }
@@ -332,30 +339,53 @@ export async function getWorkerWorkspace(filters: WorkerFilters): Promise<Worker
     createdAt: row.created_at,
   }));
   const metadata = access.user.user_metadata ?? {};
+  const profile = {
+    displayName: profileRow.display_name,
+    email: profileRow.email ?? access.user.email ?? null,
+    headline: profileRow.headline,
+    deliveryArea: profileRow.delivery_area,
+    district: profileRow.district,
+    phone: profileRow.phone,
+    skills: metadataStrings(metadata, "skills"),
+    verificationLevel: profileRow.verification_level,
+    kycStatus: profileRow.kyc_status,
+    trustScore: Number(profileRow.trust_score) || 0,
+    ratingCount: profileRow.rating_count,
+    whatsappVerified: Boolean(profileRow.whatsapp_verified_at),
+  };
+  const rawPreferences = preferencesResult.data as {
+    availability?: string;
+    preferred_categories?: unknown;
+    minimum_wage?: number | string | null;
+    radius_km?: number;
+  } | null;
+  const availability = rawPreferences?.availability as WorkerPreferences["availability"] | undefined;
+  const radius = Number(rawPreferences?.radius_km) as WorkerPreferences["radiusKm"];
+  const preferences: WorkerPreferences = {
+    availability: availability && AVAILABILITY.has(availability) ? availability : DEFAULT_PREFERENCES.availability,
+    preferredCategories: Array.isArray(rawPreferences?.preferred_categories)
+      ? rawPreferences.preferred_categories
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .slice(0, 10)
+      : [],
+    minimumWage: numberOrNull(rawPreferences?.minimum_wage),
+    radiusKm: RADII.has(radius) ? radius : DEFAULT_PREFERENCES.radiusKm,
+  };
+  const rankedJobs = scoreWorkerJobMatches(rawJobs.map(toJob), preferences, profile);
 
   return {
     applications,
     certificates,
-    jobs: rawJobs.map(toJob),
+    jobs: filterWorkerJobs(rankedJobs, filters.query),
     kycSubmissions,
     loadIssue: null,
     notifications,
     points,
     portfolio,
-    profile: {
-      displayName: profileRow.display_name,
-      email: profileRow.email ?? access.user.email ?? null,
-      headline: profileRow.headline,
-      deliveryArea: profileRow.delivery_area,
-      district: profileRow.district,
-      phone: profileRow.phone,
-      skills: metadataStrings(metadata, "skills"),
-      verificationLevel: profileRow.verification_level,
-      kycStatus: profileRow.kyc_status,
-      trustScore: Number(profileRow.trust_score) || 0,
-      ratingCount: profileRow.rating_count,
-      whatsappVerified: Boolean(profileRow.whatsapp_verified_at),
-    },
+    preferences,
+    profile,
     ratingsGiven: ratingRows(givenRatingsResult.data),
     ratingsReceived: ratingRows(receivedRatingsResult.data),
     setupIssue: false,

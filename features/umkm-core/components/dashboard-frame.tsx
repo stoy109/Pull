@@ -63,7 +63,7 @@ const successMessages: Record<string, string> = {
 const errorMessages: Record<string, string> = {
   duplicate: "Data ini sudah pernah dicatat.",
   save: "Perubahan ditolak atau data sudah berubah. Periksa kondisi terbaru lalu coba lagi.",
-  setup: "Fitur inti UMKM belum siap. Terapkan migration 202607230009_proposal_core_flows.sql di Supabase terlebih dahulu.",
+  setup: "Fitur inti UMKM belum siap. Terapkan migrations 202607230009_proposal_core_flows.sql dan 202607230015_pool_catalog_hour_window.sql di Supabase terlebih dahulu.",
   validation: "Periksa kembali isian wajib, format, dan batas nilainya.",
 };
 

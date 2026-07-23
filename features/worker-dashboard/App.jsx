@@ -1,85 +1,40 @@
 'use client'
 
-import { lazy, Suspense, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
-import { gsap } from 'gsap'
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { WorkerPageContent } from '../worker-core/worker-pages'
 import AppShell from './components/AppShell'
-import { WorkspaceProvider } from './context/WorkspaceContext'
-import { EmptyState } from './components/UI'
 
-const DashboardPage = lazy(() => import('./pages/DashboardPage'))
-const JobsPage = lazy(() => import('./pages/JobsPage'))
-const JobDetailPage = lazy(() => import('./pages/JobDetailPage'))
-const ApplicationsPage = lazy(() => import('./pages/ApplicationsPage'))
-const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage'))
-const ProfilePage = lazy(() => import('./pages/ProfilePage'))
-const CertificatesPage = lazy(() => import('./pages/CertificatesPage'))
-const TrustPage = lazy(() => import('./pages/TrustPage'))
-const SkillsPage = lazy(() => import('./pages/SkillsPage'))
-const ActivityPage = lazy(() => import('./pages/ActivityPage'))
-
-const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-
-const subscribe = () => () => {}
-const getClientSnapshot = () => true
-const getServerSnapshot = () => false
-
-function AnimatedPage({ children }) {
-  const rootRef = useRef(null)
-
-  useLayoutEffect(() => {
-    const root = rootRef.current
-    if (!root) return undefined
-
-    const media = gsap.matchMedia()
-    media.add('(prefers-reduced-motion: no-preference)', () => {
-      gsap.fromTo(
-        Array.from(root.children),
-        { autoAlpha: 0, y: 18 },
-        { autoAlpha: 1, y: 0, duration: 0.58, stagger: 0.055, ease: 'power3.out', clearProps: 'opacity,visibility,transform' },
-      )
-    })
-
-    return () => media.revert()
-  }, [])
-
-  return <div ref={rootRef} className="worker-page">{children}</div>
+function WorkerRoute({ page, workspace, filters, notice }) {
+  return <WorkerPageContent page={page} data={workspace} filters={filters} notice={notice} />
 }
 
-function PageSuspense({ children }) {
-  const location = useLocation()
-  return <Suspense fallback={<div className="space-y-4"><div className="h-20 animate-pulse rounded-[22px] bg-pull-100/60" /><div className="h-64 animate-pulse rounded-[22px] bg-pull-100/60" /></div>}><AnimatedPage key={location.pathname}>{children}</AnimatedPage></Suspense>
-}
+function AppRoutes({ workspace, filters, notice }) {
+  const page = (name) => <WorkerRoute page={name} workspace={workspace} filters={filters} notice={notice} />
 
-function AppRoutes({ initialProfile, initialDashboard }) {
   return (
-    <WorkspaceProvider initialProfile={initialProfile} initialDashboard={initialDashboard}>
-      <Routes>
-        <Route element={<AppShell />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<PageSuspense><DashboardPage /></PageSuspense>} />
-          <Route path="jobs" element={<PageSuspense><JobsPage /></PageSuspense>} />
-          <Route path="jobs/:id" element={<PageSuspense><JobDetailPage /></PageSuspense>} />
-          <Route path="applications" element={<PageSuspense><ApplicationsPage /></PageSuspense>} />
-          <Route path="applications/:id" element={<PageSuspense><ApplicationDetailPage /></PageSuspense>} />
-          <Route path="profile" element={<PageSuspense><ProfilePage /></PageSuspense>} />
-          <Route path="certificates" element={<PageSuspense><CertificatesPage /></PageSuspense>} />
-          <Route path="trust" element={<PageSuspense><TrustPage /></PageSuspense>} />
-          <Route path="skills" element={<PageSuspense><SkillsPage /></PageSuspense>} />
-          <Route path="activity" element={<PageSuspense><ActivityPage /></PageSuspense>} />
-
-          <Route path="settings/*" element={<PageSuspense><SettingsPage /></PageSuspense>} />
-          <Route path="*" element={<EmptyState title="Halaman tidak ditemukan" description="Alamat yang kamu buka tidak tersedia di ruang kerja pekerja." />} />
-        </Route>
-      </Routes>
-    </WorkspaceProvider>
+    <Routes>
+      <Route element={<AppShell workspace={workspace} />}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={page('dashboard')} />
+        <Route path="jobs" element={page('jobs')} />
+        <Route path="jobs/:id" element={page('jobs')} />
+        <Route path="applications" element={page('applications')} />
+        <Route path="applications/:id" element={page('applications')} />
+        <Route path="profile" element={page('profile')} />
+        <Route path="trust" element={page('trust')} />
+        <Route path="notifications" element={page('notifications')} />
+        <Route path="activity" element={<Navigate to="/notifications" replace />} />
+        <Route path="settings/*" element={<Navigate to="/profile" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Route>
+    </Routes>
   )
 }
 
-export default function App({ initialProfile, initialDashboard }) {
-  const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot)
-
-  if (!mounted) return null
-
-  return <BrowserRouter basename="/worker"><AppRoutes initialProfile={initialProfile} initialDashboard={initialDashboard} /></BrowserRouter>
+export default function App({ workspace, filters, notice }) {
+  return (
+    <BrowserRouter basename="/worker">
+      <AppRoutes workspace={workspace} filters={filters} notice={notice} />
+    </BrowserRouter>
+  )
 }

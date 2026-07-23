@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import type { PullMapItem } from "./pull-map";
 
-const USER_POSITION: [number, number] = [-7.5666, 110.8167];
+const SOLO_CENTER: [number, number] = [-7.5666, 110.8167];
 
 const itemIcon = L.divIcon({
   className: "",
@@ -23,21 +23,29 @@ const userIcon = L.divIcon({
   iconAnchor: [12, 12],
 });
 
-function MapController({ items, focusRequest }: { items: PullMapItem[]; focusRequest: number }) {
+function MapController({
+  items,
+  focusRequest,
+  userPosition,
+}: {
+  items: PullMapItem[];
+  focusRequest: number;
+  userPosition: [number, number];
+}) {
   const map = useMap();
 
   useEffect(() => {
-    const positions = [USER_POSITION, ...items.map((item) => item.coordinates)];
+    const positions = [userPosition, ...items.map((item) => item.coordinates)];
     if (positions.length > 1) {
       map.fitBounds(L.latLngBounds(positions), { padding: [44, 44], maxZoom: 13 });
     } else {
-      map.setView(USER_POSITION, 13);
+      map.setView(userPosition, 13);
     }
-  }, [items, map]);
+  }, [items, map, userPosition]);
 
   useEffect(() => {
-    if (focusRequest) map.flyTo(USER_POSITION, 14, { duration: 0.7 });
-  }, [focusRequest, map]);
+    if (focusRequest) map.flyTo(userPosition, 14, { duration: 0.7 });
+  }, [focusRequest, map, userPosition]);
 
   return null;
 }
@@ -53,9 +61,24 @@ export default function PullMapInner({
   focusRequest: number;
   onSelectItem: (id: string) => void;
 }) {
+  const [userPosition, setUserPosition] = useState<[number, number]>(SOLO_CENTER);
+  const [hasUserPosition, setHasUserPosition] = useState(false);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setUserPosition([coords.latitude, coords.longitude]);
+        setHasUserPosition(true);
+      },
+      () => setHasUserPosition(false),
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 8_000 },
+    );
+  }, []);
+
   return (
     <MapContainer
-      center={USER_POSITION}
+      center={SOLO_CENTER}
       zoom={13}
       scrollWheelZoom
       className="h-full min-h-[620px] w-full"
@@ -65,7 +88,7 @@ export default function PullMapInner({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Circle
-        center={USER_POSITION}
+        center={userPosition}
         radius={radius * 1000}
         pathOptions={{
           color: "#5d9f65",
@@ -74,8 +97,8 @@ export default function PullMapInner({
           weight: 1,
         }}
       />
-      <Marker position={USER_POSITION} icon={userIcon}>
-        <Popup>Lokasimu · Solo</Popup>
+      <Marker position={userPosition} icon={userIcon}>
+        <Popup>{hasUserPosition ? "Lokasimu" : "Pusat peta · Solo (lokasi perangkat belum tersedia)"}</Popup>
       </Marker>
       {items.map((item) => (
         <Marker
@@ -99,7 +122,7 @@ export default function PullMapInner({
           </Popup>
         </Marker>
       ))}
-      <MapController items={items} focusRequest={focusRequest} />
+      <MapController items={items} focusRequest={focusRequest} userPosition={userPosition} />
     </MapContainer>
   );
 }

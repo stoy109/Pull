@@ -341,7 +341,7 @@ export function CompleteProfileForm({
             disabled={isPending}
             className="form-button form-button--primary"
           >
-            {isPending ? "Menyimpan..." : "Simpan & Lanjutkan"}
+            {isPending ? "Menyiapkan..." : "Tinjau Profil"}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>

@@ -1,84 +1,76 @@
-import { Boxes, ChevronDown, Package, PackagePlus, TriangleAlert } from "lucide-react";
+import { BadgePercent, Package, Save } from "lucide-react";
 import { upsertSupplierProductAction } from "@/features/supplier/actions";
 import { getSupplierWorkspace } from "@/features/supplier/data";
 import {
   ActionNotice,
   cardClass,
   DataState,
-  EmptyState,
-  formatCurrency,
-  formatNumber,
   inputClass,
   primaryButtonClass,
-  SectionHeading,
-  StatCard,
-  StatusBadge,
-  textareaClass,
 } from "@/features/supplier/components/supplier-ui";
 import type { SupplierProduct } from "@/features/supplier/workspace";
 
 function ProductFields({ product }: { product?: SupplierProduct }) {
   return (
-    <>
-      {product ? <input type="hidden" name="id" value={product.id} /> : null}
+    <form action={upsertSupplierProductAction} className="mt-6 border-t border-[#e3ece6] pt-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">Nama produk<input className={inputClass} name="itemName" required minLength={3} maxLength={100} defaultValue={product?.itemName} placeholder="Contoh: Kain katun 30s" /></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">Kategori<input className={inputClass} name="category" required minLength={2} maxLength={80} defaultValue={product?.category} placeholder="Bahan baku tekstil" /></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">Satuan<input className={inputClass} name="unit" required maxLength={30} defaultValue={product?.unit} placeholder="kg, pcs, meter" /></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">Harga satuan<input className={inputClass} name="unitPrice" type="number" inputMode="decimal" required min="0.01" step="0.01" defaultValue={product?.unitPrice} /></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">Stok tersedia<input className={inputClass} name="stockQuantity" type="number" inputMode="decimal" required min="0" step="0.001" defaultValue={product?.stockQuantity ?? 0} /></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">Minimum pemesanan (MOQ)<input className={inputClass} name="minOrderQuantity" type="number" inputMode="decimal" required min="0.001" step="0.001" defaultValue={product?.minOrderQuantity ?? 1} /></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e] sm:col-span-2">Status<select className={inputClass} name="status" defaultValue={product?.status ?? "active"}><option value="active">Aktif dijual</option><option value="inactive">Nonaktif</option></select></label>
-        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e] sm:col-span-2">Deskripsi<textarea className={textareaClass} name="description" maxLength={1000} defaultValue={product?.description} placeholder="Spesifikasi, kualitas, atau catatan pengiriman" /></label>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">
+          Nama bahan baku
+          <input className={inputClass} name="itemName" required minLength={3} maxLength={100} defaultValue={product?.itemName} placeholder="Contoh: Kain katun 30s" />
+        </label>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">
+          Satuan
+          <input className={inputClass} name="unit" required maxLength={30} defaultValue={product?.unit} placeholder="kg, liter, pcs" />
+        </label>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">
+          Harga per satuan
+          <input className={inputClass} name="unitPrice" type="number" inputMode="decimal" required min="0.01" step="0.01" defaultValue={product?.unitPrice} placeholder="0" />
+        </label>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e]">
+          Jumlah tersedia
+          <input className={inputClass} name="stockQuantity" type="number" inputMode="decimal" required min="0" step="0.001" defaultValue={product?.stockQuantity ?? 0} />
+        </label>
+        <label className="grid gap-2 text-[10px] font-extrabold text-[#28543e] sm:col-span-2">
+          Diskon saat target tercapai
+          <span className="relative">
+            <input className={`${inputClass} pr-10`} name="targetDiscount" type="number" inputMode="decimal" required min="0" max="99" step="0.1" defaultValue={product?.targetDiscount ?? 0} />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-extrabold text-[#507f63]">%</span>
+          </span>
+          <span className="text-[9px] font-medium leading-4 text-[#718078]">Diskon maksimum yang berlaku setelah target pool terpenuhi.</span>
+        </label>
       </div>
-      <button type="submit" className={`${primaryButtonClass} mt-5 w-full sm:w-auto`}>{product ? "Simpan perubahan" : "Tambahkan produk"}</button>
-    </>
+      <button type="submit" className={`${primaryButtonClass} mt-6 w-full sm:w-auto`}>
+        <Save className="h-4 w-4" /> {product ? "Simpan perubahan" : "Simpan bahan baku"}
+      </button>
+    </form>
   );
 }
 
 export default async function SupplierProductsPage({ searchParams }: { searchParams: Promise<{ result?: string | string[] }> }) {
   const [{ status, workspace }, params] = await Promise.all([getSupplierWorkspace(), searchParams]);
   if (status !== "ready") return <DataState status={status} />;
-  const active = workspace.products.filter((product) => product.status === "active");
-  const stockTotal = workspace.products.reduce((sum, product) => sum + product.stockQuantity, 0);
-  const warnings = active.filter((product) => product.stockQuantity <= product.minOrderQuantity);
+  const product = workspace.products[0];
   const verified = workspace.profile.verificationLevel >= 2 && workspace.profile.kycStatus === "verified";
 
   return (
     <>
       <ActionNotice result={params.result} />
-      {!verified ? <p className="mb-5 rounded-xl border border-[#efd8ad] bg-[#fff8e9] px-4 py-3 text-xs font-bold text-[#76581c]">Katalog tetap dapat dikelola. Verifikasi KYC diperlukan untuk mengirim penawaran dan memproses pesanan. <a href="/supplier/store" className="font-extrabold text-[#087447] underline">Buka verifikasi</a>.</p> : null}
-      <section className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Total katalog" value={formatNumber(workspace.products.length)} detail="Produk milik akun supplier" icon={Package} />
-        <StatCard label="Produk aktif" value={formatNumber(active.length)} detail="Saat ini dapat dipilih untuk order" icon={Boxes} />
-        <StatCard label="Peringatan stok" value={formatNumber(warnings.length)} detail="Stok berada pada atau di bawah MOQ" icon={TriangleAlert} tone={warnings.length ? "orange" : "green"} />
-      </section>
-
-      <details className={`${cardClass} group mt-5 p-5 sm:p-6`}>
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#08783f]">
-          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-[13px] bg-[#e8f5ec] text-[#08783f]"><PackagePlus className="h-5 w-5" /></span><div><p className="text-[9px] font-extrabold uppercase tracking-[.16em] text-[#507f63]">Katalog</p><h2 className="mt-1 text-lg font-extrabold text-[#163c2b]">Tambah produk</h2></div></div>
-          <ChevronDown className="h-5 w-5 text-[#507f63] transition group-open:rotate-180" />
-        </summary>
-        <form action={upsertSupplierProductAction} className="mt-6 border-t border-[#e3ece6] pt-5"><ProductFields /></form>
-      </details>
-
-      <section className={`${cardClass} mt-5 p-5 sm:p-6`}>
-        <SectionHeading eyebrow="Katalog supplier" title="Produk tersimpan" description={`Total stok tercatat ${formatNumber(stockTotal)} dalam satuan produk masing-masing.`} />
-        {workspace.products.length ? (
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            {workspace.products.map((product) => {
-              const warning = product.status === "active" && product.stockQuantity <= product.minOrderQuantity;
-              return (
-                <article key={product.id} className="rounded-2xl border border-[#dfeae2] bg-[#fcfdfc] p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-[.1em] text-[#6b7b75]">{product.category || "Tanpa kategori"}</p><h3 className="mt-1.5 truncate text-base font-extrabold text-[#163c2b]">{product.itemName}</h3></div><StatusBadge status={product.status} /></div>
-                  <dl className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Harga</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatCurrency(product.unitPrice)}</dd></div><div className={`rounded-xl p-3 ${warning ? "bg-[#fff0df]" : "bg-white"}`}><dt className="text-[9px] font-bold text-[#6b7b75]">Stok</dt><dd className={`mt-1 text-xs font-extrabold ${warning ? "text-[#b35e16]" : "text-[#163c2b]"}`}>{formatNumber(product.stockQuantity)} {product.unit}</dd></div><div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">MOQ</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatNumber(product.minOrderQuantity)} {product.unit}</dd></div></dl>
-                  {product.description ? <p className="mt-4 text-[10px] font-medium leading-5 text-[#6b7b75]">{product.description}</p> : null}
-                  <details className="group/edit mt-4 border-t border-[#e3ece6] pt-4"><summary className="flex cursor-pointer list-none items-center justify-between text-xs font-extrabold text-[#08783f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#08783f]">Edit produk <ChevronDown className="h-4 w-4 transition group-open/edit:rotate-180" /></summary><form action={upsertSupplierProductAction} className="mt-5"><ProductFields product={product} /></form></details>
-                </article>
-              );
-            })}
+      {!verified ? <p className="mb-5 rounded-xl border border-[#efd8ad] bg-[#fff8e9] px-4 py-3 text-xs font-bold text-[#76581c]">Katalog bahan baku tetap dapat dikelola. Verifikasi KYC diperlukan untuk memproses pesanan. <a href="/supplier/store" className="font-extrabold text-[#087447] underline">Buka verifikasi</a>.</p> : null}
+      <section className={`${cardClass} p-5 sm:p-7`}>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-[#e8f5ec] text-[#08783f]"><Package className="h-5 w-5" /></span>
+            <div>
+              <p className="text-[9px] font-extrabold uppercase tracking-[.16em] text-[#507f63]">Katalog tunggal</p>
+              <h2 className="mt-1.5 font-[family-name:var(--font-worker-display)] text-2xl font-semibold tracking-[-.03em] text-[#10231d]">{product ? "Edit bahan baku" : "Tambahkan bahan baku"}</h2>
+              <p className="mt-2 max-w-2xl text-xs font-medium leading-5 text-[#6b7b75]">Setiap akun supplier hanya dapat menyimpan satu bahan baku. Setelah tersimpan, form ini akan memperbarui item yang sama—bukan menambah katalog baru.</p>
+            </div>
           </div>
-        ) : <EmptyState title="Katalog masih kosong" description="Tambahkan produk pertama untuk mencatat harga, stok, dan minimum pemesanan." />}
+          <span className={`inline-flex shrink-0 items-center gap-2 self-start rounded-full px-3 py-2 text-[10px] font-extrabold ${product ? "bg-[#e8f5ec] text-[#08783f]" : "bg-[#f1f4f2] text-[#607069]"}`}>
+            <BadgePercent className="h-3.5 w-3.5" /> {product ? "1 dari 1 terisi" : "0 dari 1 terisi"}
+          </span>
+        </header>
+        <ProductFields product={product} />
       </section>
     </>
   );

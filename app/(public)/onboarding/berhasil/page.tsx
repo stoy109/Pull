@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import successIllustration from "@/public/Profile(Selesai).png";
+import { completeOnboardingAction } from "@/features/onboarding/actions";
 import { createClient } from "@/lib/supabase/server";
 import { parseOnboardingRole } from "@/lib/auth/roles";
 
@@ -32,32 +33,7 @@ function readSearchString(
   return typeof value === "string" ? value : "";
 }
 
-function createProfileParams({
-  role,
-  displayName,
-  businessName,
-  headline,
-  deliveryArea,
-  phone,
-}: {
-  role: string;
-  displayName: string;
-  businessName: string;
-  headline: string;
-  deliveryArea: string;
-  phone: string;
-}) {
-  const params = new URLSearchParams({
-    role,
-    displayName,
-    businessName,
-    headline,
-    deliveryArea,
-    phone,
-  });
 
-  return params.toString();
-}
 
 function roleLabel(role: string) {
   if (role === "pekerja") {
@@ -129,6 +105,7 @@ export default async function OnboardingSuccessPage({
   const queryDeliveryArea = readSearchString(params, "deliveryArea");
   const queryPhone = readSearchString(params, "phone");
   const queryRole = readSearchString(params, "role");
+  const finalizationError = readSearchString(params, "error");
   const displayName = readMetadataString(
     metadata,
     "display_name",
@@ -146,26 +123,15 @@ export default async function OnboardingSuccessPage({
     queryDeliveryArea,
   );
   const phone = readMetadataString(metadata, "phone", queryPhone);
-  const role =
-    parseOnboardingRole(readMetadataString(metadata, "role")) ??
-    parseOnboardingRole(queryRole) ??
-    "umkm";
+  const pendingRole = parseOnboardingRole(readMetadataString(metadata, "pending_role"));
+  if (!pendingRole) redirect("/onboarding/pilih-peran");
+  const role = pendingRole;
+  const requestedRole = parseOnboardingRole(queryRole);
+  if (requestedRole && requestedRole !== role) redirect(`/onboarding/berhasil?role=${role}`);
   const isWorker = role === "pekerja";
   const isSupplier = role === "supplier";
-  const dashboardHref = isWorker
-    ? "/worker/dashboard"
-    : isSupplier
-      ? "/supplier"
-      : "/dashboard";
-  const profileParams = createProfileParams({
-    role,
-    displayName,
-    businessName,
-    headline,
-    deliveryArea,
-    phone,
-  });
-  const editHref = `/onboarding/lengkapi-profil?${profileParams}`;
+
+  const editHref = `/onboarding/lengkapi-profil?role=${role}`;
 
   if (!displayName || !businessName || !headline || !phone || (isSupplier && !deliveryArea)) {
     redirect(`/onboarding/lengkapi-profil?role=${role}`);
@@ -230,11 +196,10 @@ export default async function OnboardingSuccessPage({
         <div className="px-4 pb-3 pt-2.5 sm:px-5 sm:pb-4 sm:pt-3 lg:px-6 lg:pb-5 lg:pt-4">
           <div className="text-center">
             <h1 className="text-lg font-extrabold leading-normal tracking-normal text-[#145c46] sm:text-[1.1875rem] lg:text-xl">
-              Profil Anda Lengkap!
+              Profil Siap Digunakan
             </h1>
             <p className="mx-auto mt-1 max-w-xs text-[11px] font-semibold leading-normal text-[#526a60] sm:text-[11px] lg:mt-1.5 lg:text-xs">
-              Terima kasih telah melengkapi profil Anda. Anda sekarang siap
-              menjelajahi Pull.
+              Periksa ringkasan berikut. Peran baru disimpan saat Anda masuk ke dashboard.
             </p>
           </div>
 
@@ -263,14 +228,25 @@ export default async function OnboardingSuccessPage({
             </div>
           </div>
 
-          <Link
-            href={dashboardHref}
-            aria-label={`Masuk ke Dashboard untuk role ${role}`}
-            className="success-fade mt-2.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#079640] px-5 text-sm font-extrabold text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#057c35] active:scale-[0.99] sm:mt-3 lg:mt-4 lg:h-11"
-          >
-            Masuk ke Dashboard
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          {finalizationError ? (
+            <p className="mt-3 rounded-lg border border-[#efc8c8] bg-[#fff3f3] px-3 py-2 text-center text-[11px] font-bold text-[#a63d49]">
+              {finalizationError === "role"
+                ? "Peran lama sudah terkunci. Jalankan migration 013 lalu coba lagi."
+                : "Profil belum dapat difinalisasi. Coba lagi."}
+            </p>
+          ) : null}
+
+          <form action={completeOnboardingAction} className="success-fade mt-2.5 sm:mt-3 lg:mt-4">
+            <input type="hidden" name="role" value={role} />
+            <button
+              type="submit"
+              aria-label={`Masuk ke Dashboard untuk role ${role}`}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#079640] px-5 text-sm font-extrabold text-white shadow-md shadow-emerald-950/20 transition-all duration-150 hover:bg-[#057c35] active:scale-[0.99] lg:h-11"
+            >
+              Masuk ke Dashboard
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
 
           <div className="mt-2.5 sm:mt-3 lg:mt-4">
             <StepDots />

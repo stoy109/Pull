@@ -50,7 +50,10 @@ Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan
 - `202607230009_proposal_core_flows.sql` untuk pool, pekerjaan, supplier, toko publik, rating, poin, notifikasi, dan pembayaran.
 - `202607230010_admin_kyc_metrics.sql` untuk review KYC admin dan KPI proposal.
 - `202607230011_identity_storage_worker_reads.sql` untuk dokumen KYC privat, verifikasi telepon, dan worker RPC.
-- `202607230012_allow_unverified_supplier_catalog.sql` agar supplier aktif dapat mengelola katalog sebelum KYC; penawaran dan pesanan tetap membutuhkan verifikasi.
+- `202607230012_allow_unverified_supplier_catalog.sql` agar supplier aktif dapat mengelola katalog sebelum KYC; pesanan tetap membutuhkan verifikasi.
+- `202607230013_reset_partial_onboarding_roles.sql` untuk membebaskan pilihan role onboarding lama yang belum diselesaikan.
+- `202607230014_worker_matching_map_contact.sql` untuk preferensi smart matching, koordinat lowongan, dan handoff WhatsApp pekerja.
+- `202607230015_pool_catalog_hour_window.sql` untuk katalog tunggal supplier, pilihan bahan saat membuat pool, diskon target, dan deadline pool satu jam yang hanya reset pada join pertama tiap akun.
 
 Verifikasi telepon membutuhkan SMS provider yang aktif di Supabase Auth. Bucket privat `kyc-documents` dibuat oleh migration `011`; file hanya dapat dibaca pemilik atau admin, dan admin UI menggunakan signed URL singkat.
 

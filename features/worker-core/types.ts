@@ -7,6 +7,7 @@ export type WorkerPage =
   | "notifications";
 
 export type WorkerFilters = {
+  query: string;
   category: string;
   district: string;
   minWage?: number;
@@ -43,6 +44,18 @@ export type WorkerJob = {
   requirements: string | null;
   createdAt: string;
   ownerName: string | null;
+  ownerVerified: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  matchScore: number;
+  matchReasons: string[];
+};
+
+export type WorkerPreferences = {
+  availability: "available" | "limited" | "unavailable";
+  preferredCategories: string[];
+  minimumWage: number | null;
+  radiusKm: 3 | 5 | 10 | 20 | 50;
 };
 
 export type WorkerApplication = {
@@ -118,6 +131,7 @@ export type WorkerWorkspace = {
   notifications: WorkerNotification[];
   points: WorkerPoint[];
   portfolio: WorkerPortfolioItem[];
+  preferences: WorkerPreferences;
   profile: WorkerProfile | null;
   ratingsGiven: WorkerRating[];
   ratingsReceived: WorkerRating[];

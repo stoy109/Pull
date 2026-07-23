@@ -1,12 +1,11 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BadgePercent,
   Banknote,
-  Boxes,
-  CalendarClock,
   CircleAlert,
+  Package,
   PackageCheck,
-  PackageOpen,
   ReceiptText,
 } from "lucide-react";
 import { getSupplierWorkspace } from "@/features/supplier/data";
@@ -33,11 +32,8 @@ export default async function SupplierPage() {
   const inProgress = workspace.orders.filter((order) => order.status === "accepted" || order.status === "processing" || order.status === "shipped");
   const completedToday = workspace.orders.filter((order) => order.status === "completed" && isWithinDays(order.completedAt, 1, loadedAt));
   const completedTodayValue = completedToday.reduce((sum, order) => sum + order.total, 0);
-  const lowStock = workspace.products.filter((product) => product.status === "active" && product.stockQuantity <= product.minOrderQuantity);
   const recentOrders = workspace.orders.slice(0, 4);
-  const nearestDemands = [...workspace.demands]
-    .sort((left, right) => new Date(left.deadline).getTime() - new Date(right.deadline).getTime())
-    .slice(0, 3);
+  const catalogItem = workspace.products[0];
 
   return (
     <>
@@ -49,13 +45,13 @@ export default async function SupplierPage() {
             {awaitingDecision.length ? `${awaitingDecision.length} pesanan perlu keputusanmu.` : "Operasional supplier terkendali."}
           </h2>
           <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/70">
-            {workspace.demands.length} pool sedang mencari pasokan dan {inProgress.length} pesanan sedang dalam pemenuhan.
+            {inProgress.length} pesanan sedang dalam pemenuhan. Katalog bahan baku {catalogItem ? "sudah terisi" : "belum diisi"}.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href={awaitingDecision.length ? "/supplier/transactions" : "/supplier/demands"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-extrabold text-[#08783f] transition hover:bg-[#eff8f2]">
-              {awaitingDecision.length ? "Tinjau pesanan" : "Cari peluang demand"}<ArrowRight className="h-4 w-4" />
+            <Link href={awaitingDecision.length ? "/supplier/transactions" : "/supplier/products"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-extrabold text-[#08783f] transition hover:bg-[#eff8f2]">
+              {awaitingDecision.length ? "Tinjau pesanan" : "Kelola bahan baku"}<ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/supplier/products" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/[.06] px-5 text-xs font-extrabold text-white transition hover:bg-white/10">Periksa stok</Link>
+            {awaitingDecision.length ? <Link href="/supplier/products" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/[.06] px-5 text-xs font-extrabold text-white transition hover:bg-white/10">Kelola bahan baku</Link> : null}
           </div>
         </div>
       </section>
@@ -82,37 +78,32 @@ export default async function SupplierPage() {
                 </article>
               ))}
             </div>
-          ) : <EmptyState title="Belum ada pesanan" description="Pesanan akan muncul setelah UMKM memilih penawaran suppliermu." />}
+          ) : <EmptyState title="Belum ada pesanan" description="Pesanan akan muncul saat UMKM membuat order untuk pasokanmu." />}
         </section>
 
         <section className={`${cardClass} p-5 sm:p-6`}>
-          <SectionHeading eyebrow="Kontrol stok" title="Peringatan stok" description="Produk aktif dengan stok pada atau di bawah MOQ." />
-          {lowStock.length ? (
-            <div className="mt-5 space-y-3">
-              {lowStock.slice(0, 5).map((product) => (
-                <Link key={product.id} href="/supplier/products" className="flex items-center justify-between gap-4 rounded-xl border border-[#f0d6bd] bg-[#fff9f1] p-3.5 transition hover:border-[#e4b780]">
-                  <div className="min-w-0"><p className="truncate text-xs font-extrabold text-[#613d1e]">{product.itemName}</p><p className="mt-1 text-[9px] font-semibold text-[#94673e]">MOQ {formatNumber(product.minOrderQuantity)} {product.unit}</p></div>
-                  <strong className="shrink-0 text-xs text-[#b35e16]">{formatNumber(product.stockQuantity)} {product.unit}</strong>
-                </Link>
-              ))}
-            </div>
+          <SectionHeading eyebrow="Katalog tunggal" title="Bahan baku" description="Setiap akun supplier mengelola maksimal satu bahan baku." />
+          {catalogItem ? (
+            <Link href="/supplier/products" className="mt-5 block rounded-2xl border border-[#dfeae2] bg-[#fcfdfc] p-5 transition hover:border-[#a8cfb7] hover:shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-[13px] bg-[#e8f5ec] text-[#08783f]"><Package className="h-5 w-5" /></span><div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-[#507f63]">1 dari 1 terisi</p><h3 className="mt-1 truncate text-sm font-extrabold text-[#163c2b]">{catalogItem.itemName}</h3></div></div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-[#08783f]" />
+              </div>
+              <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Harga</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatCurrency(catalogItem.unitPrice)}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Tersedia</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatNumber(catalogItem.stockQuantity)} {catalogItem.unit}</dd></div>
+                <div className="rounded-xl bg-[#edf8f0] p-3"><dt className="text-[9px] font-bold text-[#507f63]">Diskon target</dt><dd className="mt-1 text-xs font-extrabold text-[#08783f]">{formatNumber(catalogItem.targetDiscount)}%</dd></div>
+              </dl>
+            </Link>
           ) : (
-            <div className="mt-5 rounded-2xl bg-[#edf8f0] p-5 text-center"><Boxes className="mx-auto h-6 w-6 text-[#08783f]" /><p className="mt-3 text-xs font-extrabold text-[#163c2b]">Tidak ada stok kritis</p><p className="mt-1 text-[10px] font-medium leading-5 text-[#6b7b75]">Semua produk aktif berada di atas MOQ.</p></div>
+            <Link href="/supplier/products" className="mt-5 block rounded-2xl border border-dashed border-[#b9d7c5] bg-[#f7fbf8] p-6 text-center transition hover:border-[#78b994]">
+              <BadgePercent className="mx-auto h-6 w-6 text-[#08783f]" />
+              <p className="mt-3 text-xs font-extrabold text-[#163c2b]">Tambahkan satu bahan baku</p>
+              <p className="mt-1 text-[10px] font-medium leading-5 text-[#6b7b75]">Isi harga, jumlah tersedia, dan diskon target.</p>
+            </Link>
           )}
         </section>
       </div>
-
-      <section className={`${cardClass} mt-5 p-5 sm:p-6`}>
-        <SectionHeading eyebrow="Tenggat terdekat" title="Demand yang bisa ditindaklanjuti" description="Pool aktif diurutkan dari tenggat paling dekat." action={<Link href="/supplier/demands" className="text-xs font-extrabold text-[#08783f]">Buka demand board</Link>} />
-        {nearestDemands.length ? <div className="mt-5 grid gap-3 md:grid-cols-3">{nearestDemands.map((demand) => (
-          <Link key={demand.id} href="/supplier/demands" className="group rounded-2xl border border-[#dfeae2] p-4 transition hover:-translate-y-0.5 hover:border-[#a8cfb7] hover:shadow-sm">
-            <div className="flex items-center justify-between"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e8f5ec] text-[#08783f]"><PackageOpen className="h-4 w-4" /></span><CalendarClock className="h-4 w-4 text-[#c76516]" /></div>
-            <h3 className="mt-4 text-sm font-extrabold text-[#163c2b] group-hover:text-[#08783f]">{demand.itemName || "Demand tanpa nama"}</h3>
-            <p className="mt-2 text-[10px] font-semibold text-[#6b7b75]">{formatNumber(demand.currentQuantity)} / {formatNumber(demand.targetQuantity)} {demand.unit}</p>
-            <p className="mt-3 text-[9px] font-bold text-[#507f63]">Tenggat {formatDate(demand.deadline)}</p>
-          </Link>
-        ))}</div> : <EmptyState title="Belum ada demand aktif" description="Pool baru akan tampil saat UMKM membuka kebutuhan pasokan." />}
-      </section>
     </>
   );
 }

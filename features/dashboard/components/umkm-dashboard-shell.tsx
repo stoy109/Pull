@@ -40,7 +40,7 @@ const UMKM_FAQS = [
   {
     question: "Bagaimana cara membuat Pool Patungan?",
     answer:
-      "Buka menu Pool Patungan, pilih Buat Pool, lalu lengkapi bahan baku, harga normal supplier per satuan, diskon maksimum supplier, target volume, satuan, batas waktu, dan deskripsinya. Estimasi diskon anggota akan menyesuaikan jumlah pesanannya terhadap target pool.",
+      "Buka menu Pool Patungan, pilih Buat Pool, lalu pilih bahan baku dari katalog supplier dan isi target, kecamatan, serta hub pengambilan bila perlu. Pool dimulai dengan batas waktu satu jam yang diperbarui saat pengguna baru pertama kali bergabung.",
   },
   {
     question: "Bagaimana cara meninjau dan menerima pelamar?",

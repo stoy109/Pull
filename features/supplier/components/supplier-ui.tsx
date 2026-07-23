@@ -45,7 +45,7 @@ export function ActionNotice({ result }: { result?: string | string[] }) {
     : value === "validation"
       ? "Periksa kembali data yang dimasukkan."
       : value === "setup"
-        ? "Fitur belum siap. Terapkan migration 009–011 terlebih dahulu."
+        ? "Fitur belum siap. Terapkan migration 009–015 secara berurutan."
         : value === "verification"
           ? "Verifikasi KYC level 2 wajib sebelum menjalankan aktivitas supplier."
           : "Perubahan belum dapat disimpan. Coba lagi.";
@@ -68,7 +68,7 @@ export function DataState({ status }: { status: SupplierDataStatus }) {
         <h2 className="mt-5 text-xl font-extrabold text-[#10231d]">{setup ? "Workspace supplier belum disiapkan" : "Data belum dapat dimuat"}</h2>
         <p className="mt-2 text-sm font-medium leading-6 text-[#6b7b75]">
           {setup
-            ? "Terapkan migration 202607230009–202607230011 untuk mengaktifkan produk, demand, pesanan, notifikasi, dan verifikasi supplier."
+            ? "Terapkan migration 202607230009–202607230015 secara berurutan untuk mengaktifkan katalog tunggal, pesanan, notifikasi, dan verifikasi supplier."
             : "Koneksi data supplier sedang bermasalah. Muat ulang halaman atau coba beberapa saat lagi."}
         </p>
       </div>

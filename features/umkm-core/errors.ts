@@ -13,7 +13,7 @@ const SETUP_ERROR_CODES = new Set([
 ]);
 
 export const CORE_SETUP_MESSAGE =
-  "Fitur inti UMKM belum siap. Terapkan migration 202607230009_proposal_core_flows.sql di Supabase, lalu muat ulang halaman ini.";
+  "Fitur inti UMKM belum siap. Terapkan migrations 202607230009_proposal_core_flows.sql dan 202607230015_pool_catalog_hour_window.sql di Supabase, lalu muat ulang halaman ini.";
 
 export function isCoreSetupError(error: SupabaseErrorLike | null | undefined) {
   if (!error) return false;

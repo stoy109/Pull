@@ -1,32 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { WorkerDashboardData } from "@/features/dashboard/data/get-role-dashboard-data";
-
-type WorkerProfile = {
-  name: string;
-  email: string;
-  phone: string;
-  title: string;
-  postalCode: string;
-  province: string;
-  city: string;
-  district: string;
-  village: string;
-  skills: string[];
-};
+import type { WorkerFilters, WorkerWorkspace } from "@/features/worker-core/types";
 
 const WorkerDashboard = dynamic<{
-  initialProfile: WorkerProfile;
-  initialDashboard: WorkerDashboardData;
-}>(() => import("@/features/worker-dashboard/App"), { ssr: false });
+  workspace: WorkerWorkspace;
+  filters: WorkerFilters;
+  notice: string | undefined;
+}>(() => import("@/features/worker-dashboard/App").then((module) => module.default), { ssr: false });
 
 export function WorkerDashboardClient({
-  initialProfile,
-  initialDashboard,
+  workspace,
+  filters,
+  notice,
 }: {
-  initialProfile: WorkerProfile;
-  initialDashboard: WorkerDashboardData;
+  workspace: WorkerWorkspace;
+  filters: WorkerFilters;
+  notice?: string;
 }) {
-  return <WorkerDashboard initialProfile={initialProfile} initialDashboard={initialDashboard} />;
+  return <WorkerDashboard workspace={workspace} filters={filters} notice={notice} />;
 }

@@ -41,8 +41,12 @@ export default async function LengkapiProfilPage({
   }
 
   const metadata = user.user_metadata ?? {};
-  const searchRole = parseOnboardingRole(readSearchString(params.role)) ?? "umkm";
-  const role = parseOnboardingRole(readMetadataString(metadata, "role")) ?? searchRole;
+  const searchRole = parseOnboardingRole(readSearchString(params.role));
+  const role =
+    searchRole ??
+    parseOnboardingRole(readMetadataString(metadata, "pending_role")) ??
+    parseOnboardingRole(readMetadataString(metadata, "role")) ??
+    "umkm";
   const displayName =
     readMetadataString(metadata, "display_name") ||
     readMetadataString(metadata, "full_name") ||

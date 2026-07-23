@@ -22,6 +22,7 @@ import type {
   PublicUmkmProfile,
   PublishWorkspace,
   ReceivedRating,
+  SupplierCatalogProduct,
   SupplierOffer,
   TrustWorkspace,
 } from "./types";
@@ -125,6 +126,7 @@ function protectedResult<T>(
 }
 
 type PoolRow = {
+  catalog_product_id: string | null;
   category: string;
   created_at: string;
   current_quantity: number | string;
@@ -149,6 +151,17 @@ type PoolRow = {
 type PoolMemberRow = {
   pool_id: string;
   quantity: number | string;
+};
+
+type CatalogProductRow = {
+  category: string | null;
+  description: string | null;
+  id: string;
+  item_name: string;
+  min_order_quantity: number | string;
+  stock_quantity: number | string;
+  unit: string;
+  unit_price: number | string;
 };
 
 type OfferRow = {
@@ -177,22 +190,52 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
     return protectedResult(context.identity, null, context.identityError);
   }
 
-  const poolsResult = await context.client
-    .from("pools")
-    .select(
-      "id,owner_id,item_name,category,description,unit,target_quantity,current_quantity,min_threshold,tier1_price,tier2_price,market_price,district,latitude,longitude,deadline,status,hub,created_at",
-    )
-    .order("created_at", { ascending: false });
+  const [poolsResult, catalogResult] = await Promise.all([
+    context.client
+      .from("pools")
+      .select(
+        "id,owner_id,catalog_product_id,item_name,category,description,unit,target_quantity,current_quantity,min_threshold,tier1_price,tier2_price,market_price,district,latitude,longitude,deadline,status,hub,created_at",
+      )
+      .order("created_at", { ascending: false }),
+    context.client
+      .from("supplier_offers")
+      .select("id,item_name,category,description,unit,unit_price,stock_quantity,min_order_quantity")
+      .is("pool_id", null)
+      .eq("status", "active")
+      .gt("stock_quantity", 0)
+      .order("item_name", { ascending: true }),
+  ]);
 
-  if (poolsResult.error) {
+  const workspaceError = poolsResult.error ?? catalogResult.error;
+  if (workspaceError) {
     return protectedResult(
       context.identity,
       null,
-      queryErrorMessage(poolsResult.error, "Data pool"),
+      queryErrorMessage(workspaceError, "Data pool dan katalog supplier"),
     );
   }
 
   const poolRows = (poolsResult.data ?? []) as PoolRow[];
+  const catalogProducts: SupplierCatalogProduct[] = (
+    (catalogResult.data ?? []) as CatalogProductRow[]
+  )
+    .map((product) => ({
+      category: optionalString(product.category) ?? "",
+      description: optionalString(product.description),
+      id: product.id,
+      itemName: product.item_name,
+      minOrderQuantity: asNumber(product.min_order_quantity),
+      stockQuantity: asNumber(product.stock_quantity),
+      unit: product.unit,
+      unitPrice: asNumber(product.unit_price),
+    }))
+    .filter(
+      (product) =>
+        product.category.length >= 2 &&
+        product.minOrderQuantity > 0 &&
+        product.minOrderQuantity <= product.stockQuantity,
+    );
+  const catalogById = new Map(catalogProducts.map((product) => [product.id, product]));
   const readyOwnedIds = poolRows
     .filter(
       (pool) =>
@@ -249,6 +292,26 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
     };
     offersByPool.set(offer.pool_id, [...(offersByPool.get(offer.pool_id) ?? []), item]);
   }
+  for (const pool of poolRows) {
+    if (!readyOwnedIds.includes(pool.id) || !pool.catalog_product_id) continue;
+    const product = catalogById.get(pool.catalog_product_id);
+    if (!product) continue;
+    offersByPool.set(pool.id, [
+      {
+        description: pool.description,
+        id: product.id,
+        minOrderQuantity: product.minOrderQuantity,
+        stockQuantity: product.stockQuantity,
+        unitPrice:
+          asNumber(pool.current_quantity) >= asNumber(pool.target_quantity) && pool.tier2_price !== null
+            ? asNumber(pool.tier2_price)
+            : pool.tier1_price === null
+              ? product.unitPrice
+              : asNumber(pool.tier1_price),
+      },
+      ...(offersByPool.get(pool.id) ?? []),
+    ]);
+  }
 
   const now = Date.now();
   const pools: Pool[] = poolRows.map((pool) => {
@@ -298,6 +361,7 @@ export async function getPoolsWorkspace(): Promise<ProtectedLoadResult<PoolsWork
   return protectedResult(
     context.identity,
     {
+      catalogProducts,
       joinedPools: pools.filter((pool) => pool.joinedQuantity !== null),
       openPools: pools.filter((pool) => pool.joinable),
       orders,

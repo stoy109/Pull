@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowRight, CheckCircle2, HandCoins, PackageOpen, ReceiptText } from "lucide-react";
+import { CheckCircle2, HandCoins, PackageOpen, ReceiptText } from "lucide-react";
 import { getSupplierWorkspace } from "@/features/supplier/data";
 import {
   cardClass,
@@ -31,7 +30,7 @@ export default async function SupplierOffersPage() {
       </section>
 
       <section className={`${cardClass} mt-5 p-5 sm:p-6`}>
-        <SectionHeading eyebrow="Riwayat penawaran" title="Penawaran pool terkirim" description="Harga dan kemampuan pasok yang sudah dikirim. Penawaran pool tidak mengubah katalog produk." action={<Link href="/supplier/demands" className="inline-flex items-center gap-1 text-xs font-extrabold text-[#08783f]">Cari demand <ArrowRight className="h-3.5 w-3.5" /></Link>} />
+        <SectionHeading eyebrow="Riwayat penawaran" title="Penawaran pool terkirim" description="Harga dan kemampuan pasok yang pernah dikirim. Penawaran pool tidak mengubah katalog bahan baku." />
         {workspace.poolOffers.length ? (
           <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {workspace.poolOffers.map((offer) => {
@@ -50,7 +49,7 @@ export default async function SupplierOffersPage() {
               );
             })}
           </div>
-        ) : <EmptyState title="Belum ada penawaran pool" description="Buka demand board dan kirim harga serta kemampuan pasok pada pool yang sesuai." />}
+        ) : <EmptyState title="Belum ada penawaran pool" description="Riwayat penawaran pool yang sudah ada akan tampil di sini." />}
       </section>
     </>
   );
