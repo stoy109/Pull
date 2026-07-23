@@ -2,11 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getMvpSession,
-  isMvpAuthEnabled,
-  mvpSessionToUser,
-} from "@/lib/auth/mvp-session";
+
 import {
   dashboardPathForRole,
   isRoleAllowed,
@@ -32,16 +28,6 @@ function parseAccountStatus(value: unknown): AccountStatus {
 }
 
 export const getCurrentAccess = cache(async (): Promise<CurrentAccess | null> => {
-  if (isMvpAuthEnabled()) {
-    const session = await getMvpSession();
-    if (!session) return null;
-    return {
-      accountStatus: "active",
-      role: session.role,
-      user: mvpSessionToUser(session) as unknown as User,
-    };
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -100,7 +86,7 @@ export async function requireRole(allowedRoles: readonly AppRole[]) {
   if (!isRoleAllowed(access.role, allowedRoles)) {
     const [requiredRole] = allowedRoles;
 
-    if (requiredRole && !isMvpAuthEnabled()) {
+    if (requiredRole) {
       const supabase = await createClient();
       await supabase.rpc("record_access_denied", {
         required_role: requiredRole,
@@ -110,7 +96,7 @@ export async function requireRole(allowedRoles: readonly AppRole[]) {
     redirect(dashboardPathForRole(access.role));
   }
 
-  return access;
+  return { ...access, role: access.role };
 }
 
 export async function redirectToRoleDashboard(): Promise<never> {

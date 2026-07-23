@@ -3,19 +3,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity/log-activity";
-import { isRole } from "@/lib/auth/roles";
-import {
-  getMvpSession,
-  isMvpAuthEnabled,
-  setMvpSession,
-} from "@/lib/auth/mvp-session";
+import { parseOnboardingRole } from "@/lib/auth/roles";
 
 export type OnboardingActionState = {
   status: "idle" | "error" | "success";
   message: string;
 };
-
-const validRoles = new Set(["umkm", "pekerja", "supplier"]);
 
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -75,34 +68,30 @@ export async function saveRoleAction(
   _state: OnboardingActionState,
   formData: FormData,
 ): Promise<OnboardingActionState> {
-  const role = readFormString(formData, "role");
+  const role = parseOnboardingRole(readFormString(formData, "role"));
 
-  if (!validRoles.has(role) || !isRole(role)) {
+  if (!role) {
     return {
       status: "error",
       message: "Pilih peran yang tersedia.",
     };
   }
 
-  if (isMvpAuthEnabled()) {
-    const session = await getMvpSession();
-    if (!session) redirect("/register");
-    await setMvpSession({
-      ...session,
-      role,
-      userMetadata: {
-        ...session.userMetadata,
-        role,
-        onboarding_step: "profile",
-      },
-    });
-    redirect(role === "admin" ? "/admin" : "/onboarding/lengkapi-profil");
-  }
-
   const { supabase, user } = await getCurrentUser();
 
   if (!user) {
-    redirect(`/onboarding/lengkapi-profil?role=${role}`);
+    redirect("/register");
+  }
+
+  const { error: roleError } = await supabase.rpc("set_own_role", {
+    requested_role: role,
+  });
+
+  if (roleError) {
+    return {
+      status: "error",
+      message: roleError.message,
+    };
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -129,7 +118,7 @@ export async function saveRoleAction(
     metadata: { selected_role: role, detail: `Peran akun diatur sebagai ${role}.` },
   });
 
-  redirect(role === "admin" ? "/admin" : "/onboarding/lengkapi-profil");
+  redirect("/onboarding/lengkapi-profil");
 }
 
 export async function saveProfileAction(
@@ -142,9 +131,7 @@ export async function saveProfileAction(
   const deliveryArea = readFormString(formData, "deliveryArea");
   const phone = readFormString(formData, "phone");
   const skills = readFormStrings(formData, "skills");
-  const formRole = readFormString(formData, "role");
-  const role = validRoles.has(formRole) ? formRole : "umkm";
-  if (role === "admin") redirect("/admin");
+  const role = parseOnboardingRole(readFormString(formData, "role")) ?? "umkm";
   const profileName = role === "pekerja" ? displayName : businessName;
 
   if (role === "pekerja" && (!displayName || !headline || !phone || !skills.length)) {
@@ -169,47 +156,21 @@ export async function saveProfileAction(
     };
   }
 
-  if (isMvpAuthEnabled()) {
-    const session = await getMvpSession();
-    if (!session || !isRole(role)) redirect("/register");
-    await setMvpSession({
-      ...session,
-      role,
-      userMetadata: {
-        ...session.userMetadata,
-        display_name: displayName,
-        business_name: profileName,
-        headline,
-        delivery_area: deliveryArea,
-        ...(role === "pekerja" ? { skills } : {}),
-        phone,
-        role,
-        onboarding_step: "complete",
-      },
-    });
-    redirect(createProfileSuccessPath({
-      role,
-      displayName,
-      businessName: profileName,
-      headline,
-      deliveryArea,
-      phone,
-    }));
-  }
-
   const { supabase, user } = await getCurrentUser();
 
   if (!user) {
-    redirect(
-      createProfileSuccessPath({
-        role,
-        displayName,
-        businessName: profileName,
-        headline,
-        deliveryArea,
-        phone,
-      }),
-    );
+    redirect("/register");
+  }
+
+  const { error: roleError } = await supabase.rpc("set_own_role", {
+    requested_role: role,
+  });
+
+  if (roleError) {
+    return {
+      status: "error",
+      message: roleError.message,
+    };
   }
 
   const { error } = await supabase.auth.updateUser({

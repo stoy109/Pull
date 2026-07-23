@@ -30,17 +30,14 @@ Create a local `.env.local` file with these values:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-MVP_AUTH_MODE=true
 ```
 
-The app validates required Supabase variables through `lib/env.ts`. Only publishable Supabase keys should be exposed through `NEXT_PUBLIC_*` variables. `SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipasang pada environment server Vercel/lokal dan tidak boleh memakai prefix `NEXT_PUBLIC_`.
+The app validates required Supabase variables through `lib/env.ts`. Data access uses authenticated Supabase sessions plus RLS-protected RPCs, so a service-role key is not required by the application.
 
-### Mode Auth MVP
+### Supabase Auth
 
-Mode MVP aktif secara default (`MVP_AUTH_MODE` selain `false`). Register/login memakai cookie demo `httpOnly`; email, OTP, Google OAuth, dan penyimpanan password dilewati. Pilihan role dan profil onboarding tetap tersimpan selama 7 hari agar seluruh dashboard dapat didemokan. Untuk membuka dashboard Administrator, login dengan `admin@pull.demo` dan kata sandi apa pun yang tidak kosong.
+Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan session refresh menggunakan Supabase. Terapkan seluruh migration RBAC, termasuk `202607230008_supplier_demand_dashboard.sql`, sebelum menguji onboarding dan dashboard role.
 
-Set `MVP_AUTH_MODE=false` saat siap mengaktifkan Supabase Auth kembali. Activity write juga dilewati selama mode MVP karena user demo tidak mempunyai foreign key di `auth.users`. Mode ini hanya untuk demo/hackathon, bukan production.
 
 ## Constraint 1: Multi-Role & Activity Monitoring
 

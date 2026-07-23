@@ -3,15 +3,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { logActivity } from "@/lib/activity/log-activity";
-import { isRole, type Role } from "@/lib/auth/roles";
-import {
-  clearMvpSession,
-  createMvpSession,
-  getMvpSession,
-  isMvpAuthEnabled,
-  setMvpSession,
-} from "@/lib/auth/mvp-session";
 
 export type AuthActionState = {
   status: "idle" | "error" | "success";
@@ -21,13 +12,6 @@ export type AuthActionState = {
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
-}
-
-function dashboardForRole(role: Role) {
-  if (role === "pekerja") return "/worker/dashboard";
-  if (role === "supplier") return "/supplier";
-  if (role === "admin") return "/admin";
-  return "/dashboard";
 }
 
 function authMessage(message?: string) {
@@ -95,26 +79,8 @@ export async function signInAction(
     };
   }
 
-  if (isMvpAuthEnabled()) {
-    const existingSession = await getMvpSession();
-    const session = existingSession?.email === email
-      ? existingSession
-      : await createMvpSession(email, email.split("@")[0] || "Pengguna Pull");
-
-    if (email.toLowerCase() === "admin@pull.demo") {
-      await setMvpSession({
-        ...session,
-        role: "admin",
-        userMetadata: { ...session.userMetadata, role: "admin" },
-      });
-      redirect("/admin");
-    }
-
-    redirect(session.role ? dashboardForRole(session.role) : "/onboarding/pilih-peran");
-  }
-
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return {
@@ -123,35 +89,18 @@ export async function signInAction(
     };
   }
 
-  const role = data.user.user_metadata?.role;
-  if (isRole(role)) {
-    await logActivity({
-      userId: data.user.id,
-      role,
-      action: "auth.login",
-      entityType: "user",
-      entityId: data.user.id,
-      metadata: { method: "password", detail: "Pengguna berhasil masuk." },
-    });
-    redirect(dashboardForRole(role));
-  }
-
-  redirect("/onboarding/pilih-peran");
+  await supabase.rpc("record_current_login");
+  redirect("/auth/redirect");
 }
 
 export async function signInWithGoogleAction() {
-  if (isMvpAuthEnabled()) {
-    await createMvpSession("demo.google@pull.local", "Pengguna Google Demo");
-    redirect("/onboarding/pilih-peran");
-  }
-
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${siteUrl}/auth/confirm?next=/dashboard`,
+      redirectTo: `${siteUrl}/auth/confirm?next=/auth/redirect`,
     },
   });
 
@@ -163,26 +112,8 @@ export async function signInWithGoogleAction() {
 }
 
 export async function signOutAction() {
-  if (isMvpAuthEnabled()) {
-    await clearMvpSession();
-    redirect("/");
-  }
-
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.user_metadata?.role;
-
-  if (user && isRole(role)) {
-    await logActivity({
-      userId: user.id,
-      role,
-      action: "auth.logout",
-      entityType: "user",
-      entityId: user.id,
-      metadata: { detail: "Pengguna keluar dari sesi." },
-    });
-  }
-
+  await supabase.rpc("record_current_logout");
   await supabase.auth.signOut();
   redirect("/");
 }
@@ -215,11 +146,6 @@ export async function signUpAction(
       status: "error",
       message: "Kata sandi minimal 8 karakter.",
     };
-  }
-
-  if (isMvpAuthEnabled()) {
-    await createMvpSession(email, fullName);
-    redirect("/onboarding");
   }
 
   const supabase = await createClient();
@@ -264,8 +190,6 @@ export async function requestPasswordResetAction(
     };
   }
 
-  if (isMvpAuthEnabled()) redirect("/reset-password");
-
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -296,8 +220,6 @@ export async function verifyEmailOtpAction(
     };
   }
 
-  if (isMvpAuthEnabled()) redirect("/onboarding");
-
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({
     email,
@@ -326,10 +248,6 @@ export async function resendEmailOtpAction(
       status: "error",
       message: "Email tidak ditemukan. Silakan daftar ulang.",
     };
-  }
-
-  if (isMvpAuthEnabled()) {
-    return { status: "success", message: "Mode MVP aktif; verifikasi email dilewati." };
   }
 
   const supabase = await createClient();
@@ -365,8 +283,6 @@ export async function verifyResetOtpAction(
     };
   }
 
-  if (isMvpAuthEnabled()) redirect("/reset-password");
-
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({
     email,
@@ -395,10 +311,6 @@ export async function resendPasswordResetAction(
       status: "error",
       message: "Email tidak ditemukan. Silakan masukkan email ulang.",
     };
-  }
-
-  if (isMvpAuthEnabled()) {
-    return { status: "success", message: "Mode MVP aktif; email reset tidak diperlukan." };
   }
 
   const supabase = await createClient();
@@ -440,8 +352,6 @@ export async function updatePasswordAction(
       message: "Konfirmasi kata sandi belum sama.",
     };
   }
-
-  if (isMvpAuthEnabled()) redirect("/reset-success");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });

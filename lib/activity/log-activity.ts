@@ -1,19 +1,29 @@
 import "server-only";
 
-import { isIP } from "node:net";
-import { headers } from "next/headers";
 import { after } from "next/server";
-
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { isMvpAuthEnabled } from "@/lib/auth/mvp-session";
+import type { ActivityEventType } from "@/lib/activity/events";
+import type { AppRole } from "@/lib/auth/roles";
+import { createClient } from "@/lib/supabase/server";
 
 const MAX_SAFE_METADATA_BYTES = 1024;
 
 type ActivityMetadata = Record<string, unknown>;
+const EVENT_BY_ACTION: Record<string, ActivityEventType> = {
+  "auth.login": "auth.login_succeeded",
+  "auth.logout": "auth.logout",
+  "profile.update": "profile.updated",
+  "role.set": "role.changed",
+  "job.draft": "job.created",
+  "job.post": "job.published",
+  "job.apply": "application.submitted",
+  "pool.create": "pool.created",
+  "pool.join": "pool.joined",
+  "supplier.offer": "supplier.offer_created",
+};
 
 export type LogActivityInput = {
   userId: string;
-  role: string;
+  role: AppRole;
   action: string;
   entityType?: string;
   entityId?: string;
@@ -24,94 +34,58 @@ function sanitizeMetadata(metadata: ActivityMetadata): ActivityMetadata {
   const seen = new WeakSet<object>();
   const serialized = JSON.stringify(metadata, (_key, value: unknown) => {
     if (typeof value === "bigint") return value.toString();
-
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) return "[Circular]";
       seen.add(value);
     }
-
     return value;
   });
 
   if (!serialized) return {};
-
   const normalized = JSON.parse(serialized) as ActivityMetadata;
-  if (Buffer.byteLength(serialized, "utf8") <= MAX_SAFE_METADATA_BYTES) {
-    return normalized;
-  }
+  if (Buffer.byteLength(serialized, "utf8") <= MAX_SAFE_METADATA_BYTES) return normalized;
 
   const truncated: ActivityMetadata = { _truncated: true };
   for (const [key, value] of Object.entries(normalized)) {
     const candidate = { ...truncated, [key]: value };
-    if (
-      Buffer.byteLength(JSON.stringify(candidate), "utf8") <=
-      MAX_SAFE_METADATA_BYTES
-    ) {
+    if (Buffer.byteLength(JSON.stringify(candidate), "utf8") <= MAX_SAFE_METADATA_BYTES) {
       truncated[key] = value;
     }
   }
-
   return truncated;
 }
 
-function readClientIp(requestHeaders: Headers) {
-  const candidates = [
-    requestHeaders.get("cf-connecting-ip"),
-    requestHeaders.get("x-real-ip"),
-    requestHeaders.get("x-forwarded-for")?.split(",", 1)[0],
-  ];
-
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-    if (value && isIP(value)) return value;
-  }
-
-  return null;
-}
-
 export async function logActivity({
-  userId,
-  role,
   action,
   entityType,
   entityId,
   metadata = {},
 }: LogActivityInput): Promise<void> {
-  if (isMvpAuthEnabled()) return;
-
-  let ipAddress: string | null = null;
-  let userAgent: string | null = null;
-
-  try {
-    const requestHeaders = await headers();
-    ipAddress = readClientIp(requestHeaders);
-    userAgent = requestHeaders.get("user-agent")?.slice(0, 1024) ?? null;
-  } catch {
-    // Request headers tidak selalu tersedia di luar request lifecycle.
+  const eventType = EVENT_BY_ACTION[action];
+  if (!eventType) {
+    console.error(`Unsupported activity action: ${action}`);
+    return;
   }
 
-  try {
-    const safeMetadata = sanitizeMetadata(metadata);
-    after(async () => {
-      try {
-        const supabase = createServiceRoleClient();
-        const { error } = await supabase.from("activity_logs").insert({
-          user_id: userId,
-          role,
-          action: action.slice(0, 200),
-          entity_type: entityType ?? null,
-          entity_id: entityId ?? null,
-          metadata: safeMetadata,
-          ip: ipAddress,
-          user_agent: userAgent,
-        });
+  const safeMetadata = sanitizeMetadata(metadata);
+  const detail = typeof safeMetadata.detail === "string" && safeMetadata.detail.trim()
+    ? safeMetadata.detail.trim()
+    : action.replaceAll(".", " ");
 
-        if (error) console.error("Failed to write activity log", error);
-      } catch (error) {
-        console.error("Failed to write activity log", error);
-      }
-    });
-  } catch (error) {
-    console.error("Failed to schedule activity log", error);
-  }
+  after(async () => {
+    try {
+      const supabase = await createClient();
+      const { error } = await supabase.rpc("record_current_activity", {
+        activity_event_type: eventType,
+        activity_target_type: entityType ?? null,
+        activity_target_id: entityId ?? null,
+        activity_description: detail.slice(0, 500),
+        activity_metadata: safeMetadata,
+      });
+
+      if (error) console.error("Failed to write activity log", error);
+    } catch (error) {
+      console.error("Failed to write activity log", error);
+    }
+  });
 }

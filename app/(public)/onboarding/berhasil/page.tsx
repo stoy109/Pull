@@ -13,11 +13,7 @@ import {
 import { FaWhatsapp } from "react-icons/fa";
 import successIllustration from "@/public/Profile(Selesai).png";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getMvpSession,
-  isMvpAuthEnabled,
-  mvpSessionToUser,
-} from "@/lib/auth/mvp-session";
+import { parseOnboardingRole } from "@/lib/auth/roles";
 
 function readMetadataString(
   metadata: Record<string, unknown>,
@@ -72,7 +68,6 @@ function roleLabel(role: string) {
     return "Supplier";
   }
 
-  if (role === "admin") return "Admin / Panitia";
   return "Pemilik UMKM";
 }
 
@@ -121,11 +116,13 @@ export default async function OnboardingSuccessPage({
   searchParams,
 }: OnboardingSuccessPageProps) {
   const params = await searchParams;
-  const mvpSession = isMvpAuthEnabled() ? await getMvpSession() : null;
-  const user = mvpSession
-    ? mvpSessionToUser(mvpSession)
-    : (await (await createClient()).auth.getUser()).data.user;
-  const metadata = user?.user_metadata ?? {};
+  const { data: { user } } = await (await createClient()).auth.getUser();
+
+  if (!user) {
+    redirect("/register");
+  }
+
+  const metadata = user.user_metadata ?? {};
   const queryDisplayName = readSearchString(params, "displayName");
   const queryBusinessName = readSearchString(params, "businessName");
   const queryHeadline = readSearchString(params, "headline");
@@ -149,16 +146,17 @@ export default async function OnboardingSuccessPage({
     queryDeliveryArea,
   );
   const phone = readMetadataString(metadata, "phone", queryPhone);
-  const role = readMetadataString(metadata, "role", queryRole || "umkm");
+  const role =
+    parseOnboardingRole(readMetadataString(metadata, "role")) ??
+    parseOnboardingRole(queryRole) ??
+    "umkm";
   const isWorker = role === "pekerja";
   const isSupplier = role === "supplier";
   const dashboardHref = isWorker
     ? "/worker/dashboard"
     : isSupplier
       ? "/supplier"
-      : role === "admin"
-        ? "/admin"
-        : "/dashboard";
+      : "/dashboard";
   const profileParams = createProfileParams({
     role,
     displayName,

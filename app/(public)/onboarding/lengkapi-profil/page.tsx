@@ -1,9 +1,6 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getMvpSession,
-  isMvpAuthEnabled,
-  mvpSessionToUser,
-} from "@/lib/auth/mvp-session";
+import { parseOnboardingRole } from "@/lib/auth/roles";
 import { CompleteProfileForm } from "./profile-form";
 
 type LengkapiProfilPageProps = {
@@ -37,22 +34,15 @@ export default async function LengkapiProfilPage({
   searchParams,
 }: LengkapiProfilPageProps) {
   const params = await searchParams;
-  const mvpSession = isMvpAuthEnabled() ? await getMvpSession() : null;
-  const user = mvpSession
-    ? mvpSessionToUser(mvpSession)
-    : (await (await createClient()).auth.getUser()).data.user;
-  const metadata = user?.user_metadata ?? {};
-  const searchRole =
-    params.role === "pekerja"
-      ? "pekerja"
-      : params.role === "supplier"
-        ? "supplier"
-        : "umkm";
-  const metadataRole = readMetadataString(metadata, "role");
-  const role =
-    metadataRole === "pekerja" || metadataRole === "supplier" || metadataRole === "umkm"
-      ? metadataRole
-      : searchRole;
+  const { data: { user } } = await (await createClient()).auth.getUser();
+
+  if (!user) {
+    redirect("/register");
+  }
+
+  const metadata = user.user_metadata ?? {};
+  const searchRole = parseOnboardingRole(readSearchString(params.role)) ?? "umkm";
+  const role = parseOnboardingRole(readMetadataString(metadata, "role")) ?? searchRole;
   const displayName =
     readMetadataString(metadata, "display_name") ||
     readMetadataString(metadata, "full_name") ||

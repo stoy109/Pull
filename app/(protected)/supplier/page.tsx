@@ -1,158 +1,85 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Activity,
+  ArrowRight,
   Boxes,
-  CheckCircle2,
-  LayoutDashboard,
+  CalendarClock,
+  CircleAlert,
+  Clock3,
+  MapPin,
   PackageOpen,
+  ShieldCheck,
   Store,
+  TrendingUp,
 } from "lucide-react";
-import { createSupplierOfferAction } from "@/features/collaboration/actions";
-import { getSupplierActivities } from "@/features/dashboard/data/get-role-dashboard-data";
-import { requireRole } from "@/lib/auth/access";
-import { createClient } from "@/lib/supabase/server";
+import { getSupplierProfile } from "@/features/supplier/profile";
+import { requireRole } from "@/lib/auth/require-role";
+import { getSupplierDashboardData } from "@/lib/activity/queries";
+import supplierImage from "@/public/onboarding/roles/supplier.png";
 
-const SUPPLIER_NAV_ITEMS = [
-  { icon: Boxes, label: "Penawaran", href: "/supplier#offers" },
-  { icon: Activity, label: "Aktivitas", href: "/supplier#activity" },
-  { icon: Store, label: "Profil Supplier", href: "/supplier#profile" },
-];
-
-function readMetadata(metadata: Record<string, unknown>, key: string, fallback: string) {
-  const value = metadata[key];
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+function formatValue(value: string | number) {
+  return typeof value === "number" ? new Intl.NumberFormat("id-ID").format(value) : value;
 }
 
-function formatRupiah(value: number | string | null) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-export default async function SupplierDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ success?: string; error?: string }>;
-}) {
+export default async function SupplierPage() {
   const { user } = await requireRole(["supplier"]);
-  const params = await searchParams;
-  const supabase = await createClient();
-  const [{ data: offers }, activities] = await Promise.all([
-    supabase
-      .from("supplier_offers")
-      .select("id,item_name,unit,unit_price,status")
-      .eq("supplier_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(10),
-    getSupplierActivities(user.id),
-  ]);
-  const metadata = user.user_metadata ?? {};
-  const ownerName = readMetadata(metadata, "display_name", "Mitra Supplier");
-  const businessName = readMetadata(metadata, "business_name", "Supplier Pull");
-  const offerRows = offers ?? [];
-  const activeOffers = offerRows.filter((offer) => offer.status === "active").length;
+  const data = await getSupplierDashboardData();
+  const profile = getSupplierProfile(user.user_metadata ?? {}, user.email ?? "");
+  const firstName = profile.displayName.split(" ")[0];
+  const metrics = [
+    { label: "Demand aktif", value: data.activeDemands, detail: "Kebutuhan masih terbuka", icon: PackageOpen, tone: "bg-[#e7f4df] text-[#07833f]" },
+    { label: "UMKM membutuhkan pasokan", value: data.requestingUmkm, detail: "Calon mitra tersedia", icon: Store, tone: "bg-[#e7f4df] text-[#07833f]" },
+    { label: "Kategori komoditas", value: data.categories, detail: "Ragam kebutuhan jaringan", icon: Boxes, tone: "bg-[#e9f2ff] text-[#0868d7]" },
+    { label: "Menunggu respons", value: data.awaitingConfirmation, detail: "Perlu ditindaklanjuti", icon: Clock3, tone: "bg-[#fff0df] text-[#e87513]" },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#f7f6f1] text-[#1f3029]">
-      <aside className="fixed inset-y-0 left-0 hidden w-60 bg-[#43331e] px-5 py-7 text-white lg:block">
-        <Link href="/supplier" className="flex items-center gap-3 px-2">
-          <Image src="/Logo(Pull).svg" alt="Pull" width={40} height={40} className="rounded-xl" priority />
-          <div>
-            <p className="text-xl font-extrabold">Pull</p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#f2d8a6]">Supplier Space</p>
-          </div>
-        </Link>
-        <nav className="mt-9 space-y-2" aria-label="Navigasi Supplier">
-          <Link href="/supplier" className="flex min-h-11 items-center gap-3 rounded-xl bg-[#d69238] px-3 text-sm font-extrabold">
-            <LayoutDashboard className="h-4 w-4" /> Dashboard
-          </Link>
-          {SUPPLIER_NAV_ITEMS.map(({ icon: Icon, label, href }) => (
-            <Link key={label} href={href} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.07] hover:text-white">
-              <Icon className="h-4 w-4" /> {label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+    <>
+      <section className="relative z-20 mb-5 overflow-hidden rounded-[20px] border border-[#dfeae2] bg-[#fffefa] shadow-[0_8px_30px_rgba(18,59,48,.035)] sm:min-h-[270px]">
+        <div className="relative z-10 px-5 py-7 sm:min-h-[270px] sm:max-w-[56%] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#507f63]">Radar kebutuhan Solo Raya</p>
+          <h2 className="mt-4 font-[family-name:var(--font-worker-display)] text-[27px] font-semibold leading-[1.1] tracking-[-0.04em] text-[#0c261c] sm:text-[32px]">Selamat datang kembali, {firstName}! <span aria-hidden="true">👋</span></h2>
+          <p className="mt-5 max-w-[450px] text-sm font-medium leading-7 text-[#38694e] sm:text-[15px]">Temukan kebutuhan yang cocok dengan stokmu dan respons sebelum tenggat pool berakhir.</p>
+          <Link href="/supplier/demands" className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#08783f] px-5 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(7,150,77,.18)] transition hover:bg-[#00613f]">Lihat {data.awaitingConfirmation} peluang <ArrowRight className="h-4 w-4" /></Link>
+        </div>
+        <div className="relative h-56 sm:absolute sm:inset-y-0 sm:right-1 sm:h-auto sm:w-[48%]">
+          <Image src={supplierImage} alt="Supplier memeriksa persediaan bahan baku" fill priority sizes="(min-width: 640px) 48vw, 100vw" className="object-contain object-bottom sm:object-right-bottom" />
+        </div>
+      </section>
 
-      <main className="mx-auto max-w-6xl px-5 py-7 sm:px-8 sm:py-10 lg:ml-60">
-        <section id="profile" className="scroll-mt-24 rounded-[24px] border border-[#ead7b9] bg-[linear-gradient(120deg,#fffaf0_0%,#f8ebd2_100%)] p-6 sm:p-8">
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#a26822]">Ruang supplier</p>
-          <h2 className="mt-3 text-3xl font-extrabold text-[#3c2c19]">Halo, {ownerName}</h2>
-          <p className="mt-3 max-w-2xl text-sm font-medium leading-7 text-[#74644f]">
-            Kelola penawaran bahan untuk {businessName}. Data tersimpan di Supabase dan aktivitasnya terbaca oleh Administrator.
-          </p>
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 space-y-5 xl:col-span-9">
+          <section className="flex min-h-[124px] flex-col gap-4 rounded-[18px] border border-[#f5c38e] bg-[linear-gradient(100deg,#fffaf3_0%,#fff3e5_100%)] p-5 shadow-[0_8px_28px_rgba(197,104,28,.055)] sm:flex-row sm:items-center sm:gap-5 sm:p-6">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#f47b0c] text-white shadow-[0_8px_18px_rgba(244,123,12,.22)]"><CircleAlert className="h-7 w-7" /></span>
+            <div className="min-w-0 flex-1"><h2 className="text-base font-extrabold text-[#0c261c]">{data.awaitingConfirmation} pool menunggu respons supplier</h2><p className="mt-1.5 text-xs font-medium leading-5 text-[#507f63] sm:text-[13px]">Prioritaskan kebutuhan dengan tenggat terdekat, lalu konfirmasi kemampuan pasokmu.</p></div>
+            <Link href="/supplier/demands" className="inline-flex h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#07964d] px-6 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(7,150,77,.18)] transition hover:bg-[#087d44]">Tinjau demand <ArrowRight className="h-4 w-4" /></Link>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan supplier">
+            {metrics.map((metric) => {
+              const Icon = metric.icon;
+              return <article key={metric.label} className="flex min-h-[184px] flex-col rounded-[18px] border border-[#dfeae2] bg-white p-5 shadow-[0_8px_24px_rgba(18,59,48,.025)]"><div className="flex items-start gap-3.5"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-[13px] ${metric.tone}`}><Icon className="h-[22px] w-[22px]" /></span><div className="min-w-0 pt-0.5"><p className="text-[11px] font-extrabold leading-4 text-[#28543e]">{metric.label}</p><strong className="mt-2 block font-[family-name:var(--font-worker-display)] text-[32px] font-semibold leading-none tracking-[-0.04em] text-[#0c261c]">{formatValue(metric.value)}</strong></div></div><p className="mt-auto flex items-center gap-1.5 pt-5 text-[10px] font-semibold leading-5 text-[#6e9b7d]"><TrendingUp className="h-3.5 w-3.5" /> {metric.detail}</p></article>;
+            })}
+          </section>
+        </div>
+
+        <section className="col-span-12 flex min-h-[348px] flex-col rounded-[18px] border border-[#dfeae2] bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.035)] sm:p-6 xl:col-span-3">
+          <h2 className="flex items-center gap-2 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.025em] text-[#0c261c]"><ShieldCheck className="h-5 w-5 fill-[#087a41] text-white" /> Kesiapan Supplier</h2>
+          <div className="relative mx-auto mt-5 grid h-44 w-44 place-items-center rounded-full" style={{ background: `conic-gradient(#07833f 0 ${profile.profileCompletion}%, #edf1ee ${profile.profileCompletion}% 100%)` }} role="img" aria-label={`Profil supplier ${profile.profileCompletion} persen lengkap`}><div className="grid h-[138px] w-[138px] place-content-center rounded-full bg-white text-center"><strong className="font-[family-name:var(--font-worker-display)] text-[44px] font-semibold tracking-[-0.06em] text-[#0c261c]">{profile.profileCompletion}%</strong><span className="mt-1 text-[10px] font-extrabold text-[#28543e]">Profil siap</span></div></div>
+          <p className="mt-5 text-center text-[10px] font-medium leading-5 text-[#6e9b7d]">Profil lengkap membantu UMKM menilai kesiapan dan jangkauan pasok {profile.businessName}.</p>
+          <Link href="/supplier/profile" className="mt-auto inline-flex h-11 w-full items-center justify-center rounded-xl border border-[#b9dcc8] bg-white text-[11px] font-extrabold text-[#087a41] transition hover:border-[#78b994] hover:bg-[#f5fbf7]">Lihat profil supplier</Link>
         </section>
+      </div>
 
-        <section className="mt-6 grid gap-3 sm:grid-cols-3">
-          <article className="rounded-[18px] border border-[#e5dfd2] bg-white p-5">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8c704d]">Total penawaran</p>
-            <p className="mt-2 text-3xl font-extrabold">{offerRows.length}</p>
-          </article>
-          <article className="rounded-[18px] border border-[#e5dfd2] bg-white p-5">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8c704d]">Penawaran aktif</p>
-            <p className="mt-2 text-3xl font-extrabold">{activeOffers}</p>
-          </article>
-          <article className="rounded-[18px] border border-[#e5dfd2] bg-white p-5">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8c704d]">Aktivitas tercatat</p>
-            <p className="mt-2 text-3xl font-extrabold">{activities.length}</p>
-          </article>
-        </section>
+      <section className="mt-5 rounded-[18px] border border-[#dfeae2] bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.03)] sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#507f63]">Peluang terbaru</p><h2 className="mt-1.5 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.025em]">Demand yang perlu ditinjau</h2></div><Link href="/supplier/demands" className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#08783f]">Lihat semua <ArrowRight className="h-3.5 w-3.5" /></Link></div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {data.pools.slice(0, 3).map((pool) => <Link key={pool.id} href="/supplier/demands" className="group rounded-[16px] border border-[#dfeae2] p-4 transition hover:-translate-y-0.5 hover:border-[#b9d5c4] hover:shadow-sm"><div className="flex items-start justify-between gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e8f5ec] text-[#08783f]"><PackageOpen className="h-4.5 w-4.5" /></span><CalendarClock className="h-4 w-4 text-[#e87513]" /></div><h3 className="mt-4 text-sm font-extrabold text-[#1d4634] group-hover:text-[#08783f]">{pool.commodity}</h3><p className="mt-2 text-[10px] font-semibold text-[#6e9b7d]">{formatValue(pool.volume)} {pool.unit || "unit"}</p><p className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-[#507f63]"><MapPin className="h-3.5 w-3.5" />{pool.location || "Solo Raya"}</p></Link>)}
+          {!data.pools.length ? <p className="col-span-full py-8 text-center text-xs font-semibold text-[#6e9b7d]">Belum ada demand yang perlu ditinjau.</p> : null}
+        </div>
+      </section>
 
-        <section id="offers" className="mt-6 grid scroll-mt-24 gap-5 xl:grid-cols-[.8fr_1.2fr]">
-          <form action={createSupplierOfferAction} className="rounded-[20px] border border-[#e5dfd2] bg-white p-5 shadow-sm">
-            <Boxes className="h-5 w-5 text-[#bd7828]" />
-            <h2 className="mt-4 text-lg font-extrabold">Buat penawaran supplier</h2>
-            {params.success ? <p className="mt-3 rounded-xl bg-[#eef8ed] p-3 text-xs font-bold text-[#47772f]">Penawaran berhasil disimpan.</p> : null}
-            {params.error ? <p className="mt-3 rounded-xl bg-[#fff0f0] p-3 text-xs font-bold text-[#b43e48]">Periksa data penawaran.</p> : null}
-            <input name="itemName" required minLength={3} maxLength={100} placeholder="Nama bahan, mis. Minyak Goreng" className="mt-4 h-11 w-full rounded-xl border border-[#e1d8ca] px-4 text-xs" />
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <input name="unit" required maxLength={30} placeholder="Satuan (karton)" className="h-11 rounded-xl border border-[#e1d8ca] px-4 text-xs" />
-              <input name="unitPrice" required type="number" min="1" step="100" placeholder="Harga/satuan" className="h-11 rounded-xl border border-[#e1d8ca] px-4 text-xs" />
-            </div>
-            <button className="mt-4 h-11 w-full rounded-xl bg-[#b87427] text-xs font-extrabold text-white">Simpan penawaran</button>
-          </form>
-
-          <div className="rounded-[20px] border border-[#e5dfd2] bg-white p-5">
-            <h2 className="text-lg font-extrabold">Penawaran aktif ({offerRows.length})</h2>
-            <div className="mt-4 space-y-3">
-              {offerRows.length ? offerRows.map((offer) => (
-                <article key={offer.id} className="flex items-center justify-between gap-4 rounded-xl border border-[#eee5d8] p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f7ead9] text-[#a7651e]">
-                      <PackageOpen className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-extrabold">{offer.item_name}</p>
-                      <p className="mt-1 text-[10px] text-[#796954]">Per {offer.unit}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm font-extrabold text-[#a7651e]">{formatRupiah(offer.unit_price)}</p>
-                </article>
-              )) : <p className="py-10 text-center text-xs text-[#7c6f5c]">Belum ada penawaran database.</p>}
-            </div>
-          </div>
-        </section>
-
-        <section id="activity" className="mt-6 scroll-mt-24 rounded-[20px] border border-[#e5dfd2] bg-white p-5 sm:p-6">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#9b6b2c]">Data Supabase</p>
-          <h2 className="mt-1 text-lg font-extrabold">Aktivitas Supplier terbaru</h2>
-          <div className="mt-4 divide-y divide-[#eee5d8]">
-            {activities.length ? activities.map((activity) => (
-              <article key={activity.id} className="flex items-start justify-between gap-4 py-4">
-                <div>
-                  <p className="text-xs font-extrabold">{activity.title}</p>
-                  <p className="mt-1 text-[10px] leading-5 text-[#796954]">{activity.detail}</p>
-                </div>
-                <time className="shrink-0 text-[9px] font-bold text-[#9b8060]">{activity.time}</time>
-              </article>
-            )) : <p className="py-10 text-center text-xs text-[#7c6f5c]">Belum ada aktivitas database.</p>}
-          </div>
-        </section>
-      </main>
-    </div>
+      <footer className="mt-8 flex flex-col gap-2 border-t border-[#dfeae2] pt-5 text-[9px] font-semibold text-[#6e9b7d] sm:flex-row sm:items-center sm:justify-between"><p>Pull Supplier Space · Mempertemukan pasokan dengan kebutuhan usaha lokal</p><p>Data demand menyesuaikan pool aktif di jaringan Pull</p></footer>
+    </>
   );
 }

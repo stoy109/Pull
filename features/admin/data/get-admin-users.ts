@@ -1,6 +1,5 @@
 import "server-only";
 
-import { isMvpAuthEnabled } from "@/lib/auth/mvp-session";
 import { parseAppRole, type AppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
@@ -70,36 +69,6 @@ export function normalizeAdminUserFilters(input: {
 }
 
 export async function getAdminUsers(filters: AdminUserFilters): Promise<AdminUsersData> {
-  if (isMvpAuthEnabled()) {
-    const now = Date.now();
-    const demoUsers: AdminUserRow[] = [
-      { id: "00000000-0000-4000-8000-000000000001", email: "admin@pull.demo", displayName: "Admin Pull", businessName: null, role: "admin", accountStatus: "active", lastActiveAt: new Date(now - 2 * 60_000).toISOString(), activitiesToday: 2, createdAt: new Date(now - 120 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000002", email: "dapur@pull.demo", displayName: "Sari Wulandari", businessName: "Dapur Sari", role: "umkm", accountStatus: "active", lastActiveAt: new Date(now - 8 * 60_000).toISOString(), activitiesToday: 1, createdAt: new Date(now - 90 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000003", email: "batik@pull.demo", displayName: "Ayu Lestari", businessName: "Batik Laweyan", role: "umkm", accountStatus: "active", lastActiveAt: new Date(now - 65 * 60_000).toISOString(), activitiesToday: 1, createdAt: new Date(now - 75 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000004", email: "dimas@pull.demo", displayName: "Dimas Pratama", businessName: null, role: "pekerja", accountStatus: "active", lastActiveAt: new Date(now - 18 * 60_000).toISOString(), activitiesToday: 1, createdAt: new Date(now - 40 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000005", email: "rina@pull.demo", displayName: "Rina Puspita", businessName: null, role: "pekerja", accountStatus: "active", lastActiveAt: new Date(now - 95 * 60_000).toISOString(), activitiesToday: 1, createdAt: new Date(now - 32 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000006", email: "solo-supply@pull.demo", displayName: "Budi Santoso", businessName: "Solo Supply", role: "supplier", accountStatus: "active", lastActiveAt: new Date(now - 27 * 60_000).toISOString(), activitiesToday: 1, createdAt: new Date(now - 60 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000007", email: "mitra-bahan@pull.demo", displayName: "Nina Kartika", businessName: "Mitra Bahan Solo", role: "supplier", accountStatus: "active", lastActiveAt: new Date(now - 210 * 60_000).toISOString(), activitiesToday: 1, createdAt: new Date(now - 28 * 86_400_000).toISOString() },
-      { id: "00000000-0000-4000-8000-000000000008", email: "review@pull.demo", displayName: "Akun Review", businessName: "UMKM Review", role: "umkm", accountStatus: "suspended", lastActiveAt: new Date(now - 14 * 86_400_000).toISOString(), activitiesToday: 0, createdAt: new Date(now - 20 * 86_400_000).toISOString() },
-    ];
-    const query = filters.query.toLowerCase();
-    const filtered = demoUsers.filter((user) =>
-      (!filters.role || user.role === filters.role) &&
-      (!filters.status || user.accountStatus === filters.status) &&
-      (!query || [user.email, user.displayName, user.businessName]
-        .some((value) => value?.toLowerCase().includes(query)))
-    );
-    const pageSize = 10;
-    const offset = (filters.page - 1) * pageSize;
-
-    return {
-      total: filtered.length,
-      page: filters.page,
-      pageSize,
-      users: filtered.slice(offset, offset + pageSize),
-    };
-  }
-
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_admin_users", {
     search_query: filters.query || null,

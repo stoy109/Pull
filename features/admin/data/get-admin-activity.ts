@@ -1,8 +1,6 @@
 import "server-only";
 
 import { parseActivityStatus, type ActivityStatus } from "@/lib/activity/events";
-import { getRecentActivities } from "@/lib/activity/queries";
-import { isMvpAuthEnabled } from "@/lib/auth/mvp-session";
 import { parseAppRole, type AppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
@@ -83,59 +81,6 @@ export function normalizeAdminActivityFilters(input: {
 }
 
 export async function getAdminActivity(filters: AdminActivityFilters): Promise<AdminActivityData> {
-  if (isMvpAuthEnabled()) {
-    const eventMap: Record<string, { eventType: string; category: string }> = {
-      "auth.login": { eventType: "auth.login_succeeded", category: "authentication" },
-      "job.apply": { eventType: "application.submitted", category: "recruitment" },
-      "job.post": { eventType: "job.published", category: "recruitment" },
-      "pool.create": { eventType: "pool.created", category: "pool" },
-      "profile.update": { eventType: "profile.updated", category: "account" },
-      "supplier.offer": { eventType: "supplier.offer_created", category: "supplier" },
-    };
-    const demoActivities = await getRecentActivities({
-      limit: 100,
-      roleFilter: filters.role,
-      range: filters.days === 30 ? "30d" : "7d",
-    });
-    const query = filters.query.toLowerCase();
-    const filtered = demoActivities.map((activity): AdminActivityRow => {
-      const presentation = eventMap[activity.action] ?? {
-        eventType: activity.action,
-        category: "system",
-      };
-      return {
-        id: activity.id,
-        actorId: activity.user_id,
-        actorName: activity.actorName,
-        actorEmail: null,
-        actorRole: activity.role,
-        eventType: presentation.eventType,
-        category: presentation.category,
-        targetType: activity.entity_type,
-        targetId: activity.entity_id,
-        description: activity.detail || "Aktivitas sistem",
-        status: "success",
-        createdAt: activity.created_at,
-      };
-    }).filter((activity) =>
-      (!filters.status || activity.status === filters.status) &&
-      (!query || [activity.actorName, activity.eventType, activity.description, activity.targetId]
-        .some((value) => value?.toLowerCase().includes(query)))
-    );
-    const pageSize = 20;
-    const offset = (filters.page - 1) * pageSize;
-
-    return {
-      total: filtered.length,
-      successCount: filtered.filter((activity) => activity.status === "success").length,
-      attentionCount: filtered.filter((activity) => activity.status !== "success").length,
-      uniqueActors: new Set(filtered.map((activity) => activity.actorId).filter(Boolean)).size,
-      page: filters.page,
-      pageSize,
-      activities: filtered.slice(offset, offset + pageSize),
-    };
-  }
-
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_admin_activity_page", {
     period_days: filters.days,

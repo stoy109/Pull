@@ -57,6 +57,26 @@ if (cases.some(({ email, password }) => !email || !password)) {
   throw new Error("Isi kredensial role atau ADMIN_TEMP_PASSWORD sebelum menjalankan verifikasi.");
 }
 
+const supplierDemandMetadataKeys = new Set([
+  "pool_id",
+  "product_name",
+  "item_name",
+  "commodity",
+  "name",
+  "category",
+  "target_quantity",
+  "quantity",
+  "volume",
+  "current_quantity",
+  "unit",
+  "district",
+  "location",
+  "status",
+  "deadline_at",
+  "deadline",
+  "pool_leader",
+  "whatsapp_masked",
+]);
 const verified = [];
 for (const testCase of cases) {
   const client = createClient(supabaseUrl, publishableKey, clientOptions);
@@ -83,8 +103,18 @@ for (const testCase of cases) {
   const { error: dashboardError } = await dashboardQuery;
   if (dashboardError) throw new Error(`Data dashboard ${testCase.role} tidak dapat dibaca.`);
 
+  const { data: supplierDemands, error: supplierDemandError } = await client.rpc("get_supplier_demands");
+  if (testCase.role === "supplier") {
+    if (supplierDemandError || !Array.isArray(supplierDemands)) throw new Error("Supplier tidak dapat membaca demand.");
+    if (supplierDemands.some((demand) => Object.keys(demand.metadata ?? {}).some((key) => !supplierDemandMetadataKeys.has(key)))) {
+      throw new Error("Demand supplier memuat metadata yang tidak diizinkan.");
+    }
+  } else if (!supplierDemandError) {
+    throw new Error(`${testCase.role} dapat membaca demand supplier.`);
+  }
+
   await client.auth.signOut({ scope: "local" });
   verified.push(testCase.role);
 }
 
-console.log(JSON.stringify({ verifiedRoles: verified, adminMonitoringDenied: true, crossRoleActionsDenied: true, ownActivityReadable: true, roleDashboardsReadable: true }));
+console.log(JSON.stringify({ verifiedRoles: verified, adminMonitoringDenied: true, crossRoleActionsDenied: true, ownActivityReadable: true, roleDashboardsReadable: true, supplierDemandBoundariesVerified: true }));

@@ -1,10 +1,5 @@
 import { applyJobAction } from "@/features/activity/actions";
 import { getRecentActivities } from "@/lib/activity/queries";
-import {
-  getMvpSession,
-  isMvpAuthEnabled,
-  mvpSessionToUser,
-} from "@/lib/auth/mvp-session";
 import { createClient } from "@/lib/supabase/server";
 
 const noStoreHeaders = { "Cache-Control": "no-store, max-age=0" };
@@ -12,20 +7,13 @@ const noStoreHeaders = { "Cache-Control": "no-store, max-age=0" };
 export const dynamic = "force-dynamic";
 
 async function getWorkerUser() {
-  if (isMvpAuthEnabled()) {
-    const session = await getMvpSession();
-    if (!session) return { user: null, status: 401, mvp: true };
-    if (session.role !== "pekerja") return { user: null, status: 403, mvp: true };
-    return { user: mvpSessionToUser(session), status: 200, mvp: true };
-  }
-
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { user: null, status: 401, mvp: false };
+  if (error || !user) return { user: null, status: 401 };
   if (user.user_metadata?.role !== "pekerja") {
-    return { user: null, status: 403, mvp: false };
+    return { user: null, status: 403 };
   }
-  return { user, status: 200, mvp: false };
+  return { user, status: 200 };
 }
 
 export async function GET() {
@@ -38,11 +26,10 @@ export async function GET() {
   }
 
   try {
-    const activities = await getRecentActivities(
-      auth.mvp
-        ? { roleFilter: "pekerja", limit: 50 }
-        : { userIdFilter: auth.user.id, limit: 50 },
-    );
+    const activities = await getRecentActivities({
+      userIdFilter: auth.user.id,
+      limit: 50,
+    });
     return Response.json(activities, { headers: noStoreHeaders });
   } catch {
     return Response.json(

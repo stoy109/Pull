@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/access";
-import { isMvpAuthEnabled } from "@/lib/auth/mvp-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserStatusActionState = {
@@ -32,15 +31,6 @@ export async function setUserStatusAction(
 
   if (requestedStatus !== "active" && requestedStatus !== "suspended") {
     return { status: "error", message: "Status akun tidak valid." };
-  }
-
-  if (isMvpAuthEnabled()) {
-    return {
-      status: "success",
-      message: requestedStatus === "suspended"
-        ? "Simulasi MVP: akun ditangguhkan."
-        : "Simulasi MVP: akun diaktifkan.",
-    };
   }
 
   const supabase = await createClient();

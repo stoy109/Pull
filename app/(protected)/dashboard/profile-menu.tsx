@@ -18,6 +18,10 @@ type ProfileMenuProps = {
   initials: string;
   ownerName: string;
   profileCompletion: number;
+  profileHref?: string;
+  activityHref?: string;
+  activityLabel?: string;
+  completionLabel?: string;
 };
 
 function SignOutButton() {
@@ -40,6 +44,10 @@ export function ProfileMenu({
   initials,
   ownerName,
   profileCompletion,
+  profileHref = "/dashboard/profile",
+  activityHref = "/dashboard/activity",
+  activityLabel = "Aktivitas",
+  completionLabel = "profil bisnis",
 }: ProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -84,7 +92,7 @@ export function ProfileMenu({
             {ownerName}
           </span>
           <span className="mt-1 block whitespace-nowrap text-xs font-medium leading-tight text-[#69756f]">
-            {profileCompletion}% profil bisnis lengkap
+            {profileCompletion}% {completionLabel} lengkap
           </span>
         </span>
         <ChevronDown
@@ -119,8 +127,8 @@ export function ProfileMenu({
 
           <div className="mt-6">
             <div className="flex items-center justify-between gap-3 text-[10px] font-extrabold">
-              <span className="text-[#2f3e38]">{profileCompletion}% profil lengkap</span>
-              <Link href="/dashboard/profile" onClick={() => setIsOpen(false)} className="inline-flex items-center gap-1 whitespace-nowrap text-[#16844c] transition hover:text-[#086f3a]">
+              <span className="text-[#2f3e38]">{profileCompletion}% {completionLabel} lengkap</span>
+              <Link href={profileHref} onClick={() => setIsOpen(false)} className="inline-flex items-center gap-1 whitespace-nowrap text-[#16844c] transition hover:text-[#086f3a]">
                 Lengkapi profil <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -136,7 +144,7 @@ export function ProfileMenu({
             <p className="mb-2 text-[9px] font-extrabold uppercase text-[#65736e]">Menu lainnya</p>
             <nav className="space-y-1" aria-label="Menu profil">
               {[
-                { label: "Aktivitas", href: "/dashboard/activity", icon: History },
+                { label: activityLabel, href: activityHref, icon: History },
               ].map((item) => {
                 const Icon = item.icon;
 

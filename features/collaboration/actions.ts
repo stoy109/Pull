@@ -48,12 +48,12 @@ export async function createSupplierOfferAction(formData: FormData) {
   const itemName = field(formData, "itemName", 100);
   const unit = field(formData, "unit", 30);
   const unitPrice = Number(field(formData, "unitPrice", 20));
-  if (itemName.length < 3 || !unit || !Number.isFinite(unitPrice) || unitPrice <= 0) redirect("/supplier?error=validation");
+  if (itemName.length < 3 || !unit || !Number.isFinite(unitPrice) || unitPrice <= 0) redirect("/supplier/offers?error=validation");
   const supabase = await createClient();
   const { error } = await supabase.rpc("create_supplier_offer", { offer_item_name: itemName, offer_unit: unit, offer_unit_price: unitPrice });
-  if (error) redirect("/supplier?error=save");
-  revalidatePath("/supplier");
+  if (error) redirect("/supplier/offers?error=save");
+  revalidatePath("/supplier/offers");
   revalidatePath("/admin");
   revalidatePath("/admin/impact");
-  redirect("/supplier?success=1");
+  redirect("/supplier/offers?success=1");
 }
