@@ -12,7 +12,6 @@ import {
   IdCard,
   LogOut,
   MapPin,
-  RotateCcw,
   Save,
   SlidersHorizontal,
   Smartphone,
@@ -50,14 +49,6 @@ function SignOutButton() {
 }
 
 function SettingsNavigation({ activeSection }: { activeSection: SettingsSection }) {
-  const [resetNotice, setResetNotice] = useState("");
-
-  useEffect(() => {
-    if (!resetNotice) return;
-    const timeout = window.setTimeout(() => setResetNotice(""), 2400);
-    return () => window.clearTimeout(timeout);
-  }, [resetNotice]);
-
   return (
     <aside className="overflow-hidden rounded-[18px] border border-[#dce5e0] bg-white p-2 shadow-[0_8px_26px_rgba(16,66,45,.025)] lg:p-3">
       <nav className="grid grid-cols-3 lg:grid-cols-1" aria-label="Bagian pengaturan">
@@ -80,14 +71,6 @@ function SettingsNavigation({ activeSection }: { activeSection: SettingsSection 
       <form action={signOutAction}>
         <SignOutButton />
       </form>
-      <button
-        type="button"
-        onClick={() => setResetNotice("Data demo pengaturan dikembalikan.")}
-        className="mt-1 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-[10px] font-extrabold text-[#697a73] transition hover:bg-[#f3f6f4] hover:text-[#34473e] lg:justify-start lg:gap-4 lg:px-4 lg:text-xs"
-      >
-        <RotateCcw className="h-[18px] w-[18px]" /> Reset data demo
-      </button>
-      {resetNotice ? <p className="px-3 pb-2 text-[9px] font-bold text-[#08783f] lg:px-4">{resetNotice}</p> : null}
     </aside>
   );
 }

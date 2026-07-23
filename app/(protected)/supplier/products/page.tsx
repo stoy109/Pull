@@ -47,20 +47,20 @@ export default async function SupplierProductsPage({ searchParams }: { searchPar
   return (
     <>
       <ActionNotice result={params.result} />
-      {!verified ? <p className="mb-5 rounded-xl border border-[#efd8ad] bg-[#fff8e9] px-4 py-3 text-xs font-bold text-[#76581c]">Katalog dapat dikelola setelah KYC NIB/SIUP disetujui. <a href="/supplier/store" className="font-extrabold text-[#087447] underline">Buka verifikasi</a>.</p> : null}
+      {!verified ? <p className="mb-5 rounded-xl border border-[#efd8ad] bg-[#fff8e9] px-4 py-3 text-xs font-bold text-[#76581c]">Katalog tetap dapat dikelola. Verifikasi KYC diperlukan untuk mengirim penawaran dan memproses pesanan. <a href="/supplier/store" className="font-extrabold text-[#087447] underline">Buka verifikasi</a>.</p> : null}
       <section className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Total katalog" value={formatNumber(workspace.products.length)} detail="Produk milik akun supplier" icon={Package} />
         <StatCard label="Produk aktif" value={formatNumber(active.length)} detail="Saat ini dapat dipilih untuk order" icon={Boxes} />
         <StatCard label="Peringatan stok" value={formatNumber(warnings.length)} detail="Stok berada pada atau di bawah MOQ" icon={TriangleAlert} tone={warnings.length ? "orange" : "green"} />
       </section>
 
-      {verified ? <details className={`${cardClass} group mt-5 p-5 sm:p-6`}>
+      <details className={`${cardClass} group mt-5 p-5 sm:p-6`}>
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#08783f]">
           <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-[13px] bg-[#e8f5ec] text-[#08783f]"><PackagePlus className="h-5 w-5" /></span><div><p className="text-[9px] font-extrabold uppercase tracking-[.16em] text-[#507f63]">Katalog</p><h2 className="mt-1 text-lg font-extrabold text-[#163c2b]">Tambah produk</h2></div></div>
           <ChevronDown className="h-5 w-5 text-[#507f63] transition group-open:rotate-180" />
         </summary>
         <form action={upsertSupplierProductAction} className="mt-6 border-t border-[#e3ece6] pt-5"><ProductFields /></form>
-      </details> : null}
+      </details>
 
       <section className={`${cardClass} mt-5 p-5 sm:p-6`}>
         <SectionHeading eyebrow="Katalog supplier" title="Produk tersimpan" description={`Total stok tercatat ${formatNumber(stockTotal)} dalam satuan produk masing-masing.`} />
@@ -73,7 +73,7 @@ export default async function SupplierProductsPage({ searchParams }: { searchPar
                   <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-[.1em] text-[#6b7b75]">{product.category || "Tanpa kategori"}</p><h3 className="mt-1.5 truncate text-base font-extrabold text-[#163c2b]">{product.itemName}</h3></div><StatusBadge status={product.status} /></div>
                   <dl className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">Harga</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatCurrency(product.unitPrice)}</dd></div><div className={`rounded-xl p-3 ${warning ? "bg-[#fff0df]" : "bg-white"}`}><dt className="text-[9px] font-bold text-[#6b7b75]">Stok</dt><dd className={`mt-1 text-xs font-extrabold ${warning ? "text-[#b35e16]" : "text-[#163c2b]"}`}>{formatNumber(product.stockQuantity)} {product.unit}</dd></div><div className="rounded-xl bg-white p-3"><dt className="text-[9px] font-bold text-[#6b7b75]">MOQ</dt><dd className="mt-1 text-xs font-extrabold text-[#163c2b]">{formatNumber(product.minOrderQuantity)} {product.unit}</dd></div></dl>
                   {product.description ? <p className="mt-4 text-[10px] font-medium leading-5 text-[#6b7b75]">{product.description}</p> : null}
-                  {verified ? <details className="group/edit mt-4 border-t border-[#e3ece6] pt-4"><summary className="flex cursor-pointer list-none items-center justify-between text-xs font-extrabold text-[#08783f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#08783f]">Edit produk <ChevronDown className="h-4 w-4 transition group-open/edit:rotate-180" /></summary><form action={upsertSupplierProductAction} className="mt-5"><ProductFields product={product} /></form></details> : null}
+                  <details className="group/edit mt-4 border-t border-[#e3ece6] pt-4"><summary className="flex cursor-pointer list-none items-center justify-between text-xs font-extrabold text-[#08783f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#08783f]">Edit produk <ChevronDown className="h-4 w-4 transition group-open/edit:rotate-180" /></summary><form action={upsertSupplierProductAction} className="mt-5"><ProductFields product={product} /></form></details>
                 </article>
               );
             })}

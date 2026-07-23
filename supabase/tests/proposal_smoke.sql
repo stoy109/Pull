@@ -73,6 +73,17 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002
 select public.join_pool(:'pool_id', 10);
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);
+select public.upsert_supplier_product(
+  'Tepung Uji',
+  'kg',
+  9000,
+  100,
+  5,
+  'Bahan baku',
+  'Katalog supplier sebelum verifikasi.',
+  'active',
+  null
+) as catalog_id \gset
 insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
 values (
   'kyc-documents',
@@ -92,17 +103,6 @@ select public.get_admin_kyc_queue('pending', 1);
 select public.review_kyc_submission(:'kyc_id', true, 'Dokumen valid.');
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);
-select public.upsert_supplier_product(
-  'Tepung Uji',
-  'kg',
-  9000,
-  100,
-  5,
-  'Bahan baku',
-  'Katalog supplier smoke test.',
-  'active',
-  null
-);
 select public.get_supplier_demands();
 select public.submit_supplier_offer_against_pool(
   :'pool_id',
@@ -162,6 +162,7 @@ select 1 / ((select status = 'closed' from public.job_postings where id = :'job_
 select 1 / ((select count(*) = 1 from public.worker_certificates where application_id = :'application_id')::integer) as certificate_issued;
 select 1 / ((select count(*) = 1 from public.worker_portfolio where application_id = :'application_id')::integer) as portfolio_published;
 select 1 / ((select kyc_status = 'verified' and verification_level >= 2 from public.profiles where id = '00000000-0000-0000-0000-000000000004')::integer) as supplier_verified;
+select 1 / ((select supplier_id = '00000000-0000-0000-0000-000000000004' from public.supplier_offers where id = :'catalog_id')::integer) as unverified_supplier_catalog_created;
 select 1 / ((select count(*) > 0 from public.notifications)::integer) as notifications_created;
 select 1 / ((select coalesce(sum(points), 0) >= 10 from public.points_ledger where profile_id = '00000000-0000-0000-0000-000000000003')::integer) as worker_points_awarded;
 
