@@ -1,17 +1,15 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth/access";
+import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 
 export default async function ProtectedLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  await requireUser();
 
-  if (!user && process.env.NODE_ENV !== "development") {
-    redirect("/");
-  }
-
-  return children;
+  return (
+    <>
+      <PresenceHeartbeat />
+      {children}
+    </>
+  );
 }

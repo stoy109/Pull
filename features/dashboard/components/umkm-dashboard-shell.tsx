@@ -20,6 +20,7 @@ import { ProfileMenu } from "@/app/(protected)/dashboard/profile-menu";
 
 const SIDEBAR_ITEMS = [
   { label: "Dashboard", icon: Home, href: "/dashboard" },
+  { label: "Terbitkan Lowongan", icon: BriefcaseBusiness, href: "/dashboard/publish" },
   { label: "Pool Patungan", icon: UsersRound, href: "/dashboard/pools" },
   { label: "Papan Loker", icon: BriefcaseBusiness, href: "/dashboard/jobs" },
   { label: "Profil Bisnis", icon: Store, href: "/dashboard/profile" },

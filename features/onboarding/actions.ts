@@ -1,14 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { parseOnboardingRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export type OnboardingActionState = {
   status: "idle" | "error" | "success";
   message: string;
 };
-
-const validRoles = new Set(["umkm", "pekerja", "supplier"]);
 
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -68,9 +67,9 @@ export async function saveRoleAction(
   _state: OnboardingActionState,
   formData: FormData,
 ): Promise<OnboardingActionState> {
-  const role = readFormString(formData, "role");
+  const role = parseOnboardingRole(readFormString(formData, "role"));
 
-  if (!validRoles.has(role)) {
+  if (!role) {
     return {
       status: "error",
       message: "Pilih peran yang tersedia.",
@@ -81,6 +80,18 @@ export async function saveRoleAction(
 
   if (!user) {
     redirect(`/onboarding/lengkapi-profil?role=${role}`);
+  }
+
+  const { error: roleError } = await supabase.rpc("set_own_role", {
+    requested_role: role,
+  });
+
+  if (roleError) {
+    return {
+      status: "error",
+      message:
+        "Role belum dapat disimpan. Pastikan migration RBAC sudah diterapkan, lalu coba lagi.",
+    };
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -112,7 +123,7 @@ export async function saveProfileAction(
   const phone = readFormString(formData, "phone");
   const skills = readFormStrings(formData, "skills");
   const formRole = readFormString(formData, "role");
-  const role = validRoles.has(formRole) ? formRole : "umkm";
+  const role = parseOnboardingRole(formRole) ?? "umkm";
   const profileName = role === "pekerja" ? displayName : businessName;
 
   if (role === "pekerja" && (!displayName || !headline || !phone || !skills.length)) {

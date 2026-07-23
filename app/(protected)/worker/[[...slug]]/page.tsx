@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
 import { WorkerDashboardClient } from "./client";
 
@@ -19,19 +18,14 @@ function readMetadataStrings(metadata: Record<string, unknown>, key: string) {
 }
 
 export default async function WorkerDashboardPage() {
-  const { user } = await getDashboardData();
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role");
-
-  if (user && role !== "pekerja") {
-    redirect("/dashboard");
-  }
+  const { user } = await getDashboardData(["pekerja"]);
+  const metadata = user.user_metadata ?? {};
 
   const initialProfile = {
     name:
       readMetadataString(metadata, "display_name") ||
       readMetadataString(metadata, "full_name", "Dimas Pratama"),
-    email: user?.email ?? "dimas.pratama@email.com",
+    email: user.email ?? "dimas.pratama@email.com",
     phone: readMetadataString(metadata, "phone", "+6281234564821"),
     title: readMetadataString(
       metadata,

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getDashboardData } from "./get-dashboard-data";
 
 function readMetadataString(
@@ -26,13 +25,8 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
 }
 
 export async function resolveUmkmDashboardUser() {
-  const { user } = await getDashboardData();
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role", "umkm");
-
-  if (user && role === "pekerja") {
-    redirect("/worker/dashboard");
-  }
+  const { user } = await getDashboardData(["umkm"]);
+  const metadata = user.user_metadata ?? {};
 
   return {
     ownerName: readMetadataString(metadata, "display_name", "Sari Wulandari"),

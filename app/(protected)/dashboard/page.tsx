@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -104,18 +103,8 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
 }
 
 export default async function DashboardPage() {
-  const { user } = await getDashboardData();
-
-  if (!user && process.env.NODE_ENV !== "development") {
-    redirect("/");
-  }
-
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role", "umkm");
-
-  if (role === "pekerja") {
-    redirect("/worker/dashboard");
-  }
+  const { user } = await getDashboardData(["umkm"]);
+  const metadata = user.user_metadata ?? {};
 
   const savedOwnerName =
     readMetadataString(metadata, "display_name") ||

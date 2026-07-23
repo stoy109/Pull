@@ -1,14 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth/access";
+import type { AppRole } from "@/lib/auth/roles";
 
-export async function getDashboardData() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export async function getDashboardData(allowedRoles: readonly AppRole[]) {
+  const access = await requireRole(allowedRoles);
 
-  if (!user) {
-    return { user: null };
-  }
-
-  return { user };
+  return { role: access.role, user: access.user };
 }

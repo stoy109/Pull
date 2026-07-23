@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
 import { LowonganSayaPage } from "@/features/umkm-jobs/lowongan-saya-page";
 
@@ -20,13 +19,8 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
 }
 
 export default async function JobsPage() {
-  const { user } = await getDashboardData();
-  const metadata = user?.user_metadata ?? {};
-  const role = readMetadataString(metadata, "role", "umkm");
-
-  if (user && role === "pekerja") {
-    redirect("/worker/dashboard");
-  }
+  const { user } = await getDashboardData(["umkm"]);
+  const metadata = user.user_metadata ?? {};
 
   return (
     <LowonganSayaPage

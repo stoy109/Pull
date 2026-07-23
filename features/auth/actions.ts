@@ -73,7 +73,11 @@ export async function signInAction(
     };
   }
 
-  redirect("/dashboard");
+  // The RPC derives the actor and login timestamp from the authenticated
+  // session, so the client cannot forge another user's audit event.
+  await supabase.rpc("record_current_login");
+
+  redirect("/auth/redirect");
 }
 
 export async function signInWithGoogleAction() {
@@ -83,7 +87,7 @@ export async function signInWithGoogleAction() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${siteUrl}/auth/confirm?next=/dashboard`,
+      redirectTo: `${siteUrl}/auth/confirm?next=/auth/redirect`,
     },
   });
 
@@ -96,6 +100,7 @@ export async function signInWithGoogleAction() {
 
 export async function signOutAction() {
   const supabase = await createClient();
+  await supabase.rpc("record_current_logout");
   await supabase.auth.signOut();
   redirect("/");
 }
