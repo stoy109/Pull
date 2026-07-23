@@ -6,11 +6,13 @@ import {
   Clock3,
   MapPin,
   Star,
+  Trash2,
   UserRoundCheck,
   UsersRound,
 } from "lucide-react";
 import {
   confirmJobCompletionAction,
+  deleteDraftJobAction,
   rateCompletedWorkerAction,
   setApplicationStatusAction,
 } from "../actions";
@@ -148,6 +150,17 @@ function JobCard({ job }: { job: OwnedJob }) {
         {job.hoursPerDay !== null ? <span className="rounded-lg bg-[#f2f5f3] px-2.5 py-1.5 text-[#52645b]">{formatNumber(job.hoursPerDay)} jam/hari</span> : null}
       </div>
       {job.requirements ? <p className="mt-4 text-[10px] leading-5 text-[#64746c]"><strong className="text-[#315b4c]">Persyaratan:</strong> {job.requirements}</p> : null}
+
+      {job.status === "draft" ? (
+        <details className="mt-4 rounded-xl border border-[#efcfd4] bg-[#fff7f7] p-3">
+          <summary className="cursor-pointer list-none text-[10px] font-extrabold text-[#a72e43]">Hapus draft</summary>
+          <p className="mt-2 text-[10px] font-medium leading-5 text-[#76545a]">Draft akan dihapus permanen dan tidak dapat dipulihkan.</p>
+          <form action={deleteDraftJobAction} className="mt-3">
+            <input type="hidden" name="jobId" value={job.id} />
+            <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#a72e43] px-4 text-[10px] font-extrabold text-white focus:outline-none focus:ring-4 focus:ring-[#a72e43]/20"><Trash2 className="h-4 w-4" />Ya, hapus draft</button>
+          </form>
+        </details>
+      ) : null}
 
       <section className="mt-5 border-t border-[#e3ebe6] pt-4">
         <h3 className="text-xs font-extrabold text-[#244b3c]">Lamaran ({job.applications.length})</h3>

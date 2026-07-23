@@ -165,7 +165,7 @@ export function PublicUmkmProfilePage({ slug }: { slug: string }) {
       ? `62${whatsappDigits.slice(1)}`
       : `62${whatsappDigits}`;
   const whatsappMessage = `Halo ${info.name}, saya tertarik dengan produk Anda di Pull. Saya ingin menanyakan informasi produk, pesanan custom, atau peluang kerja sama.`;
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(whatsappMessage)}`;
 
   useEffect(() => {
     if (!toastMessage) return;

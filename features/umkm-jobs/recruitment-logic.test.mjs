@@ -54,7 +54,7 @@ test("URL WhatsApp tidak memutasi status lamaran", () => {
     businessName: "Batik Laweyan",
     jobTitle: "Buruh Cuci Kain Batik",
   });
-  assert.match(url, /^https:\/\/wa\.me\/6281234567890\?text=/);
+  assert.match(url, /^https:\/\/web\.whatsapp\.com\/send\?phone=6281234567890&text=/);
   assert.deepEqual(applications, before);
 });
 

@@ -16,10 +16,27 @@ function validatedDestination(value: unknown, channel: "website" | "whatsapp") {
     const url = new URL(value);
     if (url.username || url.password) return null;
     if (channel === "whatsapp") {
-      return url.protocol === "https:" &&
+      if (
+        url.protocol === "https:" &&
         url.hostname === "wa.me" &&
         /^\/[0-9]{8,15}$/.test(url.pathname) &&
-        !url.search &&
+        !url.hash
+      ) {
+        const destination = new URL("https://web.whatsapp.com/send");
+        destination.searchParams.set("phone", url.pathname.slice(1));
+        const message = url.searchParams.get("text");
+        if (message) destination.searchParams.set("text", message);
+        return destination;
+      }
+
+      const phone = url.searchParams.get("phone");
+      const allowedParameters = [...url.searchParams.keys()].every((key) => key === "phone" || key === "text");
+      return url.protocol === "https:" &&
+        url.hostname === "web.whatsapp.com" &&
+        url.pathname === "/send" &&
+        typeof phone === "string" &&
+        /^[0-9]{8,15}$/.test(phone) &&
+        allowedParameters &&
         !url.hash
         ? url
         : null;

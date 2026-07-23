@@ -311,7 +311,7 @@ export function UmkmDashboardShell({
               </div>
 
               <a
-                href="https://wa.me/?text=Halo%20CS%20Pull%2C%20saya%20membutuhkan%20bantuan%20untuk%20akun%20UMKM."
+                href="https://web.whatsapp.com/send?text=Halo%20CS%20Pull%2C%20saya%20membutuhkan%20bantuan%20untuk%20akun%20UMKM."
                 target="_blank"
                 rel="noreferrer"
                 className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-[14px] bg-[#07843f] px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(7,132,63,.18)] transition hover:bg-[#066f36]"

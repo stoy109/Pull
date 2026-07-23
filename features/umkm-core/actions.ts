@@ -278,6 +278,20 @@ export async function createFullJobAction(formData: FormData) {
   );
 }
 
+export async function deleteDraftJobAction(formData: FormData) {
+  await requireRole(["umkm"]);
+  const jobId = uuidField(formData, "jobId");
+  if (!jobId) fail("/dashboard/jobs", "validation");
+
+  return runRpc(
+    "/dashboard/jobs",
+    "delete_draft_job",
+    { target_job_id: jobId },
+    JOB_REVALIDATIONS,
+    "job-deleted",
+  );
+}
+
 export async function setApplicationStatusAction(formData: FormData) {
   await requireRole(["umkm"]);
   const applicationId = uuidField(formData, "applicationId");

@@ -54,6 +54,7 @@ Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan
 - `202607230013_reset_partial_onboarding_roles.sql` untuk membebaskan pilihan role onboarding lama yang belum diselesaikan.
 - `202607230014_worker_matching_map_contact.sql` untuk preferensi smart matching, koordinat lowongan, dan handoff WhatsApp pekerja.
 - `202607230015_pool_catalog_hour_window.sql` untuk katalog tunggal supplier, pilihan bahan saat membuat pool, diskon target, dan deadline pool satu jam yang hanya reset pada join pertama tiap akun.
+- `202607230016_draft_jobs_whatsapp_admin.sql` untuk hapus draft lowongan dan akses admin `r.pinontoan19@gmail.com`.
 
 Verifikasi telepon membutuhkan SMS provider yang aktif di Supabase Auth. Bucket privat `kyc-documents` dibuat oleh migration `011`; file hanya dapat dibaca pemilik atau admin, dan admin UI menggunakan signed URL singkat.
 

@@ -102,7 +102,7 @@ export function SupplierShell({
             })}
           </nav>
 
-          <a href="https://wa.me/?text=Halo%20CS%20Pull%2C%20saya%20membutuhkan%20bantuan%20untuk%20akun%20supplier." target="_blank" rel="noreferrer" className="mt-4 flex min-h-11 items-center gap-3 border-t border-white/10 px-3 pt-4 text-xs font-bold text-white/80 hover:text-white">
+          <a href="https://web.whatsapp.com/send?text=Halo%20CS%20Pull%2C%20saya%20membutuhkan%20bantuan%20untuk%20akun%20supplier." target="_blank" rel="noreferrer" className="mt-4 flex min-h-11 items-center gap-3 border-t border-white/10 px-3 pt-4 text-xs font-bold text-white/80 hover:text-white">
             <CircleHelp className="h-4 w-4" /> Bantuan
           </a>
         </div>

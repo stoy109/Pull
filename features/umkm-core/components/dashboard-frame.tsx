@@ -51,6 +51,7 @@ const successMessages: Record<string, string> = {
   "application-rejected": "Pelamar ditolak.",
   "completion-recorded": "Konfirmasi penyelesaian pekerjaan tercatat.",
   "job-created": "Lowongan berhasil disimpan.",
+  "job-deleted": "Draft lowongan berhasil dihapus.",
   "order-created": "Pesanan supplier berhasil dibuat.",
   "order-updated": "Status pesanan berhasil diperbarui.",
   "pool-created": "Pool baru berhasil dibuat.",

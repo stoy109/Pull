@@ -102,7 +102,7 @@ export function buildApplicantWhatsAppUrl({
   jobTitle: string;
 }) {
   const message = `Halo ${applicantName}, saya ${ownerName} dari ${businessName}. Saya ingin membahas lamaran Anda untuk pekerjaan ${jobTitle} di Pull.`;
-  return `https://wa.me/${normalizeWhatsAppNumber(phone)}?text=${encodeURIComponent(message)}`;
+  return `https://web.whatsapp.com/send?phone=${normalizeWhatsAppNumber(phone)}&text=${encodeURIComponent(message)}`;
 }
 
 export function updateApplicationStatus(
