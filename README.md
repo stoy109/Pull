@@ -16,7 +16,16 @@ Run quality checks before opening a PR:
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
+```
+
+Validate the complete local database migration chain with Supabase CLI and Docker:
+
+```bash
+npx supabase start
+npx supabase db reset --local
+npx supabase db lint --local
 ```
 
 You can start editing the login page by modifying `app/(auth)/page.tsx`. The page auto-updates as you edit the file.
@@ -36,8 +45,19 @@ The app validates required Supabase variables through `lib/env.ts`. Data access 
 
 ### Supabase Auth
 
-Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan session refresh menggunakan Supabase. Terapkan seluruh migration RBAC, termasuk `202607230008_supplier_demand_dashboard.sql`, sebelum menguji onboarding dan dashboard role.
+Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan session refresh menggunakan Supabase. Terapkan seluruh migration secara berurutan, termasuk:
 
+- `202607230009_proposal_core_flows.sql` untuk pool, pekerjaan, supplier, toko publik, rating, poin, notifikasi, dan pembayaran.
+- `202607230010_admin_kyc_metrics.sql` untuk review KYC admin dan KPI proposal.
+- `202607230011_identity_storage_worker_reads.sql` untuk dokumen KYC privat, verifikasi telepon, dan worker RPC.
+
+Verifikasi telepon membutuhkan SMS provider yang aktif di Supabase Auth. Bucket privat `kyc-documents` dibuat oleh migration `011`; file hanya dapat dibaca pemilik atau admin, dan admin UI menggunakan signed URL singkat.
+
+### Integrasi Eksternal
+
+- Status pembayaran dan transaksi sudah tersimpan, tetapi checkout/webhook Midtrans atau Xendit belum aktif tanpa kredensial merchant.
+- Notifikasi dalam aplikasi sudah tersimpan dan realtime. Web Push membutuhkan VAPID key dan delivery service terpisah.
+- Jangan menaruh Supabase service-role key di frontend; aplikasi menggunakan session pengguna dan RPC yang dilindungi RLS.
 
 ## Constraint 1: Multi-Role & Activity Monitoring
 
@@ -81,7 +101,7 @@ $$;
 --   'select public.redact_old_activity_request_data()');
 ```
 
-Dashboard supplier dan ringkasan UMKM membaca event audit `pool.create`, `job.post`, dan `job.apply` dari Supabase. Ini mempertahankan SPA mock existing sambil membuat monitoring demo memakai data database nyata.
+Dashboard supplier dan ringkasan UMKM membaca data pool, pekerjaan, penawaran, transaksi, dan event audit langsung dari Supabase.
 
 ## Project Structure
 
@@ -149,7 +169,7 @@ Use the typography tokens for primary content hierarchy instead of inline font-s
 
 Supabase helpers are split by runtime:
 
-- `lib/supabase/client.ts` for browser components.
+- `lib/supabase/browser.ts` for browser components and realtime subscriptions.
 - `lib/supabase/server.ts` for server components and server-side reads.
 - `lib/supabase/middleware.ts` for session refresh in `proxy.ts`.
 

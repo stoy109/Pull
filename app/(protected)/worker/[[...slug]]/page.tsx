@@ -1,48 +1,39 @@
-import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
-import { getWorkerDashboardData } from "@/features/dashboard/data/get-role-dashboard-data";
-import { WorkerDashboardClient } from "./client";
+import { redirect } from "next/navigation";
+import { getWorkerWorkspace, parseWorkerFilters } from "@/features/worker-core/data";
+import { WorkerPageContent } from "@/features/worker-core/worker-pages";
+import { WorkerShell } from "@/features/worker-core/worker-shell";
+import type { WorkerPage } from "@/features/worker-core/types";
 
-function readMetadataString(
-  metadata: Record<string, unknown>,
-  key: string,
-  fallback = "",
-) {
-  const value = metadata[key];
-  return typeof value === "string" && value.trim() ? value : fallback;
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function resolvePage(slug: string[] | undefined): WorkerPage | null {
+  if (!slug?.length || (slug.length === 1 && slug[0] === "dashboard")) return "dashboard";
+  if (slug.length !== 1) return null;
+  return (["jobs", "applications", "profile", "trust", "notifications"] as const).find((page) => page === slug[0]) ?? null;
 }
 
-function readMetadataStrings(metadata: Record<string, unknown>, key: string) {
-  const value = metadata[key];
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
-    : [];
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function WorkerDashboardPage() {
-  const { user } = await getDashboardData(["pekerja"]);
-  const dashboard = await getWorkerDashboardData(user.id);
-  const metadata = user.user_metadata ?? {};
+export default async function WorkerWorkspacePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug?: string[] }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const page = resolvePage(slug);
+  if (!page) redirect("/worker");
 
-  const initialProfile = {
-    name:
-      readMetadataString(metadata, "display_name") ||
-      readMetadataString(metadata, "full_name", "Pekerja Pull"),
-    email: user.email ?? "",
-    phone: readMetadataString(metadata, "phone"),
-    title: readMetadataString(
-      metadata,
-      "headline",
-      "Profil pekerjaan belum dilengkapi",
-    ),
-    postalCode: readMetadataString(metadata, "postal_code"),
-    province: readMetadataString(metadata, "province"),
-    city: readMetadataString(metadata, "city"),
-    district:
-      readMetadataString(metadata, "district") ||
-      readMetadataString(metadata, "delivery_area"),
-    village: readMetadataString(metadata, "village"),
-    skills: readMetadataStrings(metadata, "skills"),
-  };
+  const filters = parseWorkerFilters(query);
+  const data = await getWorkerWorkspace(filters);
+  const unreadCount = data.notifications.filter((notification) => !notification.readAt).length;
 
-  return <WorkerDashboardClient initialProfile={initialProfile} initialDashboard={dashboard} />;
+  return (
+    <WorkerShell currentPage={page} profile={data.profile} unreadCount={unreadCount}>
+      <WorkerPageContent page={page} data={data} filters={filters} notice={first(query.notice)} />
+    </WorkerShell>
+  );
 }

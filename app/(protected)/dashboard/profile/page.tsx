@@ -1,36 +1,29 @@
-import { requireRole } from "@/lib/auth/require-role";
-import { KelolaProfilUsahaPage } from "@/features/umkm-profile/kelola-profil-usaha-page";
+import { ProfilePageView } from "@/features/umkm-core/components/profile-page";
+import { getProfileWorkspace } from "@/features/umkm-core/data";
+import {
+  firstSearchParam,
+  type PageSearchParams,
+} from "@/features/umkm-core/search-params";
 
-function readMetadataString(
-  metadata: Record<string, unknown>,
-  key: string,
-  fallback: string,
-) {
-  const value = metadata[key];
-  return typeof value === "string" && value.trim() ? value : fallback;
-}
-
-function readProfileCompletion(metadata: Record<string, unknown>) {
-  const value = metadata.profile_completion;
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Math.min(100, Math.max(0, Math.round(value)));
-  }
-  if (typeof value === "string") {
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isFinite(parsed)) return Math.min(100, Math.max(0, parsed));
-  }
-  return 84;
-}
-
-export default async function BusinessProfilePage() {
-  const { user } = await requireRole(["umkm"]);
-  const metadata = user.user_metadata ?? {};
+export default async function BusinessProfilePage({
+  searchParams,
+}: {
+  searchParams: PageSearchParams;
+}) {
+  const [result, params] = await Promise.all([
+    getProfileWorkspace(),
+    searchParams,
+  ]);
 
   return (
-    <KelolaProfilUsahaPage
-      ownerName={readMetadataString(metadata, "display_name", "Sari Wulandari")}
-      businessName={readMetadataString(metadata, "business_name", "Batik Laweyan Bu Sari")}
-      profileCompletion={readProfileCompletion(metadata)}
+    <ProfilePageView
+      error={result.error}
+      identity={result.identity}
+      notice={{
+        error: firstSearchParam(params, "error"),
+        success: firstSearchParam(params, "success"),
+      }}
+      workspace={result.data}
     />
   );
 }

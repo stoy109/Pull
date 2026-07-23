@@ -1,32 +1,29 @@
-import { requireRole } from "@/lib/auth/require-role";
-import { LowonganSayaPage } from "@/features/umkm-jobs/lowongan-saya-page";
+import { JobsPageView } from "@/features/umkm-core/components/jobs-page";
+import { getJobsWorkspace } from "@/features/umkm-core/data";
+import {
+  firstSearchParam,
+  type PageSearchParams,
+} from "@/features/umkm-core/search-params";
 
-function readMetadataString(metadata: Record<string, unknown>, key: string, fallback: string) {
-  const value = metadata[key];
-  return typeof value === "string" && value.trim() ? value : fallback;
-}
-
-function readProfileCompletion(metadata: Record<string, unknown>) {
-  const value = metadata.profile_completion;
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Math.min(100, Math.max(0, Math.round(value)));
-  }
-  if (typeof value === "string") {
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isFinite(parsed)) return Math.min(100, Math.max(0, parsed));
-  }
-  return 84;
-}
-
-export default async function JobsPage() {
-  const { user } = await requireRole(["umkm"]);
-  const metadata = user.user_metadata ?? {};
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: PageSearchParams;
+}) {
+  const [result, params] = await Promise.all([
+    getJobsWorkspace(),
+    searchParams,
+  ]);
 
   return (
-    <LowonganSayaPage
-      ownerName={readMetadataString(metadata, "display_name", "Sari Wulandari")}
-      businessName={readMetadataString(metadata, "business_name", "Dapur Sari")}
-      profileCompletion={readProfileCompletion(metadata)}
+    <JobsPageView
+      error={result.error}
+      identity={result.identity}
+      notice={{
+        error: firstSearchParam(params, "error"),
+        success: firstSearchParam(params, "success"),
+      }}
+      workspace={result.data}
     />
   );
 }

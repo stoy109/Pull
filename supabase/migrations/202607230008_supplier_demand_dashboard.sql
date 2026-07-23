@@ -14,8 +14,8 @@ set search_path = ''
 as $$
 declare
   current_user_id uuid := auth.uid();
-  current_role public.app_role;
-  current_status public.account_status;
+  stored_role public.app_role;
+  stored_status public.account_status;
   event_category public.activity_category;
   created_id uuid;
 begin
@@ -24,11 +24,11 @@ begin
   end if;
 
   select profiles.role, profiles.account_status
-    into current_role, current_status
+    into stored_role, stored_status
   from public.profiles as profiles
   where profiles.id = current_user_id;
 
-  if not found or current_role is null or current_status <> 'active'::public.account_status then
+  if not found or stored_role is null or stored_status <> 'active'::public.account_status then
     raise exception 'Active profile is required';
   end if;
 
@@ -49,17 +49,17 @@ begin
   end if;
 
   if activity_event_type in ('job.created', 'job.published', 'pool.created', 'pool.joined')
-    and current_role <> 'umkm'::public.app_role then
+    and stored_role <> 'umkm'::public.app_role then
     raise exception 'UMKM account required';
   end if;
 
   if activity_event_type = 'application.submitted'
-    and current_role <> 'pekerja'::public.app_role then
+    and stored_role <> 'pekerja'::public.app_role then
     raise exception 'Worker account required';
   end if;
 
   if activity_event_type = 'supplier.offer_created'
-    and current_role <> 'supplier'::public.app_role then
+    and stored_role <> 'supplier'::public.app_role then
     raise exception 'Supplier account required';
   end if;
 
@@ -84,7 +84,7 @@ begin
   )
   values (
     current_user_id,
-    current_role,
+    stored_role,
     activity_event_type,
     event_category,
     nullif(left(trim(activity_target_type), 80), ''),

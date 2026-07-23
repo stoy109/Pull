@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Activity,
+  BadgeCheck,
+  ChartNoAxesCombined,
   LayoutDashboard,
   Sparkles,
   UsersRound,
@@ -12,6 +14,8 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Monitoring", icon: LayoutDashboard },
   { href: "/admin/impact", label: "Smart Impact", icon: Sparkles },
   { href: "/admin/users", label: "Pengguna", icon: UsersRound },
+  { href: "/admin/kyc", label: "Review KYC", icon: BadgeCheck },
+  { href: "/admin/metrics", label: "Metrik Proposal", icon: ChartNoAxesCombined },
   { href: "/admin/activity", label: "Log Aktivitas", icon: Activity },
 ] as const;
 
@@ -19,10 +23,16 @@ export function AdminShell({
   activePath = "/admin",
   children,
 }: Readonly<{
-  activePath?: "/admin" | "/admin/impact" | "/admin/users" | "/admin/activity";
+  activePath?: "/admin" | "/admin/impact" | "/admin/users" | "/admin/kyc" | "/admin/metrics" | "/admin/activity";
   children: React.ReactNode;
 }>) {
-  const isImpactPage = activePath === "/admin/impact";
+  const pageContext = activePath === "/admin/impact"
+    ? { eyebrow: "Challenge 2", title: "Smart Impact Dashboard" }
+    : activePath === "/admin/kyc"
+      ? { eyebrow: "Trust & Safety", title: "Review KYC" }
+      : activePath === "/admin/metrics"
+        ? { eyebrow: "Proposal KPI", title: "Metrik Inti Platform" }
+        : { eyebrow: "Challenge 1", title: "Pusat Monitoring Platform" };
 
   return (
     <div className="min-h-screen bg-[#f4f7f5] text-[#10231d]">
@@ -69,16 +79,16 @@ export function AdminShell({
               <div>
                 <p className="text-sm font-extrabold">Pull Admin</p>
                 <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#5a796d]">
-                  {isImpactPage ? "Smart Impact" : "Monitoring"}
+                  {pageContext.title}
                 </p>
               </div>
             </Link>
             <div className="hidden lg:block">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#42806a]">
-                {isImpactPage ? "Challenge 2" : "Challenge 1"}
+                {pageContext.eyebrow}
               </p>
               <p className="mt-1 text-sm font-extrabold">
-                {isImpactPage ? "Smart Impact Dashboard" : "Pusat Monitoring Platform"}
+                {pageContext.title}
               </p>
             </div>
             <form action={signOutAction}>

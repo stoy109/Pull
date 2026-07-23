@@ -1,0 +1,345 @@
+import {
+  Clock3,
+  MapPin,
+  PackageOpen,
+  Plus,
+  ShoppingCart,
+  TrendingDown,
+  UsersRound,
+} from "lucide-react";
+import {
+  createPoolAction,
+  createSupplierOrderAction,
+  joinPoolAction,
+  setBuyerOrderStatusAction,
+} from "../actions";
+import {
+  formatCurrency,
+  formatDate,
+  formatNumber,
+  formatPercent,
+  orderStatusLabel,
+  poolStatusLabel,
+  savingsPercent,
+} from "../format";
+import type { BuyerOrder, Pool, PoolsWorkspace } from "../types";
+import { PersistedPoolMap } from "./pool-map";
+import {
+  ActionNotice,
+  DashboardFrame,
+  DataErrorPanel,
+  Field,
+  inputClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  textareaClass,
+} from "./dashboard-frame";
+
+function StatusBadge({ status }: { status: string }) {
+  const completed = ["fulfilled", "completed"].includes(status);
+  const failed = ["cancelled", "expired", "rejected"].includes(status);
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-[9px] font-extrabold ${
+        completed
+          ? "bg-[#e6f5ea] text-[#16703d]"
+          : failed
+            ? "bg-[#fdebed] text-[#aa3348]"
+            : "bg-[#fff4db] text-[#94620d]"
+      }`}
+    >
+      {poolStatusLabel(status)}
+    </span>
+  );
+}
+
+function PoolCard({ pool }: { pool: Pool }) {
+  const canOrder =
+    pool.isOwner &&
+    ["threshold_met", "ready"].includes(pool.status) &&
+    pool.currentQuantity >= pool.minThreshold;
+  const bestPrice = pool.tier2Price ?? pool.tier1Price;
+  const bestSavings = savingsPercent(pool.marketPrice, bestPrice);
+  const savingsValue =
+    pool.marketPrice && bestPrice && pool.marketPrice > bestPrice
+      ? (pool.marketPrice - bestPrice) * pool.targetQuantity
+      : 0;
+
+  return (
+    <article className="rounded-[20px] border border-[#dce7e1] bg-white p-5 shadow-[0_8px_26px_rgba(18,59,48,.04)]">
+      <div className="flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#e8f4eb] text-[#087447]">
+          <PackageOpen className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-extrabold text-[#10231d]">{pool.itemName}</h3>
+            <StatusBadge status={pool.status} />
+            {pool.isOwner ? (
+              <span className="rounded-full bg-[#edf3ff] px-2.5 py-1 text-[9px] font-extrabold text-[#426394]">Milik Anda</span>
+            ) : null}
+            {pool.joinedQuantity !== null ? (
+              <span className="rounded-full bg-[#e9f6ed] px-2.5 py-1 text-[9px] font-extrabold text-[#16703d]">Sudah bergabung</span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-[10px] font-bold text-[#718078]">{pool.category}</p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-xs font-medium leading-5 text-[#596a62]">{pool.description}</p>
+      <div className="mt-4 flex items-center justify-between gap-3 text-[11px] font-bold text-[#40534a]">
+        <span>
+          {formatNumber(pool.currentQuantity)} / {formatNumber(pool.targetQuantity)} {pool.unit}
+        </span>
+        <span>{formatPercent(pool.progress)}</span>
+      </div>
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#e6ece8]">
+        <div className="h-full rounded-full bg-[#087447]" style={{ width: `${pool.progress}%` }} />
+      </div>
+      <p className="mt-2 text-[10px] font-semibold text-[#718078]">
+        Ambang minimum {formatNumber(pool.minThreshold)} {pool.unit}
+      </p>
+
+      <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-xl bg-[#f6f9f7] p-3">
+          <dt className="text-[9px] font-bold text-[#75857d]">Harga pasar</dt>
+          <dd className="mt-1 text-[11px] font-extrabold text-[#26372f]">
+            {pool.marketPrice === null ? "—" : formatCurrency(pool.marketPrice)}
+          </dd>
+        </div>
+        <div className="rounded-xl bg-[#f0f7f2] p-3">
+          <dt className="text-[9px] font-bold text-[#65806f]">Harga ambang</dt>
+          <dd className="mt-1 text-[11px] font-extrabold text-[#087447]">
+            {pool.tier1Price === null ? "—" : formatCurrency(pool.tier1Price)}
+          </dd>
+        </div>
+        <div className="rounded-xl bg-[#fff8e8] p-3">
+          <dt className="text-[9px] font-bold text-[#8a753f]">Harga target</dt>
+          <dd className="mt-1 text-[11px] font-extrabold text-[#9a670f]">
+            {pool.tier2Price === null ? "—" : formatCurrency(pool.tier2Price)}
+          </dd>
+        </div>
+      </dl>
+
+      {bestSavings > 0 ? (
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-[#fff8e8] px-3 py-2.5 text-[10px] font-bold leading-5 text-[#76581c]">
+          <TrendingDown className="mt-0.5 h-4 w-4 shrink-0" />
+          Potensi hemat {formatPercent(bestSavings)} atau {formatCurrency(savingsValue)} saat target tercapai.
+        </p>
+      ) : null}
+
+      <div className="mt-4 grid gap-2 text-[10px] font-semibold text-[#64746c] sm:grid-cols-3">
+        <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{pool.district}</span>
+        <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{formatDate(pool.deadline)}</span>
+        <span className="inline-flex items-center gap-1.5"><UsersRound className="h-3.5 w-3.5" />Hub: {pool.hub ?? "Belum ditentukan"}</span>
+      </div>
+
+      {pool.joinedQuantity !== null ? (
+        <p className="mt-4 rounded-xl border border-[#d7e8dd] bg-[#f3faf5] px-3 py-2.5 text-[10px] font-bold text-[#276443]">
+          Kontribusi Anda: {formatNumber(pool.joinedQuantity)} {pool.unit}
+        </p>
+      ) : pool.joinable ? (
+        <form action={joinPoolAction} className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <input type="hidden" name="poolId" value={pool.id} />
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">Jumlah untuk bergabung ke {pool.itemName}</span>
+            <input
+              className={inputClass}
+              max={Math.max(0, pool.targetQuantity - pool.currentQuantity)}
+              min="0.001"
+              name="quantity"
+              placeholder={`Jumlah (${pool.unit})`}
+              required
+              step="0.001"
+              type="number"
+            />
+          </label>
+          <button className={primaryButtonClass}>Gabung pool</button>
+        </form>
+      ) : null}
+
+      {canOrder ? (
+        <section className="mt-5 border-t border-[#e3ebe6] pt-4">
+          <h4 className="text-xs font-extrabold text-[#244b3c]">Penawaran supplier</h4>
+          <p className="mt-1 text-[10px] font-medium leading-4 text-[#718078]">
+            Pilih penawaran yang dapat memenuhi jumlah pool saat ini.
+          </p>
+          <div className="mt-3 space-y-2">
+            {pool.offers.length ? (
+              pool.offers.map((offer, index) => {
+                const maximum = Math.min(offer.stockQuantity, pool.currentQuantity);
+                const orderable = maximum >= offer.minOrderQuantity;
+                return (
+                  <form
+                    action={createSupplierOrderAction}
+                    className="rounded-xl border border-[#dfe8e2] bg-[#f9fbfa] p-3"
+                    key={offer.id}
+                  >
+                    <input type="hidden" name="poolId" value={pool.id} />
+                    <input type="hidden" name="offerId" value={offer.id} />
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] font-extrabold text-[#315b4c]">Penawaran {index + 1}</p>
+                        <p className="mt-1 text-xs font-extrabold text-[#10231d]">{formatCurrency(offer.unitPrice)} / {pool.unit}</p>
+                      </div>
+                      <p className="text-right text-[9px] font-semibold leading-4 text-[#718078]">
+                        Stok {formatNumber(offer.stockQuantity)} {pool.unit}<br />
+                        Minimum {formatNumber(offer.minOrderQuantity)} {pool.unit}
+                      </p>
+                    </div>
+                    {offer.description ? <p className="mt-2 text-[10px] leading-4 text-[#68776f]">{offer.description}</p> : null}
+                    {orderable ? (
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <input
+                          className={inputClass}
+                          defaultValue={maximum}
+                          max={maximum}
+                          min={offer.minOrderQuantity}
+                          name="quantity"
+                          required
+                          step="0.001"
+                          type="number"
+                        />
+                        <button className={primaryButtonClass}>
+                          <ShoppingCart className="mr-2 h-4 w-4" />Buat pesanan
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[10px] font-bold text-[#aa3348]">Stok tidak memenuhi minimum pesanan.</p>
+                    )}
+                  </form>
+                );
+              })
+            ) : (
+              <p className="rounded-xl border border-dashed border-[#cbdad2] p-4 text-center text-[10px] font-semibold text-[#718078]">
+                Belum ada penawaran supplier untuk pool ini.
+              </p>
+            )}
+          </div>
+        </section>
+      ) : null}
+    </article>
+  );
+}
+
+function PoolSection({ empty, pools, title }: { empty: string; pools: Pool[]; title: string }) {
+  return (
+    <section className="mt-6">
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <h2 className="text-lg font-extrabold text-[#10231d]">{title}</h2>
+        <span className="rounded-full bg-[#e7f3eb] px-3 py-1 text-[10px] font-extrabold text-[#087447]">{pools.length}</span>
+      </div>
+      {pools.length ? (
+        <div className="grid gap-4 xl:grid-cols-2">{pools.map((pool) => <PoolCard key={pool.id} pool={pool} />)}</div>
+      ) : (
+        <p className="rounded-[20px] border border-dashed border-[#cad9d1] bg-white p-8 text-center text-sm font-semibold text-[#718078]">{empty}</p>
+      )}
+    </section>
+  );
+}
+
+function OrderCard({ order }: { order: BuyerOrder }) {
+  const canCancel = order.status === "pending";
+  const canComplete = order.status === "shipped";
+  return (
+    <article className="rounded-2xl border border-[#dce7e1] bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-extrabold text-[#17362a]">{order.itemName}</h3>
+          <p className="mt-1 text-[10px] font-semibold text-[#718078]">Dibuat {formatDate(order.createdAt)}</p>
+        </div>
+        <span className="rounded-full bg-[#edf4f0] px-2.5 py-1 text-[9px] font-extrabold text-[#315b4c]">{orderStatusLabel(order.status)}</span>
+      </div>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
+        <div><p className="font-bold text-[#718078]">Jumlah</p><p className="mt-1 font-extrabold text-[#26372f]">{formatNumber(order.quantity)} {order.unit}</p></div>
+        <div><p className="font-bold text-[#718078]">Harga</p><p className="mt-1 font-extrabold text-[#26372f]">{formatCurrency(order.unitPrice)}</p></div>
+        <div><p className="font-bold text-[#718078]">Total</p><p className="mt-1 font-extrabold text-[#087447]">{formatCurrency(order.total)}</p></div>
+      </div>
+      {canCancel || canComplete ? (
+        <form action={setBuyerOrderStatusAction} className="mt-4">
+          <input type="hidden" name="orderId" value={order.id} />
+          <input type="hidden" name="status" value={canCancel ? "cancelled" : "completed"} />
+          <button className={canCancel ? secondaryButtonClass : primaryButtonClass}>
+            {canCancel ? "Batalkan pesanan" : "Konfirmasi pesanan diterima"}
+          </button>
+        </form>
+      ) : null}
+    </article>
+  );
+}
+
+function CreatePoolForm() {
+  return (
+    <details className="group rounded-[22px] border border-[#dce7e1] bg-white shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-sm font-extrabold text-[#17362a] sm:p-6">
+        <span className="inline-flex items-center gap-2"><Plus className="h-5 w-5 text-[#087447]" />Buat pool bahan baku lengkap</span>
+        <span className="text-[10px] font-bold text-[#718078] group-open:hidden">Buka formulir</span>
+      </summary>
+      <form action={createPoolAction} className="border-t border-[#e3ebe6] p-5 sm:p-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Nama bahan *"><input className={inputClass} maxLength={120} minLength={2} name="itemName" required /></Field>
+          <Field label="Kategori *"><input className={inputClass} maxLength={80} minLength={2} name="category" required /></Field>
+          <Field label="Satuan *"><input className={inputClass} maxLength={30} name="unit" placeholder="kg, liter, pcs" required /></Field>
+          <Field label="Kecamatan *"><input className={inputClass} maxLength={120} minLength={2} name="district" required /></Field>
+          <Field label="Target jumlah *"><input className={inputClass} min="0.001" name="targetQuantity" required step="0.001" type="number" /></Field>
+          <Field label="Ambang minimum *"><input className={inputClass} min="0.001" name="minThreshold" required step="0.001" type="number" /></Field>
+          <Field label="Harga tier ambang *"><input className={inputClass} min="0.01" name="tier1Price" required step="0.01" type="number" /></Field>
+          <Field label="Harga tier target *"><input className={inputClass} min="0.01" name="tier2Price" required step="0.01" type="number" /></Field>
+          <Field label="Harga pasar per satuan *"><input className={inputClass} min="0.01" name="marketPrice" required step="0.01" type="number" /></Field>
+          <Field label="Batas waktu *" hint="Pool ditutup pukul 23.59 WIB pada tanggal ini."><input className={inputClass} name="deadline" required type="date" /></Field>
+          <Field label="Hub pengambilan"><input className={inputClass} maxLength={200} name="hub" placeholder="Alamat atau nama titik kumpul" /></Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Latitude"><input className={inputClass} max="90" min="-90" name="latitude" step="0.000001" type="number" /></Field>
+            <Field label="Longitude"><input className={inputClass} max="180" min="-180" name="longitude" step="0.000001" type="number" /></Field>
+          </div>
+          <Field className="md:col-span-2" label="Deskripsi kebutuhan *"><textarea className={textareaClass} maxLength={1000} minLength={5} name="description" required /></Field>
+        </div>
+        <button className={`${primaryButtonClass} mt-5 w-full sm:w-auto`}>Buat pool</button>
+      </form>
+    </details>
+  );
+}
+
+export function PoolsPageView({
+  error,
+  identity,
+  notice,
+  workspace,
+}: {
+  error: string | null;
+  identity: Parameters<typeof DashboardFrame>[0]["identity"];
+  notice: { error?: string; success?: string };
+  workspace: PoolsWorkspace | null;
+}) {
+  const mappedPools = workspace
+    ? Array.from(new Map([...workspace.openPools, ...workspace.ownedPools, ...workspace.joinedPools].map((pool) => [pool.id, pool])).values())
+    : [];
+
+  return (
+    <DashboardFrame identity={identity}>
+      <ActionNotice {...notice} />
+      {error || !workspace ? (
+        <DataErrorPanel message={error ?? "Data pool belum tersedia."} />
+      ) : (
+        <>
+          <CreatePoolForm />
+          <PersistedPoolMap pools={mappedPools} />
+          <PoolSection empty="Belum ada pool yang menerima anggota." pools={workspace.openPools} title="Pool terbuka" />
+          <PoolSection empty="Anda belum membuat pool." pools={workspace.ownedPools} title="Pool milik Anda" />
+          <PoolSection empty="Anda belum bergabung ke pool." pools={workspace.joinedPools} title="Pool yang Anda ikuti" />
+          <section className="mt-7">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <h2 className="text-lg font-extrabold text-[#10231d]">Pesanan supplier milik Anda</h2>
+              <span className="rounded-full bg-[#e7f3eb] px-3 py-1 text-[10px] font-extrabold text-[#087447]">{workspace.orders.length}</span>
+            </div>
+            {workspace.orders.length ? (
+              <div className="grid gap-4 xl:grid-cols-2">{workspace.orders.map((order) => <OrderCard key={order.id} order={order} />)}</div>
+            ) : (
+              <p className="rounded-[20px] border border-dashed border-[#cad9d1] bg-white p-8 text-center text-sm font-semibold text-[#718078]">Belum ada pesanan supplier dari pool milik Anda.</p>
+            )}
+          </section>
+        </>
+      )}
+    </DashboardFrame>
+  );
+}
