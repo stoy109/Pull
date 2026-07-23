@@ -6,6 +6,7 @@ import { isRole, type Role } from "@/lib/auth/roles";
 import { isMvpAuthEnabled } from "@/lib/auth/mvp-session";
 
 const allowedNextPaths = new Set([
+  "/auth/redirect",
   "/dashboard",
   "/onboarding",
   "/reset-password",
@@ -40,7 +41,7 @@ async function resolveLoginDestination(
 
 function getSafeNextPath(value: string | null) {
   if (!value || !allowedNextPaths.has(value)) {
-    return "/dashboard";
+    return "/auth/redirect";
   }
 
   return value;

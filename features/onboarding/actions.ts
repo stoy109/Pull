@@ -15,7 +15,7 @@ export type OnboardingActionState = {
   message: string;
 };
 
-const validRoles = new Set(["umkm", "pekerja", "supplier", "admin"]);
+const validRoles = new Set(["umkm", "pekerja", "supplier"]);
 
 function readFormString(formData: FormData, key: string) {
   const value = formData.get(key);

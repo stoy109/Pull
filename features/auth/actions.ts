@@ -10,6 +10,7 @@ import {
   createMvpSession,
   getMvpSession,
   isMvpAuthEnabled,
+  setMvpSession,
 } from "@/lib/auth/mvp-session";
 
 export type AuthActionState = {
@@ -99,6 +100,16 @@ export async function signInAction(
     const session = existingSession?.email === email
       ? existingSession
       : await createMvpSession(email, email.split("@")[0] || "Pengguna Pull");
+
+    if (email.toLowerCase() === "admin@pull.demo") {
+      await setMvpSession({
+        ...session,
+        role: "admin",
+        userMetadata: { ...session.userMetadata, role: "admin" },
+      });
+      redirect("/admin");
+    }
+
     redirect(session.role ? dashboardForRole(session.role) : "/onboarding/pilih-peran");
   }
 

@@ -10,10 +10,12 @@ export function RouteTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const rootRef = useRef<HTMLDivElement>(null);
   const isWorkerRoute = pathname === "/worker" || pathname.startsWith("/worker/");
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isAnimationExcluded = isWorkerRoute || isAdminRoute;
 
   useLayoutEffect(() => {
     const root = rootRef.current;
-    if (!root || isWorkerRoute) return;
+    if (!root || isAnimationExcluded) return;
 
     const media = gsap.matchMedia();
     media.add(motionQuery, () => {
@@ -155,9 +157,12 @@ export function RouteTransition({ children }: { children: ReactNode }) {
     });
 
     return () => media.revert();
-  }, [isWorkerRoute, pathname]);
+  }, [isAnimationExcluded, pathname]);
 
-  if (isWorkerRoute) return children;
+  // Worker owns its GSAP lifecycle, while Administrator pages contain streamed
+  // Server Components with small client islands. Mutating either subtree from
+  // this parent before selective hydration completes causes attribute mismatch.
+  if (isAnimationExcluded) return children;
 
   return (
     <div key={pathname} ref={rootRef} className="flex min-h-0 flex-1 flex-col">

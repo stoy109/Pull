@@ -38,7 +38,7 @@ The app validates required Supabase variables through `lib/env.ts`. Only publish
 
 ### Mode Auth MVP
 
-Mode MVP aktif secara default (`MVP_AUTH_MODE` selain `false`). Register/login memakai cookie demo `httpOnly`; email, OTP, Google OAuth, dan penyimpanan password dilewati. Pilihan role dan profil onboarding tetap tersimpan selama 7 hari agar seluruh dashboard dapat didemokan.
+Mode MVP aktif secara default (`MVP_AUTH_MODE` selain `false`). Register/login memakai cookie demo `httpOnly`; email, OTP, Google OAuth, dan penyimpanan password dilewati. Pilihan role dan profil onboarding tetap tersimpan selama 7 hari agar seluruh dashboard dapat didemokan. Untuk membuka dashboard Administrator, login dengan `admin@pull.demo` dan kata sandi apa pun yang tidak kosong.
 
 Set `MVP_AUTH_MODE=false` saat siap mengaktifkan Supabase Auth kembali. Activity write juga dilewati selama mode MVP karena user demo tidak mempunyai foreign key di `auth.users`. Mode ini hanya untuk demo/hackathon, bukan production.
 

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { gsap } from 'gsap'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
@@ -57,6 +58,7 @@ function SidebarNav({ onNavigate }) {
       <div className="px-2"><Brand inverse /></div>
       <nav className="mt-7 flex-1 space-y-2 overflow-y-auto" aria-label="Navigasi utama">
         {primaryNavigation.map((item) => <SidebarLink key={item.path} item={item} count={item.count ? allApplicationCount : null} onNavigate={onNavigate} />)}
+        <Link href="/worker/apply" className="nav-item"><BriefcaseBusiness size={16} className="shrink-0" /><span className="whitespace-nowrap">Lamaran Database</span></Link>
       </nav>
       <div className="mt-6 border-t border-white/10 pt-3">
         <nav className="flex flex-col gap-2" aria-label="Bantuan dan pengaturan">
