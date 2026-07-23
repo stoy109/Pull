@@ -1,4 +1,5 @@
-import { requireRole } from "@/lib/auth/require-role";
+import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
+import { getWorkerDashboardData } from "@/features/dashboard/data/get-role-dashboard-data";
 import { WorkerDashboardClient } from "./client";
 
 function readMetadataString(
@@ -18,29 +19,30 @@ function readMetadataStrings(metadata: Record<string, unknown>, key: string) {
 }
 
 export default async function WorkerDashboardPage() {
-  const { user } = await requireRole(["pekerja"]);
+  const { user } = await getDashboardData(["pekerja"]);
+  const dashboard = await getWorkerDashboardData(user.id);
   const metadata = user.user_metadata ?? {};
 
   const initialProfile = {
     name:
       readMetadataString(metadata, "display_name") ||
-      readMetadataString(metadata, "full_name", "Dimas Pratama"),
-    email: user?.email ?? "dimas.pratama@email.com",
-    phone: readMetadataString(metadata, "phone", "+6281234564821"),
+      readMetadataString(metadata, "full_name", "Pekerja Pull"),
+    email: user.email ?? "",
+    phone: readMetadataString(metadata, "phone"),
     title: readMetadataString(
       metadata,
       "headline",
-      "Staf Toko & Pelayanan Pelanggan",
+      "Profil pekerjaan belum dilengkapi",
     ),
     postalCode: readMetadataString(metadata, "postal_code"),
     province: readMetadataString(metadata, "province"),
     city: readMetadataString(metadata, "city"),
     district:
       readMetadataString(metadata, "district") ||
-      readMetadataString(metadata, "delivery_area", "Banjarsari"),
+      readMetadataString(metadata, "delivery_area"),
     village: readMetadataString(metadata, "village"),
     skills: readMetadataStrings(metadata, "skills"),
   };
 
-  return <WorkerDashboardClient initialProfile={initialProfile} />;
+  return <WorkerDashboardClient initialProfile={initialProfile} initialDashboard={dashboard} />;
 }

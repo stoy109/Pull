@@ -21,7 +21,14 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
     if (Number.isFinite(parsed)) return Math.min(100, Math.max(0, parsed));
   }
 
-  return 84;
+  const completedFields = [
+    metadata.display_name ?? metadata.full_name,
+    metadata.business_name,
+    metadata.headline,
+    metadata.phone,
+  ].filter((field) => typeof field === "string" && field.trim()).length;
+
+  return completedFields * 25;
 }
 
 export async function resolveUmkmDashboardUser() {
@@ -29,8 +36,9 @@ export async function resolveUmkmDashboardUser() {
   const metadata = user.user_metadata ?? {};
 
   return {
-    ownerName: readMetadataString(metadata, "display_name", "Sari Wulandari"),
-    businessName: readMetadataString(metadata, "business_name", "Batik Laweyan Bu Sari"),
+    userId: user.id,
+    ownerName: readMetadataString(metadata, "display_name", "Pemilik UMKM"),
+    businessName: readMetadataString(metadata, "business_name", "UMKM Pull"),
     profileCompletion: readProfileCompletion(metadata),
   };
 }

@@ -19,7 +19,10 @@ export async function createJobPostingAction(formData: FormData) {
   const { error } = await supabase.rpc("create_job_posting", { job_title: title, job_description: description });
   if (error) redirect("/dashboard/publish?error=save");
   revalidatePath("/dashboard/publish");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/activity");
   revalidatePath("/admin");
+  revalidatePath("/admin/impact");
   redirect("/dashboard/publish?success=1");
 }
 
@@ -32,7 +35,11 @@ export async function submitJobApplicationAction(formData: FormData) {
   const { error } = await supabase.rpc("submit_job_application", { target_job_id: jobId, application_message: message });
   if (error) redirect(`/worker/apply?error=${error.code === "23505" ? "duplicate" : "save"}`);
   revalidatePath("/worker/apply");
+  revalidatePath("/worker/dashboard");
+  revalidatePath("/worker/activity");
+  revalidatePath("/dashboard");
   revalidatePath("/admin");
+  revalidatePath("/admin/impact");
   redirect("/worker/apply?success=1");
 }
 
@@ -47,5 +54,6 @@ export async function createSupplierOfferAction(formData: FormData) {
   if (error) redirect("/supplier?error=save");
   revalidatePath("/supplier");
   revalidatePath("/admin");
+  revalidatePath("/admin/impact");
   redirect("/supplier?success=1");
 }

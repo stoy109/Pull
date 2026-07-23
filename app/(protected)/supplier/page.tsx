@@ -1,126 +1,158 @@
-import { ArrowUpRight, Boxes, CalendarClock, CheckCircle2, PackageOpen, Scale, Send } from "lucide-react";
-import { requireRole } from "@/lib/auth/require-role";
-import { getSupplierDashboardData } from "@/lib/activity/queries";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Activity,
+  Boxes,
+  CheckCircle2,
+  LayoutDashboard,
+  PackageOpen,
+  Store,
+} from "lucide-react";
+import { createSupplierOfferAction } from "@/features/collaboration/actions";
+import { getSupplierActivities } from "@/features/dashboard/data/get-role-dashboard-data";
+import { requireRole } from "@/lib/auth/access";
+import { createClient } from "@/lib/supabase/server";
 
-function formatValue(value: string | number) {
-  return typeof value === "number" ? new Intl.NumberFormat("id-ID").format(value) : value;
+const SUPPLIER_NAV_ITEMS = [
+  { icon: Boxes, label: "Penawaran", href: "/supplier#offers" },
+  { icon: Activity, label: "Aktivitas", href: "/supplier#activity" },
+  { icon: Store, label: "Profil Supplier", href: "/supplier#profile" },
+];
+
+function readMetadata(metadata: Record<string, unknown>, key: string, fallback: string) {
+  const value = metadata[key];
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-function formatDeadline(value: string | Date) {
-  if (!value) return "Belum ditentukan";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? String(value)
-    : new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(date);
+function formatRupiah(value: number | string | null) {
+  const amount = Number(value ?? 0);
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-export default async function SupplierPage() {
-  await requireRole(["supplier"]);
-  const data = await getSupplierDashboardData();
-
-  const metrics = [
-    { label: "Jumlah pool 7 hari terakhir", value: data.poolsLast7Days, detail: "Peluang permintaan terbaru", icon: CalendarClock, tone: "bg-[#e7e4f6] text-[#554b91]" },
-    { label: "Total komoditas diminta", value: data.totalCommodities, detail: "Kebutuhan pool aktif", icon: Boxes, tone: "bg-[#dff5f0] text-[#167c6c]" },
-    { label: "Estimasi volume permintaan", value: data.estimatedVolume, detail: "Akumulasi kebutuhan pool", icon: Scale, tone: "bg-[#e3effb] text-[#286c9d]" },
-    { label: "Menunggu konfirmasi supplier", value: data.awaitingConfirmation, detail: "Perlu tindak lanjut", icon: CheckCircle2, tone: "bg-[#fff0d9] text-[#a35d12]" },
-  ];
+export default async function SupplierDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const { user } = await requireRole(["supplier"]);
+  const params = await searchParams;
+  const supabase = await createClient();
+  const [{ data: offers }, activities] = await Promise.all([
+    supabase
+      .from("supplier_offers")
+      .select("id,item_name,unit,unit_price,status")
+      .eq("supplier_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    getSupplierActivities(user.id),
+  ]);
+  const metadata = user.user_metadata ?? {};
+  const ownerName = readMetadata(metadata, "display_name", "Mitra Supplier");
+  const businessName = readMetadata(metadata, "business_name", "Supplier Pull");
+  const offerRows = offers ?? [];
+  const activeOffers = offerRows.filter((offer) => offer.status === "active").length;
 
   return (
-    <>
-      <section id="insight" className="relative overflow-hidden rounded-[26px] bg-[#302a5c] px-5 py-7 text-white shadow-[0_20px_50px_rgba(42,35,87,.16)] sm:px-8 sm:py-9">
-        <div className="absolute inset-y-0 right-0 w-1/3 bg-[linear-gradient(135deg,transparent,rgba(62,221,194,.13))]" />
-        <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full border-[28px] border-[#5de0ca]/10" />
-        <div className="relative max-w-2xl">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#8de9d9]">Radar kebutuhan UMKM</p>
-          <h2 className="mt-3 font-[family-name:var(--font-worker-display)] text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-[38px]">Pasok kebutuhan yang sedang dicari.</h2>
-          <p className="mt-4 max-w-xl text-sm font-medium leading-7 text-white/65">Lihat volume dan tenggat pool aktif, lalu siapkan pesan penawaran tanpa membuka nomor pribadi di dashboard.</p>
-        </div>
-      </section>
-
-      <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan demand supplier">
-        {metrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <article key={metric.label} className="rounded-[20px] border border-[#e1e2eb] bg-white p-5 shadow-[0_9px_24px_rgba(42,35,87,.04)]">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold text-[#6b6981]">{metric.label}</p>
-                  <strong className="mt-3 block font-[family-name:var(--font-worker-display)] text-[32px] font-semibold leading-none tracking-[-0.05em] text-[#252048]">{formatValue(metric.value)}</strong>
-                </div>
-                <span className={`grid h-11 w-11 place-items-center rounded-[14px] ${metric.tone}`}><Icon className="h-5 w-5" /></span>
-              </div>
-              <p className="mt-4 text-[10px] font-semibold text-[#9693a5]">{metric.detail}</p>
-            </article>
-          );
-        })}
-      </section>
-
-      <section id="pool-aktif" className="mt-5 overflow-hidden rounded-[22px] border border-[#dedfe9] bg-white shadow-[0_12px_32px_rgba(42,35,87,.05)]">
-        <header className="flex flex-col gap-3 border-b border-[#e8e8ef] px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+    <div className="min-h-screen bg-[#f7f6f1] text-[#1f3029]">
+      <aside className="fixed inset-y-0 left-0 hidden w-60 bg-[#43331e] px-5 py-7 text-white lg:block">
+        <Link href="/supplier" className="flex items-center gap-3 px-2">
+          <Image src="/Logo(Pull).svg" alt="Pull" width={40} height={40} className="rounded-xl" priority />
           <div>
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#1b8e7b]">Demand board</p>
-            <h2 className="mt-1.5 font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.03em] text-[#252048]">Pool menunggu konfirmasi</h2>
+            <p className="text-xl font-extrabold">Pull</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#f2d8a6]">Supplier Space</p>
           </div>
-          <p className="text-xs font-semibold text-[#858397]">{data.pools.length} pool tersedia</p>
-        </header>
+        </Link>
+        <nav className="mt-9 space-y-2" aria-label="Navigasi Supplier">
+          <Link href="/supplier" className="flex min-h-11 items-center gap-3 rounded-xl bg-[#d69238] px-3 text-sm font-extrabold">
+            <LayoutDashboard className="h-4 w-4" /> Dashboard
+          </Link>
+          {SUPPLIER_NAV_ITEMS.map(({ icon: Icon, label, href }) => (
+            <Link key={label} href={href} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.07] hover:text-white">
+              <Icon className="h-4 w-4" /> {label}
+            </Link>
+          ))}
+        </nav>
+      </aside>
 
-        {data.pools.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse text-left">
-              <thead>
-                <tr className="bg-[#f8f8fb] text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#7b788f]">
-                  <th className="px-6 py-4">Komoditas</th>
-                  <th className="px-4 py-4">Volume</th>
-                  <th className="px-4 py-4">Tenggat</th>
-                  <th className="px-4 py-4">Ketua pool</th>
-                  <th className="px-4 py-4">Kontak</th>
-                  <th className="px-6 py-4 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eeeeF3]">
-                {data.pools.map((pool) => {
-                  const message = encodeURIComponent(`Halo, saya tertarik memasok kebutuhan ${pool.commodity} untuk pool ${pool.id}. Apakah masih tersedia?`);
-                  return (
-                    <tr key={pool.id} className="transition-colors hover:bg-[#fbfbfd]">
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e9f7f3] text-[#16806e]"><PackageOpen className="h-[18px] w-[18px]" /></span>
-                          <div>
-                            <p className="text-sm font-extrabold text-[#29264a]">{pool.commodity}</p>
-                            <p className="mt-1 font-mono text-[9px] text-[#9a97a9]">ID {pool.id}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-5 text-sm font-extrabold text-[#343052]">{formatValue(pool.volume)} <span className="font-semibold text-[#858296]">{pool.unit || "unit"}</span></td>
-                      <td className="px-4 py-5"><time className="text-xs font-bold text-[#504b70]">{formatDeadline(pool.deadline)}</time></td>
-                      <td className="px-4 py-5 text-xs font-bold text-[#504b70]">{pool.poolLeader}</td>
-                      <td className="px-4 py-5"><span className="rounded-lg bg-[#f0eff6] px-2.5 py-1.5 font-mono text-[10px] font-bold text-[#65617c]">{pool.whatsappMasked}</span></td>
-                      <td className="px-6 py-5 text-right">
-                        <a href={`https://wa.me/?text=${message}`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#238b76] px-4 text-xs font-extrabold text-white transition hover:bg-[#176f5e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#238b76]">
-                          Hubungi via WA masking <Send className="h-3.5 w-3.5" />
-                        </a>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="grid min-h-64 place-items-center px-6 py-12 text-center">
-            <div>
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#eeedf6] text-[#645d91]"><PackageOpen className="h-6 w-6" /></span>
-              <h3 className="mt-4 text-sm font-extrabold text-[#302c52]">Belum ada pool yang membutuhkan supplier</h3>
-              <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-[#858296]">Kebutuhan baru akan tampil di sini saat pool dibuka. Periksa kembali secara berkala.</p>
+      <main className="mx-auto max-w-6xl px-5 py-7 sm:px-8 sm:py-10 lg:ml-60">
+        <section id="profile" className="scroll-mt-24 rounded-[24px] border border-[#ead7b9] bg-[linear-gradient(120deg,#fffaf0_0%,#f8ebd2_100%)] p-6 sm:p-8">
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#a26822]">Ruang supplier</p>
+          <h2 className="mt-3 text-3xl font-extrabold text-[#3c2c19]">Halo, {ownerName}</h2>
+          <p className="mt-3 max-w-2xl text-sm font-medium leading-7 text-[#74644f]">
+            Kelola penawaran bahan untuk {businessName}. Data tersimpan di Supabase dan aktivitasnya terbaca oleh Administrator.
+          </p>
+        </section>
+
+        <section className="mt-6 grid gap-3 sm:grid-cols-3">
+          <article className="rounded-[18px] border border-[#e5dfd2] bg-white p-5">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8c704d]">Total penawaran</p>
+            <p className="mt-2 text-3xl font-extrabold">{offerRows.length}</p>
+          </article>
+          <article className="rounded-[18px] border border-[#e5dfd2] bg-white p-5">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8c704d]">Penawaran aktif</p>
+            <p className="mt-2 text-3xl font-extrabold">{activeOffers}</p>
+          </article>
+          <article className="rounded-[18px] border border-[#e5dfd2] bg-white p-5">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8c704d]">Aktivitas tercatat</p>
+            <p className="mt-2 text-3xl font-extrabold">{activities.length}</p>
+          </article>
+        </section>
+
+        <section id="offers" className="mt-6 grid scroll-mt-24 gap-5 xl:grid-cols-[.8fr_1.2fr]">
+          <form action={createSupplierOfferAction} className="rounded-[20px] border border-[#e5dfd2] bg-white p-5 shadow-sm">
+            <Boxes className="h-5 w-5 text-[#bd7828]" />
+            <h2 className="mt-4 text-lg font-extrabold">Buat penawaran supplier</h2>
+            {params.success ? <p className="mt-3 rounded-xl bg-[#eef8ed] p-3 text-xs font-bold text-[#47772f]">Penawaran berhasil disimpan.</p> : null}
+            {params.error ? <p className="mt-3 rounded-xl bg-[#fff0f0] p-3 text-xs font-bold text-[#b43e48]">Periksa data penawaran.</p> : null}
+            <input name="itemName" required minLength={3} maxLength={100} placeholder="Nama bahan, mis. Minyak Goreng" className="mt-4 h-11 w-full rounded-xl border border-[#e1d8ca] px-4 text-xs" />
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <input name="unit" required maxLength={30} placeholder="Satuan (karton)" className="h-11 rounded-xl border border-[#e1d8ca] px-4 text-xs" />
+              <input name="unitPrice" required type="number" min="1" step="100" placeholder="Harga/satuan" className="h-11 rounded-xl border border-[#e1d8ca] px-4 text-xs" />
+            </div>
+            <button className="mt-4 h-11 w-full rounded-xl bg-[#b87427] text-xs font-extrabold text-white">Simpan penawaran</button>
+          </form>
+
+          <div className="rounded-[20px] border border-[#e5dfd2] bg-white p-5">
+            <h2 className="text-lg font-extrabold">Penawaran aktif ({offerRows.length})</h2>
+            <div className="mt-4 space-y-3">
+              {offerRows.length ? offerRows.map((offer) => (
+                <article key={offer.id} className="flex items-center justify-between gap-4 rounded-xl border border-[#eee5d8] p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f7ead9] text-[#a7651e]">
+                      <PackageOpen className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-extrabold">{offer.item_name}</p>
+                      <p className="mt-1 text-[10px] text-[#796954]">Per {offer.unit}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-extrabold text-[#a7651e]">{formatRupiah(offer.unit_price)}</p>
+                </article>
+              )) : <p className="py-10 text-center text-xs text-[#7c6f5c]">Belum ada penawaran database.</p>}
             </div>
           </div>
-        )}
-      </section>
+        </section>
 
-      <footer className="mt-6 flex flex-col gap-2 border-t border-[#dedfe8] pt-5 text-[10px] font-semibold text-[#858296] sm:flex-row sm:items-center sm:justify-between">
-        <p>Data demand mengikuti pool aktif di jaringan Pull.</p>
-        <a href="#insight" className="inline-flex items-center gap-1 font-extrabold text-[#4c4777]">Kembali ke insight <ArrowUpRight className="h-3.5 w-3.5" /></a>
-      </footer>
-    </>
+        <section id="activity" className="mt-6 scroll-mt-24 rounded-[20px] border border-[#e5dfd2] bg-white p-5 sm:p-6">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#9b6b2c]">Data Supabase</p>
+          <h2 className="mt-1 text-lg font-extrabold">Aktivitas Supplier terbaru</h2>
+          <div className="mt-4 divide-y divide-[#eee5d8]">
+            {activities.length ? activities.map((activity) => (
+              <article key={activity.id} className="flex items-start justify-between gap-4 py-4">
+                <div>
+                  <p className="text-xs font-extrabold">{activity.title}</p>
+                  <p className="mt-1 text-[10px] leading-5 text-[#796954]">{activity.detail}</p>
+                </div>
+                <time className="shrink-0 text-[9px] font-bold text-[#9b8060]">{activity.time}</time>
+              </article>
+            )) : <p className="py-10 text-center text-xs text-[#7c6f5c]">Belum ada aktivitas database.</p>}
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }

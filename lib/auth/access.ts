@@ -57,6 +57,11 @@ export const getCurrentAccess = cache(async (): Promise<CurrentAccess | null> =>
     .select("role, account_status")
     .eq("id", user.id)
     .maybeSingle<ProfileAccessRow>();
+
+  if (profileResult.error) {
+    throw new Error("Profil akses belum dapat diverifikasi.");
+  }
+
   const profile = profileResult.data;
 
   return {

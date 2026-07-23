@@ -2,12 +2,9 @@ import Image from 'next/image'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
-  Award,
   CheckCircle2,
   CircleAlert,
   ClipboardList,
-  ShieldCheck,
-  Star,
   TrendingUp,
 } from 'lucide-react'
 import { useWorkspace } from '../context/WorkspaceContext'
@@ -20,12 +17,12 @@ const metricTones = {
   gold: 'bg-[#fff6d9] text-[#d69208]',
 }
 
-function CompletionAlert({ application, onConfirm }) {
-  if (!application) {
+function CompletionAlert({ waitingCount }) {
+  if (!waitingCount) {
     return (
       <section className="flex min-h-[124px] items-center gap-4 rounded-[18px] border border-pull-100 bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.035)] sm:gap-5 sm:p-6">
         <span className="grid size-14 shrink-0 place-items-center rounded-full bg-pull-100 text-pull-700"><CheckCircle2 size={25} /></span>
-        <div><h2 className="text-base font-extrabold text-pull-950">Semua konfirmasi sudah selesai</h2><p className="mt-1.5 text-xs font-medium text-pull-500 sm:text-[13px]">Tidak ada pekerjaan yang menunggu tindakanmu.</p></div>
+        <div><h2 className="text-base font-extrabold text-pull-950">Tidak ada lamaran menunggu</h2><p className="mt-1.5 text-xs font-medium text-pull-500 sm:text-[13px]">Kirim lamaran dari lowongan database untuk memulai proses.</p></div>
       </section>
     )
   }
@@ -34,10 +31,10 @@ function CompletionAlert({ application, onConfirm }) {
     <section className="flex min-h-[124px] flex-col gap-4 rounded-[18px] border border-[#f5c38e] bg-[linear-gradient(100deg,#fffaf3_0%,#fff3e5_100%)] p-5 shadow-[0_8px_28px_rgba(197,104,28,.055)] sm:flex-row sm:items-center sm:gap-5 sm:p-6">
       <span className="grid size-14 shrink-0 place-items-center rounded-full bg-[#f47b0c] text-white shadow-[0_8px_18px_rgba(244,123,12,.22)]"><CircleAlert size={27} /></span>
       <div className="min-w-0 flex-1">
-        <h2 className="text-base font-extrabold text-pull-950">1 pekerjaan menunggu konfirmasi selesai</h2>
-        <p className="mt-1.5 text-xs font-medium leading-5 text-pull-500 sm:text-[13px]">Konfirmasi selesai kerja untuk mendapatkan sertifikat dan PullPoints.</p>
+        <h2 className="text-base font-extrabold text-pull-950">{waitingCount} lamaran menunggu respons</h2>
+        <p className="mt-1.5 text-xs font-medium leading-5 text-pull-500 sm:text-[13px]">Status ini dibaca langsung dari lamaran yang tersimpan di Supabase.</p>
       </div>
-      <button type="button" onClick={onConfirm} className="inline-flex h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#07964d] px-6 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(7,150,77,.18)] transition duration-200 hover:bg-[#087d44]">Konfirmasi sekarang <ArrowRight size={17} /></button>
+      <Link to="/apply" className="inline-flex h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#07964d] px-6 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(7,150,77,.18)] transition duration-200 hover:bg-[#087d44]">Lihat lowongan <ArrowRight size={17} /></Link>
     </section>
   )
 }
@@ -54,20 +51,21 @@ function DashboardMetric({ icon: Icon, label, value, detail, tone = 'green', tre
   )
 }
 
-function TrustGauge() {
+function ApplicationGauge({ accepted, total }) {
   const circumference = 326.73
-  const progress = 0.96
+  const progress = total ? accepted / total : 0
+  const percentage = Math.round(progress * 100)
 
   return (
     <section className="flex h-full min-h-[348px] flex-col rounded-[18px] border border-pull-100 bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.035)] sm:p-6">
-      <h2 className="flex items-center gap-2 font-display text-xl font-semibold tracking-[-0.025em] text-pull-950"><ShieldCheck size={19} className="fill-[#087a41] text-white" strokeWidth={2.2} /> Trust Score</h2>
-      <div className="relative mx-auto mt-5 size-48 xl:size-44 2xl:size-48" role="img" aria-label="Trust Score 4,8 dari 5, sangat baik">
+      <h2 className="flex items-center gap-2 font-display text-xl font-semibold tracking-[-0.025em] text-pull-950"><CheckCircle2 size={19} className="text-[#087a41]" strokeWidth={2.2} /> Rasio Diterima</h2>
+      <div className="relative mx-auto mt-5 size-48 xl:size-44 2xl:size-48" role="img" aria-label={`${percentage} persen lamaran diterima`}>
         <svg className="size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
           <defs><linearGradient id="worker-trust-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#05723c" /><stop offset="1" stopColor="#84bf2f" /></linearGradient></defs>
           <circle cx="60" cy="60" r="52" fill="none" stroke="#edf1ee" strokeWidth="10" />
           <circle cx="60" cy="60" r="52" fill="none" stroke="url(#worker-trust-gradient)" strokeWidth="10" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)} />
         </svg>
-        <div className="absolute inset-0 grid place-content-center text-center"><strong className="font-display text-[52px] font-semibold tracking-[-0.06em] text-pull-950">4,8</strong><span className="mt-1 text-xs font-extrabold text-pull-700">Sangat baik</span></div>
+        <div className="absolute inset-0 grid place-content-center text-center"><strong className="font-display text-[46px] font-semibold tracking-[-0.06em] text-pull-950">{percentage}%</strong><span className="mt-1 text-xs font-extrabold text-pull-700">{accepted} dari {total}</span></div>
       </div>
       <Link to="/trust" className="mt-auto inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#b9dcc8] bg-white text-xs font-extrabold text-[#087a41] transition hover:border-[#78b994] hover:bg-[#f5fbf7]">Lihat detail</Link>
     </section>
@@ -105,9 +103,7 @@ function activityPath(activity) {
 }
 
 export default function DashboardPage() {
-  const { profile, applications, activities, certificates, activeApplicationCount, openDialog } = useWorkspace()
-  const pendingCompletion = applications.Selesai.find((application) => application.confirmable && application.employerConfirmed && !application.workerConfirmed)
-  const pendingCompletionCount = applications.Selesai.filter((application) => application.confirmable && application.employerConfirmed && !application.workerConfirmed).length
+  const { profile, activities, activeApplicationCount, allApplicationCount, waitingApplicationCount, acceptedApplicationCount } = useWorkspace()
 
   return (
     <>
@@ -121,15 +117,15 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-12 gap-5">
         <div className="col-span-12 space-y-5 xl:col-span-9">
-          <CompletionAlert application={pendingCompletion} onConfirm={() => openDialog('work-confirmation', { appId: pendingCompletion.id, stage: 'Selesai' })} />
+          <CompletionAlert waitingCount={waitingApplicationCount} />
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetric icon={ClipboardList} label="Lamaran aktif" value={String(activeApplicationCount)} detail="+1 dari minggu lalu" trend />
-            <DashboardMetric icon={CheckCircle2} label="Perlu konfirmasi" value={String(pendingCompletionCount)} detail="Segera konfirmasi selesai" tone="orange" />
-            <DashboardMetric icon={Award} label="Sertifikat dimiliki" value={String(certificates.length)} detail="Terakhir: 3 hari lalu" tone="mint" />
-            <DashboardMetric icon={Star} label="PullPoints" value="12 pts" detail="+1 dari konfirmasi terakhir" tone="gold" trend />
+            <DashboardMetric icon={ClipboardList} label="Total lamaran" value={String(allApplicationCount)} detail="Tersimpan di database" />
+            <DashboardMetric icon={CircleAlert} label="Menunggu respons" value={String(waitingApplicationCount)} detail="Berstatus dikirim" tone="orange" />
+            <DashboardMetric icon={CheckCircle2} label="Diterima" value={String(acceptedApplicationCount)} detail="Keputusan UMKM" tone="mint" />
+            <DashboardMetric icon={TrendingUp} label="Lamaran aktif" value={String(activeApplicationCount)} detail="Dikirim atau diterima" tone="gold" />
           </div>
         </div>
-        <div className="col-span-12 xl:col-span-3"><TrustGauge /></div>
+        <div className="col-span-12 xl:col-span-3"><ApplicationGauge accepted={acceptedApplicationCount} total={allApplicationCount} /></div>
 
         <div className="col-span-12"><ActivityPanel activities={activities} /></div>
       </div>

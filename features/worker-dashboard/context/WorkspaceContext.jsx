@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   defaultAdvancedFilters,
-  initialActivities,
   initialApplications,
   initialCertificates,
   initialExperiences,
@@ -12,7 +11,6 @@ import {
 } from '../data/mockData'
 
 const WorkspaceContext = createContext(null)
-const confirmationDemoApplication = initialApplications.Selesai.find((application) => application.id === 'app-7')
 
 function usePersistentState(key, initialValue) {
   const [value, setValue] = useState(() => {
@@ -50,7 +48,7 @@ function calculateProfileCompletion(profile) {
   return Math.round((completed / requiredFields.length) * 100)
 }
 
-export function WorkspaceProvider({ children, initialProfile }) {
+export function WorkspaceProvider({ children, initialProfile, initialDashboard }) {
   const navigate = useNavigate()
   const { skills: serverSkills = [], ...serverProfile } = initialProfile || {}
   const hasServerVerification = Object.hasOwn(serverProfile, 'whatsappVerified')
@@ -64,8 +62,8 @@ export function WorkspaceProvider({ children, initialProfile }) {
     ...(initialProfile && !hasServerVerification ? { whatsappVerified: false } : {}),
   }
   const [profile, setProfile] = usePersistentState(`pull-worker-profile-v3-${storageScope}`, seededProfile)
-  const [applications, setApplications] = usePersistentState(`pull-worker-applications-v4-${storageScope}`, initialApplications)
-  const [activities, setActivities] = usePersistentState(`pull-worker-activities-v2-${storageScope}`, initialActivities)
+  const [applications, setApplications] = useState(() => initialDashboard?.applications || initialApplications)
+  const [activities, setActivities] = useState(() => initialDashboard?.activities || [])
   const [portfolio, setPortfolio] = usePersistentState(`pull-worker-portfolio-v2-${storageScope}`, initialPortfolio)
   const [certificates, setCertificates] = usePersistentState(`pull-worker-certificates-v2-${storageScope}`, initialCertificates)
   const [experiences, setExperiences] = usePersistentState(`pull-worker-experiences-v2-${storageScope}`, initialExperiences)
@@ -81,6 +79,8 @@ export function WorkspaceProvider({ children, initialProfile }) {
 
   const activeApplicationCount = applications.Dilamar.length + applications.Ditinjau.length + applications.Interview.length + applications.Diterima.length
   const allApplicationCount = Object.values(applications).reduce((total, items) => total + items.length, 0)
+  const waitingApplicationCount = applications.Dilamar.length + applications.Ditinjau.length
+  const acceptedApplicationCount = applications.Diterima.length
 
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
@@ -98,26 +98,6 @@ export function WorkspaceProvider({ children, initialProfile }) {
       return { ...nextProfile, completion: calculateProfileCompletion(nextProfile) }
     })
   }, [hasServerVerification, initialProfile, setProfile, storageScope])
-
-  useEffect(() => {
-    const migrationKey = `pull-worker-confirmation-demo-v2-${storageScope}`
-    try {
-      if (window.localStorage.getItem(migrationKey)) return
-    } catch {
-      // Continue with the in-memory seed when storage is unavailable.
-    }
-
-    setApplications((current) => {
-      const withoutOldDemo = Object.fromEntries(Object.entries(current).map(([stage, items]) => [stage, items.filter((application) => application.id !== confirmationDemoApplication.id)]))
-      return { ...withoutOldDemo, Selesai: [{ ...confirmationDemoApplication }, ...withoutOldDemo.Selesai] }
-    })
-
-    try {
-      window.localStorage.setItem(migrationKey, 'done')
-    } catch {
-      // In-memory state is enough for the current session.
-    }
-  }, [setApplications, storageScope])
 
   const showToast = (message) => {
     setToast(message)
@@ -454,6 +434,8 @@ export function WorkspaceProvider({ children, initialProfile }) {
 
     activeApplicationCount,
     allApplicationCount,
+    waitingApplicationCount,
+    acceptedApplicationCount,
     openDialog,
     closeDialog,
     showToast,

@@ -51,9 +51,9 @@ function PageSuspense({ children }) {
   return <Suspense fallback={<div className="space-y-4"><div className="h-20 animate-pulse rounded-[22px] bg-pull-100/60" /><div className="h-64 animate-pulse rounded-[22px] bg-pull-100/60" /></div>}><AnimatedPage key={location.pathname}>{children}</AnimatedPage></Suspense>
 }
 
-function AppRoutes({ initialProfile }) {
+function AppRoutes({ initialProfile, initialDashboard }) {
   return (
-    <WorkspaceProvider initialProfile={initialProfile}>
+    <WorkspaceProvider initialProfile={initialProfile} initialDashboard={initialDashboard}>
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -76,10 +76,10 @@ function AppRoutes({ initialProfile }) {
   )
 }
 
-export default function App({ initialProfile }) {
+export default function App({ initialProfile, initialDashboard }) {
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot)
 
   if (!mounted) return null
 
-  return <BrowserRouter basename="/worker"><AppRoutes initialProfile={initialProfile} /></BrowserRouter>
+  return <BrowserRouter basename="/worker"><AppRoutes initialProfile={initialProfile} initialDashboard={initialDashboard} /></BrowserRouter>
 }

@@ -16,7 +16,8 @@ Migration yang diperlukan:
 - `202607230003_activity_monitoring.sql`;
 - `202607230004_fix_activity_role_variables.sql`;
 - `202607230005_admin_users_and_activity.sql`;
-- `202607230006_persistent_role_business_actions.sql`.
+- `202607230006_persistent_role_business_actions.sql`;
+- `202607230007_smart_impact_dashboard.sql`.
 
 Rangkaian migration tersebut:
 
@@ -28,7 +29,8 @@ Rangkaian migration tersebut:
 - menyediakan RPC `set_own_role` yang tidak menerima role Administrator;
 - membuat `activity_logs`, presence, dan agregasi monitoring;
 - menyediakan query pengguna/log khusus Administrator;
-- menyediakan moderasi suspend/reactivate yang tercatat otomatis.
+- menyediakan moderasi suspend/reactivate yang tercatat otomatis;
+- menyediakan agregasi Smart Impact dan Action Log khusus Administrator.
 
 ## 2. Buat akun domain
 
@@ -40,6 +42,26 @@ Buat tiga akun melalui alur registrasi dan onboarding Pull:
 
 Pilih role melalui onboarding. Jangan mengubah role langsung dari browser atau
 menanam kredensial akun demo di source code.
+
+Untuk lingkungan demo lokal yang sudah memiliki `.env.admin.local`, akun domain
+dapat disiapkan secara idempoten dengan:
+
+```powershell
+npm run provision:roles
+npm run seed:roles
+```
+
+Script membuat data berikut tanpa mencetak password:
+
+| Role | Email demo | Password lokal |
+| --- | --- | --- |
+| UMKM | `demo.umkm@pull.example.com` | Nilai `ADMIN_TEMP_PASSWORD` |
+| Pekerja | `demo.pekerja@pull.example.com` | Nilai `ADMIN_TEMP_PASSWORD` |
+| Supplier | `demo.supplier@pull.example.com` | Nilai `ADMIN_TEMP_PASSWORD` |
+
+`seed:roles` membuat satu lowongan, satu lamaran, dan satu penawaran melalui RPC
+role yang sebenarnya. Kedua script aman dijalankan ulang karena memeriksa data
+yang sudah tersedia. Ganti password seluruh akun setelah sesi demonstrasi.
 
 ## 3. Buat akun Administrator
 
@@ -105,6 +127,7 @@ Halaman Administrator:
 | Fitur | Route |
 | --- | --- |
 | Ringkasan Monitoring | `/admin` |
+| Smart Impact & Action Log | `/admin/impact` |
 | Manajemen Pengguna | `/admin/users` |
 | Log Aktivitas | `/admin/activity` |
 
@@ -133,7 +156,31 @@ Jalankan dari root project setelah `.env.local` dan `.env.admin.local` tersedia:
 node scripts/verify-admin-login.mjs
 node scripts/verify-activity-monitoring.mjs
 node scripts/verify-admin-management.mjs
+node scripts/verify-impact-dashboard.mjs
 ```
+
+Untuk membuktikan batas akses ketiga role domain, buat `.env.roles.local`
+(file ini diabaikan Git) dengan isi:
+
+```dotenv
+UMKM_EMAIL=
+UMKM_PASSWORD=
+WORKER_EMAIL=
+WORKER_PASSWORD=
+SUPPLIER_EMAIL=
+SUPPLIER_PASSWORD=
+```
+
+Kemudian jalankan:
+
+```powershell
+npm run verify:roles
+```
+
+Verifikasi tersebut memastikan ketiga akun tidak dapat membaca monitoring Admin,
+tidak dapat menjalankan RPC milik role lain, tetapi tetap dapat membaca aktivitas
+miliknya sendiri. RPC lintas role yang dipanggil sengaja ditolak sebelum menulis
+data apa pun.
 
 Script hanya menampilkan status verifikasi dan jumlah ringkas; kredensial serta
 key tidak dicetak ke output.

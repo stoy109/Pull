@@ -62,6 +62,9 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      if (next === "/auth/redirect") {
+        await supabase.rpc("record_current_login");
+      }
       const destination = await resolveLoginDestination(supabase, next);
       return NextResponse.redirect(new URL(destination, requestUrl.origin));
     }
@@ -74,6 +77,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
+      if (next === "/auth/redirect") {
+        await supabase.rpc("record_current_login");
+      }
       const destination = await resolveLoginDestination(supabase, next);
       return NextResponse.redirect(new URL(destination, requestUrl.origin));
     }

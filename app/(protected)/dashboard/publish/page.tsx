@@ -11,7 +11,9 @@ export default async function PublishJobPage({ searchParams }: { searchParams: P
   const metadata = user.user_metadata ?? {};
   const ownerName = typeof metadata.display_name === "string" ? metadata.display_name : "Pemilik UMKM";
   const businessName = typeof metadata.business_name === "string" ? metadata.business_name : "UMKM Pull";
-  return <UmkmDashboardShell ownerName={ownerName} businessName={businessName} profileCompletion={84}>
+  const profileCompletion = [metadata.display_name ?? metadata.full_name, metadata.business_name, metadata.headline, metadata.phone]
+    .filter((field) => typeof field === "string" && field.trim()).length * 25;
+  return <UmkmDashboardShell ownerName={ownerName} businessName={businessName} profileCompletion={profileCompletion}>
     <section className="grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
       <form action={createJobPostingAction} className="rounded-[22px] border border-[#dce7e1] bg-white p-6 shadow-sm">
         <BriefcaseBusiness className="h-6 w-6 text-[#087447]" />

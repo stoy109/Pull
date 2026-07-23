@@ -1,48 +1,18 @@
 import Image from "next/image";
-
 import {
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
   CircleAlert,
-
+  Eye,
   FileText,
   ShieldCheck,
   TrendingUp,
-
   UsersRound,
 } from "lucide-react";
 import { UmkmDashboardShell } from "@/features/dashboard/components/umkm-dashboard-shell";
-import { requireRole } from "@/lib/auth/require-role";
-import {
-  getRecentActivities,
-  getUmkmOverviewStats,
-  type ActivityLog,
-} from "@/lib/activity/queries";
-
-function activityPresentation(activity: ActivityLog) {
-  if (activity.action === "pool.create") {
-    return { title: "Pool baru dibuat", icon: UsersRound };
-  }
-  if (activity.action === "pool.join") {
-    return { title: "Bergabung ke pool", icon: CheckCircle2 };
-  }
-  if (activity.action === "job.post") {
-    return { title: "Lowongan berhasil diposting", icon: BriefcaseBusiness };
-  }
-  if (activity.action === "profile.update") {
-    return { title: "Profil bisnis diperbarui", icon: CheckCircle2 };
-  }
-  return { title: activity.action.replaceAll(".", " · "), icon: CheckCircle2 };
-}
-
-function relativeTime(value: string) {
-  const elapsed = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(elapsed) || elapsed < 60_000) return "Baru saja";
-  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 60_000)} menit`;
-  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)} jam`;
-  return `${Math.floor(elapsed / 86_400_000)} hari`;
-}
+import { getDashboardData } from "@/features/dashboard/data/get-dashboard-data";
+import { getUmkmDashboardData } from "@/features/dashboard/data/get-role-dashboard-data";
 
 function readMetadataString(
   metadata: Record<string, unknown>,
@@ -65,30 +35,59 @@ function readProfileCompletion(metadata: Record<string, unknown>) {
     if (Number.isFinite(parsed)) return Math.min(100, Math.max(0, parsed));
   }
 
-  return 84;
+  const completedFields = [
+    metadata.display_name ?? metadata.full_name,
+    metadata.business_name,
+    metadata.headline,
+    metadata.phone,
+  ].filter((field) => typeof field === "string" && field.trim()).length;
+
+  return completedFields * 25;
+}
+
+function activityIcon(icon: string) {
+  if (icon === "briefcase") return BriefcaseBusiness;
+  if (icon === "user") return Eye;
+  if (icon === "shield") return ShieldCheck;
+  return CheckCircle2;
 }
 
 export default async function DashboardPage() {
-  const { user } = await requireRole(["umkm"]);
-  const [overview, recentActivities] = await Promise.all([
-    getUmkmOverviewStats(user.id),
-    getRecentActivities({ userIdFilter: user.id, roleFilter: "umkm", limit: 5 }),
-  ]);
+  const { user } = await getDashboardData(["umkm"]);
+  const dashboard = await getUmkmDashboardData(user.id);
   const metadata = user.user_metadata ?? {};
-  const overviewStats = [
-    { label: "Total Pool Aktif", value: overview.activePools, icon: UsersRound, tone: "bg-[#e7f4df] text-[#07833f]" },
-    { label: "Lowongan Aktif", value: overview.activeJobs, icon: BriefcaseBusiness, tone: "bg-[#e7f4df] text-[#07833f]" },
-    { label: "Lamaran Masuk", value: overview.applications, icon: FileText, tone: "bg-[#e9f2ff] text-[#0868d7]" },
-  ];
 
   const savedOwnerName =
     readMetadataString(metadata, "display_name") ||
     readMetadataString(metadata, "full_name");
-  const ownerName = savedOwnerName || "Sari Wulandari";
+  const ownerName = savedOwnerName || "Pemilik UMKM";
   const businessName =
-    readMetadataString(metadata, "business_name") || "Dapur Sari";
+    readMetadataString(metadata, "business_name") || "UMKM Pull";
   const profileCompletion = readProfileCompletion(metadata);
   const firstName = ownerName.split(" ")[0];
+  const overviewStats = [
+    {
+      label: "Total Lowongan",
+      value: dashboard.totalJobs,
+      comparison: "tersimpan di database",
+      icon: UsersRound,
+      tone: "bg-[#e7f4df] text-[#07833f]",
+    },
+    {
+      label: "Lowongan Aktif",
+      value: dashboard.activeJobs,
+      comparison: "berstatus diterbitkan",
+      icon: BriefcaseBusiness,
+      tone: "bg-[#e7f4df] text-[#07833f]",
+    },
+    {
+      label: "Lamaran Masuk",
+      value: dashboard.totalApplications,
+      comparison: `${dashboard.pendingApplications} menunggu ditinjau`,
+      icon: FileText,
+      tone: "bg-[#e9f2ff] text-[#0868d7]",
+    },
+  ];
 
   return (
     <UmkmDashboardShell ownerName={ownerName} businessName={businessName} profileCompletion={profileCompletion}>
@@ -98,7 +97,7 @@ export default async function DashboardPage() {
       >
         <div className="relative z-10 px-5 py-7 sm:min-h-[260px] sm:max-w-[52%] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           <h2 className="mt-4 font-[family-name:var(--font-worker-display)] text-[27px] font-semibold leading-[1.1] tracking-[-0.04em] text-[#0c261c] sm:text-[32px]">
-            Selamat datang kembali, {firstName}! <span aria-hidden="true">👋</span>
+            Selamat datang kembali, {firstName}!
           </h2>
           <p className="mt-5 max-w-[430px] text-sm font-medium leading-7 text-[#38694e] sm:text-[15px]">
             Kelola usahamu, temukan pekerja tepercaya, dan tumbuh bersama komunitas Pull.
@@ -123,13 +122,13 @@ export default async function DashboardPage() {
               <CircleAlert className="h-7 w-7" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-base font-extrabold text-[#0c261c]">{overview.applications} pelamar tercatat</h2>
+              <h2 className="text-base font-extrabold text-[#0c261c]">{dashboard.pendingApplications} pelamar menunggu ditinjau</h2>
               <p className="mt-1.5 text-xs font-medium leading-5 text-[#507f63] sm:text-[13px]">
                 Tinjau kandidat lebih awal agar kebutuhan tim {businessName} cepat terpenuhi.
               </p>
             </div>
-            <a href="/dashboard/jobs" className="inline-flex h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#07964d] px-6 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(7,150,77,.18)] transition hover:bg-[#087d44]">
-              Tinjau pelamar <ArrowRight className="h-4 w-4" />
+            <a href="/dashboard/publish" className="inline-flex h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#07964d] px-6 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(7,150,77,.18)] transition hover:bg-[#087d44]">
+              {dashboard.pendingApplications ? "Lihat data lowongan" : "Buat lowongan"} <ArrowRight className="h-4 w-4" />
             </a>
           </section>
 
@@ -146,9 +145,9 @@ export default async function DashboardPage() {
                     <strong className="block font-[family-name:var(--font-worker-display)] text-[30px] font-semibold leading-8 tracking-[-0.04em] text-[#0c261c]">{stat.value}</strong>
                     <p className="flex items-center gap-x-1 whitespace-nowrap text-[10px] font-semibold leading-4 text-[#6e8176]">
                       <span className="inline-flex items-center gap-1 font-extrabold text-[#07964d]">
-                        <TrendingUp className="h-3.5 w-3.5" /> Data live
+                        <TrendingUp className="h-3.5 w-3.5" /> Aktual
                       </span>
-                      <span>dari aktivitas</span>
+                      <span>{stat.comparison}</span>
                     </p>
                   </div>
                 </article>
@@ -159,9 +158,9 @@ export default async function DashboardPage() {
 
         <section id="trust-score" className="col-span-12 flex min-h-[270px] flex-col rounded-[18px] border border-[#dfeae2] bg-white p-5 shadow-[0_8px_28px_rgba(18,59,48,.035)] xl:col-span-3">
           <h2 className="flex items-center gap-2 font-[family-name:var(--font-worker-display)] text-lg font-semibold tracking-[-0.025em] text-[#0c261c]">
-            <ShieldCheck className="h-5 w-5 fill-[#087a41] text-white" /> Trust Score
+            <ShieldCheck className="h-5 w-5 fill-[#087a41] text-white" /> Kelengkapan Profil
           </h2>
-          <div className="relative mx-auto mt-3 h-32 w-32" role="img" aria-label="Trust Score bisnis 4,7 dari 5, sangat baik">
+          <div className="relative mx-auto mt-3 h-32 w-32" role="img" aria-label={`Kelengkapan profil bisnis ${profileCompletion} persen`}>
             <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
               <defs>
                 <linearGradient id="umkm-trust-gradient" x1="0" y1="0" x2="1" y2="1">
@@ -170,11 +169,11 @@ export default async function DashboardPage() {
                 </linearGradient>
               </defs>
               <circle cx="60" cy="60" r="52" fill="none" stroke="#edf1ee" strokeWidth="10" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke="url(#umkm-trust-gradient)" strokeWidth="10" strokeLinecap="round" strokeDasharray="326.73" strokeDashoffset="19.6" />
+              <circle cx="60" cy="60" r="52" fill="none" stroke="url(#umkm-trust-gradient)" strokeWidth="10" strokeLinecap="round" strokeDasharray="326.73" strokeDashoffset={326.73 * (1 - profileCompletion / 100)} />
             </svg>
             <div className="absolute inset-0 grid place-content-center text-center">
-              <strong className="font-[family-name:var(--font-worker-display)] text-[40px] font-semibold tracking-[-0.06em] text-[#0c261c]">4,7</strong>
-              <span className="mt-0.5 text-[10px] font-extrabold text-[#28543e]">Sangat baik</span>
+              <strong className="font-[family-name:var(--font-worker-display)] text-[35px] font-semibold tracking-[-0.06em] text-[#0c261c]">{profileCompletion}%</strong>
+              <span className="mt-0.5 text-[10px] font-extrabold text-[#28543e]">Data profil</span>
             </div>
           </div>
           <a href="#aktivitas" className="mt-auto inline-flex h-10 w-full items-center justify-center rounded-xl border border-[#b9dcc8] bg-white text-[11px] font-extrabold text-[#087a41] transition hover:border-[#78b994] hover:bg-[#f5fbf7]">
@@ -186,34 +185,32 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-4 border-b border-[#dfeae2] pb-5">
             <div className="flex items-center gap-2.5">
               <h2 className="font-[family-name:var(--font-worker-display)] text-xl font-semibold tracking-[-0.025em] text-[#0c261c]">Aktivitas terbaru</h2>
-              <span className="rounded-md bg-[#e7f5eb] px-2.5 py-1 text-[10px] font-extrabold text-[#18804a]">Hari ini</span>
+              <span className="rounded-md bg-[#e7f5eb] px-2.5 py-1 text-[10px] font-extrabold text-[#18804a]">Live</span>
             </div>
           </div>
           <div className="divide-y divide-[#edf3ef]">
-            {recentActivities.map((activity) => {
-              const presentation = activityPresentation(activity);
-              const Icon = presentation.icon;
+            {dashboard.activities.slice(0, 4).map((activity) => {
+              const Icon = activityIcon(activity.icon);
               return (
                 <div key={activity.id} className="flex items-start gap-3 py-4">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#e8f5ec] text-[#08783f]">
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold leading-5 text-[#1d4634]">{presentation.title}</p>
+                    <p className="text-xs font-bold leading-5 text-[#1d4634]">{activity.title}</p>
                     <p className="mt-1 text-[10px] font-medium leading-4 text-[#6e9b7d]">{activity.detail || "Aktivitas berhasil tercatat di Pull."}</p>
                   </div>
-                  <span className="shrink-0 pt-1 text-[10px] font-semibold text-[#6e9b7d]">{relativeTime(activity.created_at)}</span>
+                  <span className="shrink-0 pt-1 text-[10px] font-semibold text-[#6e9b7d]">{activity.time}</span>
                 </div>
               );
             })}
-            {!recentActivities.length ? <p className="py-10 text-center text-xs font-semibold text-[#6e9b7d]">Belum ada aktivitas tercatat.</p> : null}
+            {!dashboard.activities.length ? <p className="py-12 text-center text-xs font-medium text-[#718078]">Belum ada aktivitas database. Aktivitas akan muncul setelah Anda memakai fitur Pull.</p> : null}
           </div>
         </section>
-
       </div>
 
       <footer className="mt-8 flex flex-col gap-2 border-t border-[#dfeae2] pt-5 text-[9px] font-semibold text-[#6e9b7d] sm:flex-row sm:items-center sm:justify-between">
-        <p>Pull UMKM Space · Membantu usaha lokal tumbuh bersama</p>
+        <p>Pull UMKM Space - Membantu usaha lokal tumbuh bersama</p>
         <p>Data dashboard menyesuaikan profil bisnis Anda</p>
       </footer>
     </UmkmDashboardShell>

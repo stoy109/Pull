@@ -3,12 +3,14 @@ import Link from "next/link";
 import {
   Activity,
   LayoutDashboard,
+  Sparkles,
   UsersRound,
 } from "lucide-react";
 import { signOutAction } from "@/features/auth/actions";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Monitoring", icon: LayoutDashboard },
+  { href: "/admin/impact", label: "Smart Impact", icon: Sparkles },
   { href: "/admin/users", label: "Pengguna", icon: UsersRound },
   { href: "/admin/activity", label: "Log Aktivitas", icon: Activity },
 ] as const;
@@ -17,9 +19,11 @@ export function AdminShell({
   activePath = "/admin",
   children,
 }: Readonly<{
-  activePath?: "/admin" | "/admin/users" | "/admin/activity";
+  activePath?: "/admin" | "/admin/impact" | "/admin/users" | "/admin/activity";
   children: React.ReactNode;
 }>) {
+  const isImpactPage = activePath === "/admin/impact";
+
   return (
     <div className="min-h-screen bg-[#f4f7f5] text-[#10231d]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 bg-[#092d23] px-5 py-7 text-white lg:block">
@@ -65,15 +69,17 @@ export function AdminShell({
               <div>
                 <p className="text-sm font-extrabold">Pull Admin</p>
                 <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#5a796d]">
-                  Monitoring
+                  {isImpactPage ? "Smart Impact" : "Monitoring"}
                 </p>
               </div>
             </Link>
             <div className="hidden lg:block">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#42806a]">
-                Challenge 1
+                {isImpactPage ? "Challenge 2" : "Challenge 1"}
               </p>
-              <p className="mt-1 text-sm font-extrabold">Pusat Monitoring Platform</p>
+              <p className="mt-1 text-sm font-extrabold">
+                {isImpactPage ? "Smart Impact Dashboard" : "Pusat Monitoring Platform"}
+              </p>
             </div>
             <form action={signOutAction}>
               <button
