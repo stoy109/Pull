@@ -206,9 +206,6 @@ export const jobs = [
   },
 ]
 
-const applicationSectionCounts = { waiting: 3, confirmation: 1, accepted: 18, done: 2, rejected: 1 }
-export const applicationTabCounts = { all: Object.values(applicationSectionCounts).reduce((total, count) => total + count, 0), ...applicationSectionCounts }
-
 export const initialApplications = {
   Dilamar: [
     { id: 'app-1', company: 'Dapur Mami Solo', role: 'Asisten Dapur', time: 'Dilamar kemarin', status: 'Lamaran terkirim', location: 'Serengan', pay: 'Rp120 rb / hari' },

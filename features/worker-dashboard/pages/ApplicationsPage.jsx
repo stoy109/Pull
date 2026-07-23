@@ -16,7 +16,6 @@ import {
   XCircle,
 } from 'lucide-react'
 import { FaWhatsapp } from 'react-icons/fa'
-import { applicationTabCounts } from '../data/mockData'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { VerifiedUmkmIcon } from '../components/UI'
 
@@ -69,12 +68,12 @@ export default function ApplicationsPage() {
 
   const allApplications = useMemo(() => Object.entries(applications).flatMap(([stage, items]) => items.map((application) => ({ ...application, stage, ...referenceApplicationContent[application.id] }))), [applications])
   const tabs = [
-    { id: 'all', label: 'Semua', count: applicationTabCounts.all },
-    { id: 'waiting', label: 'Menunggu Respons', count: applicationTabCounts.waiting },
-    { id: 'confirmation', label: 'Perlu Konfirmasi', count: applicationTabCounts.confirmation },
-    { id: 'accepted', label: 'Diterima', count: applicationTabCounts.accepted },
-    { id: 'done', label: 'Selesai', count: applicationTabCounts.done },
-    { id: 'rejected', label: 'Ditolak', count: applicationTabCounts.rejected },
+    { id: 'all', label: 'Semua', count: allApplications.length },
+    { id: 'waiting', label: 'Menunggu Respons', count: allApplications.filter((item) => matchesTab(item, 'waiting')).length },
+    { id: 'confirmation', label: 'Perlu Konfirmasi', count: allApplications.filter((item) => matchesTab(item, 'confirmation')).length },
+    { id: 'accepted', label: 'Diterima', count: allApplications.filter((item) => matchesTab(item, 'accepted')).length },
+    { id: 'done', label: 'Selesai', count: allApplications.filter((item) => matchesTab(item, 'done')).length },
+    { id: 'rejected', label: 'Ditolak', count: allApplications.filter((item) => matchesTab(item, 'rejected')).length },
   ]
 
   const visibleApplications = useMemo(() => {
@@ -92,8 +91,6 @@ export default function ApplicationsPage() {
     setSearchParams(tab === 'all' ? {} : { view: tab }, { replace: true })
   }
 
-  const showingReferenceTotal = activeTab === 'all' && category === 'Semua kategori' && period === 'Semua waktu' && !query.trim()
-
   return (
     <>
       <nav className="grid grid-cols-6 border-b border-[#dfe7e2]" aria-label="Filter status lamaran">
@@ -108,7 +105,7 @@ export default function ApplicationsPage() {
         <label className="col-span-2 flex h-[70px] items-center gap-3 rounded-lg border border-[#dfe7e2] bg-white px-5 transition focus-within:border-pull-300 focus-within:ring-4 focus-within:ring-pull-100/45 lg:col-span-1"><Search size={22} className="shrink-0 text-[#70837b]" /><span className="sr-only">Cari lamaran</span><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Cari nama UMKM atau jenis pekerjaan..." className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-pull-800 outline-none placeholder:text-[#98a59f]" /></label>
       </section>
 
-      <p className="mt-5 text-xs font-semibold text-[#64766f]">Menampilkan <strong className="font-extrabold text-[#0b8a45]">{showingReferenceTotal ? applicationTabCounts.all : visibleApplications.length}</strong> lamaran</p>
+      <p className="mt-5 text-xs font-semibold text-[#64766f]">Menampilkan <strong className="font-extrabold text-[#0b8a45]">{visibleApplications.length}</strong> lamaran</p>
 
       <section className="mt-5 space-y-2.5">
         {visibleApplications.map((application) => (

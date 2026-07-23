@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  applicationTabCounts,
   defaultAdvancedFilters,
   initialActivities,
   initialApplications,
@@ -81,6 +80,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
 
 
   const activeApplicationCount = applications.Dilamar.length + applications.Ditinjau.length + applications.Interview.length + applications.Diterima.length
+  const allApplicationCount = Object.values(applications).reduce((total, items) => total + items.length, 0)
 
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
@@ -453,7 +453,7 @@ export function WorkspaceProvider({ children, initialProfile }) {
     toast,
 
     activeApplicationCount,
-    allApplicationCount: applicationTabCounts.all,
+    allApplicationCount,
     openDialog,
     closeDialog,
     showToast,
