@@ -3,13 +3,11 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
 import { AuthSlideshow } from "@/components/auth-slideshow";
 import { FormFeedback, FormLabel } from "@/components/form-ui";
 import { useClientMounted } from "@/components/use-client-mounted";
 import {
   signInAction,
-  signInWithGoogleAction,
   type AuthActionState,
 } from "@/features/auth/actions";
 
@@ -155,29 +153,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Divider */}
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#d6e4dc]"></div>
-              </div>
-              <span className="relative px-3 bg-white text-xs font-medium text-[#91a79d]">
-                Atau Masuk Dengan
-              </span>
-            </div>
-
-            {/* Social Logins */}
-            <div className="space-y-3">
-              {/* Google */}
-              <form action={signInWithGoogleAction}>
-                <button
-                  type="submit"
-                  className="form-button form-button--secondary w-full"
-                >
-                  <FcGoogle className="h-5 w-5" aria-hidden="true" />
-                  Google
-                </button>
-              </form>
-            </div>
 
             {/* Footer Links */}
             <div className="text-center text-xs font-semibold text-[#36544a]">

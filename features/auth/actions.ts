@@ -93,23 +93,6 @@ export async function signInAction(
   redirect("/auth/redirect");
 }
 
-export async function signInWithGoogleAction() {
-  const supabase = await createClient();
-  const siteUrl = await getSiteUrl();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${siteUrl}/auth/confirm?next=/auth/redirect`,
-    },
-  });
-
-  if (error || !data.url) {
-    redirect("/?auth_error=google");
-  }
-
-  redirect(data.url);
-}
 
 export async function signOutAction() {
   const supabase = await createClient();

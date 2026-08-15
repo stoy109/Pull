@@ -45,7 +45,7 @@ The app validates required Supabase variables through `lib/env.ts`. Data access 
 
 ### Supabase Auth
 
-Register, login, verifikasi email, reset kata sandi, OAuth, onboarding role, dan session refresh menggunakan Supabase. Terapkan seluruh migration secara berurutan, termasuk:
+Register, login dengan email dan kata sandi, verifikasi email, reset kata sandi, onboarding role, dan session refresh menggunakan Supabase. Terapkan seluruh migration secara berurutan, termasuk:
 
 - `202607230009_proposal_core_flows.sql` untuk pool, pekerjaan, supplier, toko publik, rating, poin, notifikasi, dan pembayaran.
 - `202607230010_admin_kyc_metrics.sql` untuk review KYC admin dan KPI proposal.

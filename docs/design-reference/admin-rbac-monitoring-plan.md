@@ -17,8 +17,8 @@ Dokumen ini bermula sebagai rancangan sebelum coding dan kini juga menjadi acuan
 Hardening setelah audit constraint juga telah menghubungkan metrik dan aktivitas
 utama dashboard UMKM, Pekerja, serta Supplier ke Supabase. Angka ringkasan dan
 daftar aktivitas pada halaman utama role tidak lagi memakai seed statis. Login
-OAuth dicatat ketika kembali ke dashboard, dan tersedia verifikasi batas akses
-untuk tiga akun domain melalui `npm run verify:roles`.
+berhasil dicatat ketika kembali ke dashboard, dan tersedia verifikasi batas
+akses untuk tiga akun domain melalui `npm run verify:roles`.
 
 | Batch | Status | Hasil utama |
 | --- | --- | --- |
