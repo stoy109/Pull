@@ -40,6 +40,9 @@ const emptyAddress = {
   village: "",
 };
 
+/** Raised when the lookup service responded, but has no area for the code. */
+class PostalCodeNotFoundError extends Error {}
+
 export function PostalLocationFields({ value, onChangeAction, required = true }: PostalLocationFieldsProps) {
   const [locations, setLocations] = useState<PostalCity[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,8 +58,20 @@ export function PostalLocationFields({ value, onChangeAction, required = true }:
       try {
         const query = new URLSearchParams({ kode_pos: value.postalCode });
         const response = await fetch(`/api/location/lookup-postal-code?${query}`, { signal: controller.signal });
-        const payload = await response.json() as PostalLookupResponse & { error?: { message?: string } };
-        if (!response.ok) throw new Error(payload.error?.message || "Kode pos tidak ditemukan.");
+        const payload = await response.json().catch(() => null) as
+          | (PostalLookupResponse & { error?: { message?: string } })
+          | null;
+        if (!response.ok) {
+          const message = payload?.error?.message;
+          // 4xx means the code itself is rejected; anything else is an outage.
+          if (response.status === 400 || response.status === 404) {
+            throw new PostalCodeNotFoundError(message || "Kode pos tidak ditemukan.");
+          }
+          throw new Error(message || "Pencarian kode pos sedang tidak tersedia.");
+        }
+        if (!payload || !Array.isArray(payload.locations) || payload.locations.length === 0) {
+          throw new PostalCodeNotFoundError("Kode pos tidak ditemukan.");
+        }
 
         setLocations(payload.locations);
         const first = payload.locations[0];
@@ -72,7 +87,9 @@ export function PostalLocationFields({ value, onChangeAction, required = true }:
         if (controller.signal.aborted) return;
         setLocations([]);
         onChangeAction((current) => ({ ...current, ...emptyAddress }));
-        setError(reason instanceof Error && reason.message.includes("not found") ? "Kode pos tidak ditemukan." : "Pencarian kode pos sedang tidak tersedia.");
+        setError(reason instanceof PostalCodeNotFoundError
+          ? reason.message
+          : "Pencarian kode pos sedang tidak tersedia.");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }

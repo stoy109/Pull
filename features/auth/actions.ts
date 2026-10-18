@@ -52,15 +52,40 @@ function authMessage(message?: string) {
   return message;
 }
 
+function normalizeSiteUrl(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.origin : null;
+  } catch {
+    return null;
+  }
+}
+
 async function getSiteUrl() {
+  // Prefer an explicitly configured origin: Host headers are attacker-controlled,
+  // so they must not decide where auth e-mail links point.
+  const configuredSiteUrl =
+    normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL) ??
+    normalizeSiteUrl(process.env.SITE_URL);
+
+  if (configuredSiteUrl) return configuredSiteUrl;
+
   const headersList = await headers();
-  const host =
+  const rawHost =
     headersList.get("x-forwarded-host") ??
     headersList.get("host") ??
     "localhost:3000";
+  const host = /^[a-z0-9.-]+(:\d{1,5})?$/i.test(rawHost) ? rawHost : "localhost:3000";
+  const forwardedProtocol = headersList.get("x-forwarded-proto");
   const protocol =
-    headersList.get("x-forwarded-proto") ??
-    (host.includes("localhost") ? "http" : "https");
+    forwardedProtocol === "http" || forwardedProtocol === "https"
+      ? forwardedProtocol
+      : host.includes("localhost") || host.startsWith("127.0.0.1")
+        ? "http"
+        : "https";
 
   return `${protocol}://${host}`;
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  Bell,
   BriefcaseBusiness,
   CircleHelp,
   Clock3,
@@ -24,6 +25,7 @@ const SIDEBAR_ITEMS = [
   { label: "Terbitkan Lowongan", icon: BriefcaseBusiness, href: "/dashboard/publish" },
   { label: "Pool Patungan", icon: UsersRound, href: "/dashboard/pools" },
   { label: "Papan Loker", icon: BriefcaseBusiness, href: "/dashboard/jobs" },
+  { label: "Notifikasi", icon: Bell, href: "/dashboard/notifications" },
   { label: "Profil Bisnis", icon: Store, href: "/dashboard/profile" },
   { label: "Trust Score", icon: ShieldCheck, href: "/dashboard/trust" },
 ];
@@ -132,6 +134,16 @@ export function UmkmDashboardShell({
           title: "Pool Patungan Bahan Baku",
           description: "Gabung patungan atau buat pool baru untuk menghemat belanja bahan baku usaha.",
         }
+      : pathname.startsWith("/dashboard/publish")
+        ? {
+            title: "Terbitkan Lowongan",
+            description: "Susun detail lowongan, simpan sebagai draft, lalu terbitkan untuk pekerja terdekat.",
+          }
+      : pathname.startsWith("/dashboard/notifications")
+        ? {
+            title: "Notifikasi",
+            description: "Kotak masuk usaha Anda: lamaran masuk, pool patungan, dan pembaruan sistem.",
+          }
       : {
           title: "Dashboard Overview",
           description: "Ringkasan utama profil bisnis Anda, aktivitas terbaru, dan notifikasi penting.",
@@ -228,7 +240,7 @@ export function UmkmDashboardShell({
           const Icon = item.icon;
           const isMenu = item.label === "Menu";
           const isActive = isMenu
-            ? isMobileMenuOpen || pathname.startsWith("/dashboard/pools") || pathname.startsWith("/dashboard/trust") || pathname.startsWith("/dashboard/activity") || pathname.startsWith("/dashboard/settings")
+            ? isMobileMenuOpen || pathname.startsWith("/dashboard/pools") || pathname.startsWith("/dashboard/trust") || pathname.startsWith("/dashboard/activity") || pathname.startsWith("/dashboard/notifications") || pathname.startsWith("/dashboard/settings")
             : item.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);

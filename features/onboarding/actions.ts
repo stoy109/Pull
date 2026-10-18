@@ -85,7 +85,12 @@ export async function saveProfileAction(
   _state: OnboardingActionState,
   formData: FormData,
 ): Promise<OnboardingActionState> {
-  const role = parseOnboardingRole(readFormString(formData, "role")) ?? "umkm";
+  const submittedRole = parseOnboardingRole(readFormString(formData, "role"));
+  if (!submittedRole) {
+    return { status: "error", message: "Pilih peran yang tersedia sebelum menyimpan profil." };
+  }
+
+  const role = submittedRole;
   const displayName = readFormString(formData, "displayName");
   const submittedBusinessName = readFormString(formData, "businessName");
   const profile: ProfileDraft = {

@@ -1,26 +1,63 @@
 import { applyJobAction } from "@/features/activity/actions";
 import { getRecentActivities } from "@/lib/activity/queries";
+import { resolveUserRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
 const noStoreHeaders = { "Cache-Control": "no-store, max-age=0" };
 
 export const dynamic = "force-dynamic";
 
-async function getWorkerUser() {
+type WorkerAuthResult = {
+  user: { id: string } | null;
+  status: 200 | 401 | 403 | 503;
+  message: string;
+};
+
+/**
+ * Resolves the caller from the trusted profile role.
+ * `user_metadata` is writable by the user through `auth.updateUser`, so it must
+ * never be the only source of an authorization decision.
+ */
+async function getWorkerUser(): Promise<WorkerAuthResult> {
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { user: null, status: 401 };
-  if (user.user_metadata?.role !== "pekerja") {
-    return { user: null, status: 403 };
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return { user: null, status: 401, message: "Autentikasi diperlukan." };
   }
-  return { user, status: 200 };
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle<{ role: string | null }>();
+
+  if (profileError) {
+    return { user: null, status: 503, message: "Peran akun belum dapat diverifikasi." };
+  }
+
+  const role = resolveUserRole({
+    appMetadataRole: user.app_metadata?.role,
+    hasProfile: Boolean(profile),
+    profileRole: profile?.role,
+    userMetadataRole: user.user_metadata?.role,
+  });
+
+  if (role !== "pekerja") {
+    return { user: null, status: 403, message: "Akses ditolak." };
+  }
+
+  return { user, status: 200, message: "OK" };
 }
 
 export async function GET() {
   const auth = await getWorkerUser();
   if (!auth.user) {
     return Response.json(
-      { error: auth.status === 401 ? "Autentikasi diperlukan." : "Akses ditolak." },
+      { error: auth.message },
       { status: auth.status, headers: noStoreHeaders },
     );
   }
@@ -43,7 +80,7 @@ export async function POST(request: Request) {
   const auth = await getWorkerUser();
   if (!auth.user) {
     return Response.json(
-      { error: auth.status === 401 ? "Autentikasi diperlukan." : "Akses ditolak." },
+      { error: auth.message },
       { status: auth.status, headers: noStoreHeaders },
     );
   }
