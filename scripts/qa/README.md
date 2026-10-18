@@ -62,6 +62,34 @@ job_applications 1 | pools 0 | supplier_offers 1 | notifications 1
 
 `qa-cleanup inspect` prints the current numbers next to these.
 
+## E-mail digest checks
+
+`/api/notifications/digest` needs its own environment, so it is not part of the
+suites above. Start the dev server with the variables you want to exercise and
+check each guard by hand:
+
+```bash
+# 1. no secret configured -> 503, refuses to run at all
+npm run dev
+curl -s -o /dev/null -w "%{http_code}\n" localhost:3000/api/notifications/digest   # 503
+
+# 2. secret configured, wrong header -> 401
+CRON_SECRET=qa-cron-secret npm run dev
+curl -s -o /dev/null -w "%{http_code}\n" localhost:3000/api/notifications/digest   # 401
+curl -s -H "Authorization: Bearer qa-cron-secret" localhost:3000/api/notifications/digest
+#    -> {"skipped":"email-provider-not-configured"}
+
+# 3. provider configured with a bogus key -> send fails, rows must stay queued
+CRON_SECRET=qa-cron-secret RESEND_API_KEY=re_palsu EMAIL_FROM=a@b.test \
+  SUPABASE_SERVICE_ROLE_KEY=... npm run dev
+curl -s -H "Authorization: Bearer qa-cron-secret" localhost:3000/api/notifications/digest
+#    -> {"pending":1,"users":1,"sent":0,"failed":1}
+```
+
+After case 3, `select count(*) from notifications where emailed_at is null` must
+still include the row. A failure that stamps `emailed_at` would drop the message
+silently, which is the one thing this endpoint must never do.
+
 ## Gotchas worth remembering
 
 - **`activity_logs.actor_id` is nulled, not cascaded,** when a profile is
