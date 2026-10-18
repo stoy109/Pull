@@ -1,0 +1,7 @@
+# Security contact for the Pull platform (pull-phi.vercel.app).
+# Full policy: see SECURITY.md in the repository.
+Contact: mailto:halo@pull.id
+Expires: 2027-10-18T00:00:00.000Z
+Preferred-Languages: id, en
+Canonical: https://pull-phi.vercel.app/.well-known/security.txt
+Policy: https://github.com/stoy109/Pull/blob/master/SECURITY.md
