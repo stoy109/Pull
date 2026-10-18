@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 import { PhoneVerificationForm } from "@/components/phone-verification-form";
 import { requireUser } from "@/lib/auth/access";
+import { isPhoneVerificationEnabled } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -26,7 +27,11 @@ export default async function VerifyPhonePage() {
         <h1 className="mt-2 text-2xl font-extrabold tracking-[-.03em]">Verifikasi nomor seluler</h1>
         <p className="mt-3 text-sm font-medium leading-7 text-[#6b7b75]">Kode dikirim melalui provider SMS yang dikonfigurasi di Supabase. Pull tidak menerima kode statis atau melewati verifikasi provider.</p>
         <div className="mt-6">
-          {profile?.whatsapp_verified_at && Number(profile.verification_level) >= 1 ? (
+          {!isPhoneVerificationEnabled() ? (
+            <div className="rounded-2xl border border-[#efd8ad] bg-[#fff8e9] p-5 text-sm font-medium leading-7 text-[#76581c]">
+              Verifikasi nomor seluler belum tersedia karena provider SMS belum dikonfigurasi. Nomor Anda tetap tersimpan dan dapat diverifikasi kapan saja setelah provider aktif.
+            </div>
+          ) : profile?.whatsapp_verified_at && Number(profile.verification_level) >= 1 ? (
             <div className="rounded-2xl border border-[#bfe0cb] bg-[#edf8f1] p-5 text-center text-sm font-extrabold text-[#087447]">Nomor akun sudah terverifikasi.</div>
           ) : <PhoneVerificationForm initialPhone={profile?.phone ?? ""} />}
         </div>

@@ -13,7 +13,19 @@
     "verify:roles": "node scripts/verify-role-boundaries.mjs",
     "verify:role-data": "node scripts/verify-role-dashboard-data.mjs",
     "provision:roles": "node scripts/provision-role-demo-accounts.mjs",
-    "seed:roles": "node scripts/seed-role-demo-data.mjs"
+    "seed:roles": "node scripts/seed-role-demo-data.mjs",
+    "qa:users": "node scripts/qa/qa-users.mjs create",
+    "qa:users:delete": "node scripts/qa/qa-users.mjs delete",
+    "qa:full": "node scripts/qa/qa-full.mjs",
+    "qa:api": "node scripts/qa/qa-api.mjs",
+    "qa:realtime": "node scripts/qa/qa-realtime.mjs",
+    "qa:validation": "node scripts/qa/qa-validation.mjs",
+    "qa:notif": "node scripts/qa/qa-notif.mjs",
+    "qa:notify:events": "node scripts/qa/qa-notify-events.mjs",
+    "qa:notify:jobs": "node scripts/qa/qa-notify-jobs.mjs",
+    "qa:notify:supplier": "node scripts/qa/qa-notify-supplier.mjs",
+    "qa:cleanup": "node scripts/qa/qa-cleanup.mjs inspect",
+    "qa:cleanup:run": "node scripts/qa/qa-cleanup.mjs clean"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -38,6 +50,8 @@
     "@types/react-dom": "^19",
     "eslint": "^10",
     "eslint-config-next": "16.4.1",
+    "pg": "^8.23.1",
+    "playwright-core": "^1.64.1",
     "tailwindcss": "^4",
     "typescript": "^7"
   }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { requireUser } from "@/lib/auth/access";
+import { isPhoneVerificationEnabled } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({
@@ -14,7 +15,7 @@ export default async function ProtectedLayout({
     .select("verification_level,whatsapp_verified_at")
     .eq("id", access.user.id)
     .maybeSingle();
-  const needsPhoneVerification = access.role !== "admin" && verification &&
+  const needsPhoneVerification = isPhoneVerificationEnabled() && access.role !== "admin" && verification &&
     (Number(verification.verification_level) < 1 || !verification.whatsapp_verified_at);
 
   return (
