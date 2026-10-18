@@ -1,10 +1,10 @@
-const STATIC_CACHE = "pull-static-v3";
+const STATIC_CACHE = "pull-static-v4";
 const MAP_CACHE = "pull-map-v1";
 const PRECACHE_URLS = [
   "/",
   "/manifest.webmanifest",
-  "/icon",
-  "/apple-icon",
+  "/icon.png",
+  "/apple-icon.png",
   "/icon.svg",
   "/apple-icon.svg",
 ];
