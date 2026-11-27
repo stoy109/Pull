@@ -485,11 +485,6 @@
   .worker-dashboard .cv-preview {
     @apply rounded-[20px] border border-pull-100 bg-white p-4 shadow-[0_12px_35px_rgba(18,59,48,.04)] sm:p-5;
   }
-
-  .worker-dashboard .toast {
-    @apply fixed bottom-20 left-1/2 z-[90] flex -translate-x-1/2 items-center gap-2 rounded-xl bg-pull-950 px-4 py-3 text-[10px] font-extrabold text-white shadow-[0_18px_45px_rgba(12,38,28,.25)] sm:bottom-5;
-
-  }
 }
 
 .worker-dashboard .hide-scrollbar,

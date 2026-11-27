@@ -358,6 +358,29 @@ select option:checked {
   font-weight: 800;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .route-transition > :first-child:not(.form-page) {
+    animation: route-fade-in 220ms ease-out;
+  }
+
+  .route-transition > .form-page > :first-child {
+    animation: form-enter 300ms ease-out;
+  }
+}
+
+@keyframes route-fade-in {
+  from {
+    opacity: 0.92;
+  }
+}
+
+@keyframes form-enter {
+  from {
+    opacity: 0.92;
+    transform: translateY(8px);
+  }
+}
+
 .form-page {
   display: flex;
   min-height: 100vh;

@@ -1,9 +1,8 @@
 "use client";
 
-import Image, { type StaticImageData } from "next/image";
+import { getImageProps, type StaticImageData } from "next/image";
 import { Pause, Play } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
+import { useEffect, useState } from "react";
 import belanjaBareng from "@/public/auth/slides/01-belanja-bareng.webp";
 import tenagaLokal from "@/public/auth/slides/02-tenaga-lokal.webp";
 import dariLapakKeLayar from "@/public/auth/slides/03-dari-lapak-ke-layar.webp";
@@ -38,64 +37,46 @@ const slides: Slide[] = [
   },
 ];
 
+const desktopMedia = "(min-width: 1024px)";
+const emptyImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E";
+
+const slideSources = slides.map(({ image, alt }) =>
+  getImageProps({ src: image, alt, sizes: "(min-width: 68rem) 32rem, 50vw" }).props,
+);
+
+function showSlide(shownSlides: number[], index: number) {
+  return shownSlides[0] === index
+    ? shownSlides
+    : [index, ...shownSlides.filter((shownIndex) => shownIndex !== index)];
+}
+
 export function AuthSlideshow() {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [shownSlides, setShownSlides] = useState([0]);
   const [paused, setPaused] = useState(false);
-  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const previousIndex = useRef(0);
+  const activeIndex = shownSlides[0];
 
   useEffect(() => {
-    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
+    if (paused) return;
+
+    const media = window.matchMedia(`${desktopMedia} and (prefers-reduced-motion: no-preference)`);
+    let timeout: number | undefined;
+
+    function scheduleNextSlide() {
+      window.clearTimeout(timeout);
+      if (media.matches) {
+        timeout = window.setTimeout(() => {
+          setShownSlides((current) => showSlide(current, (activeIndex + 1) % slides.length));
+        }, 5500);
+      }
     }
 
-    const timeout = window.setTimeout(() => {
-      setActiveIndex((current) => (current + 1) % slides.length);
-    }, 5500);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeIndex, paused]);
-
-  useLayoutEffect(() => {
-    const elements = slideRefs.current.filter(
-      (element): element is HTMLDivElement => Boolean(element),
-    );
-    const current = elements[activeIndex];
-    const previous = elements[previousIndex.current];
-    if (!current) return;
-
-    gsap.killTweensOf(elements);
-
-    if (previousIndex.current === activeIndex) {
-      gsap.set(elements, { autoAlpha: 0, scale: 1 });
-      gsap.set(current, { autoAlpha: 1, zIndex: 1 });
-      return;
-    }
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set(elements, { autoAlpha: 0, scale: 1, zIndex: 0 });
-      gsap.set(current, { autoAlpha: 1, zIndex: 1 });
-      previousIndex.current = activeIndex;
-      return;
-    }
-
-    gsap.set(current, { autoAlpha: 0, scale: 1.025, y: 10, zIndex: 2 });
-    if (previous) gsap.set(previous, { zIndex: 1 });
-
-    const timeline = gsap.timeline({ defaults: { ease: "power3.inOut" } });
-    if (previous) {
-      timeline.to(previous, { autoAlpha: 0, scale: 1.015, duration: 0.7 }, 0);
-    }
-    timeline
-      .to(current, { autoAlpha: 1, scale: 1, y: 0, duration: 0.82 }, 0)
-      .set(current, { zIndex: 1 })
-      .set(previous ?? [], { scale: 1, zIndex: 0 });
-
-    previousIndex.current = activeIndex;
+    scheduleNextSlide();
+    media.addEventListener("change", scheduleNextSlide);
     return () => {
-      timeline.kill();
+      window.clearTimeout(timeout);
+      media.removeEventListener("change", scheduleNextSlide);
     };
-  }, [activeIndex]);
+  }, [activeIndex, paused]);
 
   return (
     <div
@@ -104,37 +85,42 @@ export function AuthSlideshow() {
       aria-roledescription="carousel"
       aria-label="Manfaat Pull untuk UMKM dan pekerja"
     >
-      {slides.map((slide, index) => (
-        <div
-          key={slide.label}
-          ref={(element) => {
-            slideRefs.current[index] = element;
-          }}
-          className={`absolute inset-0 ${index === 0 ? "opacity-100" : "invisible opacity-0"}`}
-          role="group"
-          aria-roledescription="slide"
-          aria-label={`${index + 1} dari ${slides.length}: ${slide.label}`}
-          aria-hidden={index !== activeIndex}
-        >
-          <Image
-            src={slide.image}
-            alt={slide.alt}
-            fill
-            priority={index === 0}
-            placeholder="blur"
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-          />
-        </div>
-      ))}
+      {slides.map((slide, index) => {
+        const active = index === activeIndex;
+        const { srcSet, sizes } = slideSources[index];
+
+        return (
+          <div
+            key={slide.label}
+            className={`absolute inset-0 motion-safe:transition-opacity motion-safe:duration-700 ${active ? "z-[1] opacity-100" : "pointer-events-none opacity-0"}`}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${index + 1} dari ${slides.length}: ${slide.label}`}
+            aria-hidden={!active}
+          >
+            {shownSlides.includes(index) ? (
+              <picture>
+                <source media={desktopMedia} srcSet={srcSet} sizes={sizes} />
+                <img
+                  src={emptyImage}
+                  alt={slide.alt}
+                  decoding="async"
+                  fetchPriority={index === 0 ? "high" : undefined}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </picture>
+            ) : null}
+          </div>
+        );
+      })}
 
       <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/70 bg-white/85 px-2.5 py-2 shadow-lg shadow-emerald-950/10 backdrop-blur-md">
         {slides.map((slide, index) => (
           <button
             key={slide.label}
             type="button"
-            onClick={() => setActiveIndex(index)}
-            className={`h-2 rounded-full transition-[width,background-color] duration-300 ${
+            onClick={() => setShownSlides((current) => showSlide(current, index))}
+            className={`h-2 rounded-full motion-safe:transition-[width,background-color] motion-safe:duration-300 ${
               activeIndex === index ? "w-6 bg-[#145c46]" : "w-2 bg-[#b8cec2] hover:bg-[#6d9c82]"
             }`}
             aria-label={`Tampilkan ${slide.label}`}

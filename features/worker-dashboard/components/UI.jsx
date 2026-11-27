@@ -1,6 +1,4 @@
 import Image from 'next/image'
-import { useLayoutEffect, useRef } from 'react'
-import { gsap } from 'gsap'
 import { Link } from 'react-router-dom'
 import {
   Award,
@@ -9,7 +7,6 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Camera,
-  Check,
   CheckCircle2,
   GraduationCap,
   IdCard,
@@ -18,7 +15,6 @@ import {
   Sparkles,
   Star,
   UserRound,
-  X,
 } from 'lucide-react'
 
 export function Brand({ inverse = false }) {
@@ -149,29 +145,4 @@ export function MetricCard({ label, value, detail, icon: Icon = Sparkles, tone =
       {detail ? <p className="mt-1 text-[9px] leading-relaxed text-pull-400">{detail}</p> : null}
     </div>
   )
-}
-
-export function Toast({ message, onClose }) {
-  const toastRef = useRef(null)
-
-  useLayoutEffect(() => {
-    if (!message || !toastRef.current) return undefined
-    const media = gsap.matchMedia()
-    media.add('(prefers-reduced-motion: no-preference)', () => {
-      gsap.fromTo(toastRef.current, { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: 'power3.out', clearProps: 'opacity,visibility,transform' })
-    })
-    return () => media.revert()
-  }, [message])
-
-  if (!message) return null
-  if (typeof message === 'object') {
-    return (
-      <div ref={toastRef} className="fixed right-4 top-4 z-[100] flex min-h-[88px] w-[calc(100%-2rem)] max-w-[420px] items-center gap-3 rounded-2xl bg-[#087b3d] px-4 py-4 text-white shadow-[0_18px_45px_rgba(4,73,35,.3)] sm:right-6 sm:top-6 sm:gap-4 sm:px-5" role="status" aria-live="polite">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-white text-[#07843f] shadow-[0_2px_8px_rgba(0,0,0,.08)] sm:size-[52px]"><Check size={28} strokeWidth={3} className="sm:size-[31px]" /></span>
-        <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold leading-tight sm:text-base">{message.title}</strong><span className="mt-2 block text-xs font-medium leading-tight text-white/90 sm:text-[13px]">{message.detail}</span></span>
-        <button type="button" onClick={onClose} className="grid size-8 shrink-0 place-items-center text-white transition hover:text-white/75 sm:size-9" aria-label="Tutup notifikasi"><X size={24} strokeWidth={2} className="sm:size-7" /></button>
-      </div>
-    )
-  }
-  return <div ref={toastRef} className="toast" role="status" aria-live="polite"><CheckCircle2 size={17} /><span>{message}</span></div>
 }
