@@ -159,7 +159,7 @@ export async function signUpAction(
   const supabase = await createClient();
   const siteUrl = await getSiteUrl();
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -181,6 +181,8 @@ export async function signUpAction(
       message: authMessage(error.message),
     };
   }
+
+  if (data.session) redirect("/onboarding");
 
   redirect(`/verify-email?email=${encodeURIComponent(email)}`);
 }

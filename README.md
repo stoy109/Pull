@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the app. The public [project showcase](http://localhost:3000/showcase) does not require login or Supabase configuration.
 
 Run quality checks before opening a PR:
 
@@ -42,6 +42,15 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
 The app validates required Supabase variables through `lib/env.ts`. Data access uses authenticated Supabase sessions plus RLS-protected RPCs, so a service-role key is not required by the application.
+
+### Data demo
+
+1. Jalankan Docker dan `npx supabase start`. CLI menerapkan migration pada database lokal yang baru.
+2. Ambil URL API dan publishable/anon key lokal dari `npx supabase status`, lalu atur `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` di `.env.local`.
+3. Di `.env.admin.local`, set `SUPABASE_SECRET_KEY` dengan secret/service-role key **lokal** dan `ADMIN_TEMP_PASSWORD` dengan kata sandi khusus akun demo (minimal 8 karakter). Jangan commit kedua file env tersebut atau gunakan secret key di frontend.
+4. Jalankan `npm run provision:roles`, `npm run seed:roles`, lalu `npm run dev`. Masuk menggunakan `demo.umkm@pull.example.com`, `demo.pekerja@pull.example.com`, atau `demo.supplier@pull.example.com` dan kata sandi demo untuk melihat lowongan, lamaran, atau katalog.
+
+Kedua script menolak URL Supabase nonlokal secara default. Khusus project dev remote, pastikan targetnya benar sebelum menambahkan `-- --allow-remote` ke perintah. Provisioning dapat mengubah kata sandi akun demo yang sudah ada; jangan jalankan pada project produksi.
 
 ### Supabase Auth
 

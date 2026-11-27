@@ -1,6 +1,6 @@
 export default function AdminLoading() {
   return (
-    <div className="min-h-screen bg-[#f4f7f5] px-5 py-8 lg:pl-[17rem] sm:px-8">
+    <div className="min-h-screen bg-[#f4f7f5] px-5 py-8 lg:pl-68 sm:px-8">
       <div className="mx-auto max-w-7xl animate-pulse">
         <div className="h-7 w-48 rounded-lg bg-[#dfe8e3]" />
         <div className="mt-4 h-11 max-w-xl rounded-xl bg-[#e6ede9]" />

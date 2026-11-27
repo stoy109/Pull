@@ -48,7 +48,7 @@ function StepDots({ currentStep }: { currentStep: number }) {
 export default function OnboardingPage() {
   return (
     <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
-      <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+      <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-4xl border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-140">
         <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
           <Image
             src="/onboarding/start-illustration-portrait.webp"
@@ -76,7 +76,7 @@ export default function OnboardingPage() {
             <ul className="space-y-3">
               {FEATURES.map((feature) => (
                 <li key={feature.title} className="flex items-start gap-3.5">
-                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#eef8f2] border border-[#c3e6d0] flex items-center justify-center mt-0.5">
+                  <div className="shrink-0 w-9 h-9 rounded-xl bg-[#eef8f2] border border-[#c3e6d0] flex items-center justify-center mt-0.5">
                     {feature.icon}
                   </div>
                   <div>

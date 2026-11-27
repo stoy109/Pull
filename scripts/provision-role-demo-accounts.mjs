@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { requireDemoTarget } from "./demo-target.mjs";
 
 function parseEnv(content) {
   return Object.fromEntries(content.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith("#") && line.includes("=")).map((line) => {
@@ -17,6 +18,7 @@ const [appEnv, adminEnv] = await Promise.all([
   readFile(resolve(process.cwd(), ".env.admin.local"), "utf8").then(parseEnv),
 ]);
 const url = appEnv.NEXT_PUBLIC_SUPABASE_URL;
+requireDemoTarget(url, { allowRemote: process.argv.slice(2).includes("--allow-remote") });
 const secret = adminEnv.SUPABASE_SECRET_KEY;
 const password = adminEnv.ADMIN_TEMP_PASSWORD;
 if (!url || !secret || !password || password.length < 8) throw new Error("Konfigurasi provisioning akun demo belum lengkap.");

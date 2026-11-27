@@ -1,0 +1,11 @@
+{
+  "lsp": {
+    "vtsls": {
+      "settings": {
+        "vtsls": {
+          "autoUseWorkspaceTsdk": true
+        }
+      }
+    }
+  }
+}

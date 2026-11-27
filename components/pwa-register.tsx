@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Download, Share2, X } from "lucide-react";
 
 type BeforeInstallPromptEvent = Event & {
@@ -49,11 +50,12 @@ function clearDismissal() {
 }
 
 export function PwaRegister() {
+  const isShowcase = usePathname() === "/showcase";
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
+    if (isShowcase || !("serviceWorker" in navigator)) return;
 
     const register = () => {
       navigator.serviceWorker.register("/sw.js").catch(() => {
@@ -68,10 +70,10 @@ export function PwaRegister() {
 
     window.addEventListener("load", register, { once: true });
     return () => window.removeEventListener("load", register);
-  }, []);
+  }, [isShowcase]);
 
   useEffect(() => {
-    if (!isMobile() || isStandalone()) return;
+    if (isShowcase || !isMobile() || isStandalone()) return;
 
     const canShow = !recentlyDismissed();
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -97,7 +99,7 @@ export function PwaRegister() {
       window.removeEventListener("appinstalled", handleInstalled);
       if (iosTimer) window.clearTimeout(iosTimer);
     };
-  }, []);
+  }, [isShowcase]);
 
   const dismiss = () => {
     rememberDismissal();
@@ -119,7 +121,7 @@ export function PwaRegister() {
     }
   };
 
-  if (!installPrompt && !showIOSInstructions) return null;
+  if (isShowcase || (!installPrompt && !showIOSInstructions)) return null;
 
   return (
     <aside

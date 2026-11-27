@@ -24,13 +24,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+
   const isMounted = useClientMounted();
 
   return (
     <div className="form-page flex min-h-screen items-center justify-center bg-[#f8faf7] p-3 sm:p-4 lg:p-5">
       {/* Outer Card Container */}
-      <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-[560px]">
+      <div className="form-shell flex w-full max-w-5xl flex-col overflow-hidden rounded-4xl border border-[#e6eee9] bg-white shadow-xl shadow-emerald-950/5 sm:rounded-[2.25rem] lg:flex-row lg:min-h-140">
 
         {/* Left Side: Illustration Image */}
         <div className="form-visual relative hidden items-center justify-center border-r border-[#e6eee9] bg-[#f4f8f5] lg:flex lg:w-1/2">
@@ -110,18 +110,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember Me & Forgot Password Row */}
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <label className="form-checkbox-label">
-                  <input
-                    name="rememberMe"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="form-checkbox"
-                  />
-                  <span>Ingat saya</span>
-                </label>
+              <div className="text-right text-xs font-semibold">
                 <Link
                   href="/forgot-password"
                   className="form-link text-[#299a45] hover:text-[#217c37] transition-colors"
@@ -146,13 +135,12 @@ export default function LoginPage() {
               </form>
             ) : (
               <div className="space-y-4" aria-hidden="true">
-                <div className="h-[74px]" />
-                <div className="h-[74px]" />
+                <div className="h-18.5" />
+                <div className="h-18.5" />
                 <div className="h-5" />
                 <div className="h-12" />
               </div>
             )}
-
 
             {/* Footer Links */}
             <div className="text-center text-xs font-semibold text-[#36544a]">
